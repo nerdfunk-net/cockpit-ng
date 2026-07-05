@@ -26,7 +26,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { UserPlus, X, ShieldAlert, ShieldCheck } from 'lucide-react'
+import { UserPlus, X, ShieldCheck } from 'lucide-react'
+import { StatusAlert } from '@/components/shared/status-alert'
 import {
   useRbacUsers,
   useRbacPermissions,
@@ -110,15 +111,10 @@ export function UserPermissionsManager() {
       </div>
 
       {/* Info Alert */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex gap-2">
-          <ShieldAlert className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-800">
-            <strong>Note:</strong> Permission overrides take precedence over role-based
-            permissions. Use overrides sparingly for exceptions only.
-          </div>
-        </div>
-      </div>
+      <StatusAlert variant="info">
+        <strong>Note:</strong> Permission overrides take precedence over role-based
+        permissions. Use overrides sparingly for exceptions only.
+      </StatusAlert>
 
       {/* Users Table */}
       <div className="border rounded-lg">
@@ -180,7 +176,7 @@ export function UserPermissionsManager() {
               {userOverrides.length > 0 && (
                 <div className="border rounded-lg p-4 bg-muted">
                   <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <ShieldCheck className="h-4 w-4 text-blue-600" />
+                    <ShieldCheck className="h-4 w-4 text-primary" />
                     Current Overrides ({userOverrides.length})
                   </h4>
                   <div className="flex flex-wrap gap-2">
@@ -194,7 +190,7 @@ export function UserPermissionsManager() {
                         {override.granted ? ' (granted)' : ' (denied)'}
                         <button
                           onClick={() => handleRemoveOverride(override.id)}
-                          className="ml-1 hover:bg-white/20 rounded-full p-0.5"
+                          className="ml-1 hover:bg-accent/40 rounded-full p-0.5"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -209,7 +205,7 @@ export function UserPermissionsManager() {
                 <h4 className="font-semibold">Add New Override</h4>
                 {Object.entries(groupedPermissions).map(([resource, permissions]) => (
                   <div key={resource} className="border rounded-lg p-4">
-                    <h5 className="font-semibold mb-3 text-blue-600">{resource}</h5>
+                    <h5 className="font-semibold mb-3 text-primary">{resource}</h5>
                     <div className="space-y-3">
                       {permissions.map(perm => {
                         const override = userOverrides.find(o => o.id === perm.id)

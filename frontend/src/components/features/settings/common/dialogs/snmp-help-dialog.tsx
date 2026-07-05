@@ -20,7 +20,7 @@ export function SnmpHelpDialog({ open, onOpenChange }: SnmpHelpDialogProps) {
       <DialogContent className="max-w-[54rem] !max-w-[54rem] w-[85vw] max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
-            <HelpCircle className="h-5 w-5 text-blue-600" />
+            <HelpCircle className="h-5 w-5 text-primary" />
             <span>SNMP Mapping Configuration Help</span>
           </DialogTitle>
           <DialogDescription>
@@ -31,8 +31,8 @@ export function SnmpHelpDialog({ open, onOpenChange }: SnmpHelpDialogProps) {
         <div className="space-y-6 py-4">
           {/* Overview */}
           <div className="space-y-2">
-            <h3 className="text-sm font-semibold text-gray-900">Overview</h3>
-            <p className="text-sm text-gray-600">
+            <h3 className="text-sm font-semibold text-foreground">Overview</h3>
+            <p className="text-sm text-muted-foreground">
               The SNMP mapping configuration defines credentials for accessing network
               devices via SNMP. Each entry is identified by a unique ID and contains
               authentication details based on the SNMP version.
@@ -41,19 +41,19 @@ export function SnmpHelpDialog({ open, onOpenChange }: SnmpHelpDialogProps) {
 
           {/* Configuration Examples */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-900">
+            <h3 className="text-sm font-semibold text-foreground">
               Configuration Examples
             </h3>
 
             {/* Example 1: SNMPv3 with Auth and Privacy */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-blue-700">
+              <h4 className="text-sm font-medium text-primary">
                 Example 1: SNMPv3 with Authentication and Privacy
               </h4>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-muted-foreground">
                 Most secure option - requires both authentication and encryption
               </p>
-              <pre className="bg-gray-50 border border-gray-200 rounded-md p-3 text-xs font-mono overflow-x-auto">
+              <pre className="bg-muted border border-border rounded-md p-3 text-xs font-mono overflow-x-auto">
                 {`snmp-id-1:
   version: v3
   type: v3_auth_privacy
@@ -67,27 +67,27 @@ export function SnmpHelpDialog({ open, onOpenChange }: SnmpHelpDialogProps) {
   privacy_password: snmp_password
   privacy_option: 256`}
               </pre>
-              <ul className="text-xs text-gray-600 list-disc list-inside space-y-1">
+              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1">
                 <li>
-                  <code className="bg-gray-100 px-1 rounded">version: v3</code> - Uses
+                  <code className="bg-muted px-1 rounded">version: v3</code> - Uses
                   SNMP version 3
                 </li>
                 <li>
-                  <code className="bg-gray-100 px-1 rounded">
+                  <code className="bg-muted px-1 rounded">
                     type: v3_auth_privacy
                   </code>{' '}
                   - Requires both authentication and privacy (encryption)
                 </li>
                 <li>
-                  <code className="bg-gray-100 px-1 rounded">auth_protocol</code> -
+                  <code className="bg-muted px-1 rounded">auth_protocol</code> -
                   Authentication algorithm (SHA-2-256, MD5, etc.)
                 </li>
                 <li>
-                  <code className="bg-gray-100 px-1 rounded">privacy_protocol</code> -
+                  <code className="bg-muted px-1 rounded">privacy_protocol</code> -
                   Encryption algorithm (AES, DES, etc.)
                 </li>
                 <li>
-                  <code className="bg-gray-100 px-1 rounded">privacy_option</code> - Key
+                  <code className="bg-muted px-1 rounded">privacy_option</code> - Key
                   size for encryption (128, 192, 256)
                 </li>
               </ul>
@@ -95,14 +95,14 @@ export function SnmpHelpDialog({ open, onOpenChange }: SnmpHelpDialogProps) {
 
             {/* Example 2: SNMPv3 with Auth only */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-blue-700">
+              <h4 className="text-sm font-medium text-primary">
                 Example 2: SNMPv3 with Authentication Only
               </h4>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-muted-foreground">
                 Provides authentication without encryption - less secure than
                 auth_privacy
               </p>
-              <pre className="bg-gray-50 border border-gray-200 rounded-md p-3 text-xs font-mono overflow-x-auto">
+              <pre className="bg-muted border border-border rounded-md p-3 text-xs font-mono overflow-x-auto">
                 {`snmp-id-2:
   version: v3
   type: v3_auth_no_privacy
@@ -112,9 +112,9 @@ export function SnmpHelpDialog({ open, onOpenChange }: SnmpHelpDialogProps) {
   auth_protocol: MD5
   auth_password: snmp_password`}
               </pre>
-              <ul className="text-xs text-gray-600 list-disc list-inside space-y-1">
+              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1">
                 <li>
-                  <code className="bg-gray-100 px-1 rounded">
+                  <code className="bg-muted px-1 rounded">
                     type: v3_auth_no_privacy
                   </code>{' '}
                   - Authentication only, no encryption
@@ -126,24 +126,24 @@ export function SnmpHelpDialog({ open, onOpenChange }: SnmpHelpDialogProps) {
 
             {/* Example 3: SNMPv2c */}
             <div className="space-y-2">
-              <h4 className="text-sm font-medium text-blue-700">
+              <h4 className="text-sm font-medium text-primary">
                 Example 3: SNMPv2c with Community String
               </h4>
-              <p className="text-xs text-gray-600">
+              <p className="text-xs text-muted-foreground">
                 Legacy version - simple community-based authentication only
               </p>
-              <pre className="bg-gray-50 border border-gray-200 rounded-md p-3 text-xs font-mono overflow-x-auto">
+              <pre className="bg-muted border border-border rounded-md p-3 text-xs font-mono overflow-x-auto">
                 {`snmp-id-3:
   version: v2
   community: snmp_community`}
               </pre>
-              <ul className="text-xs text-gray-600 list-disc list-inside space-y-1">
+              <ul className="text-xs text-muted-foreground list-disc list-inside space-y-1">
                 <li>
-                  <code className="bg-gray-100 px-1 rounded">version: v2</code> - Uses
+                  <code className="bg-muted px-1 rounded">version: v2</code> - Uses
                   SNMP version 2c
                 </li>
                 <li>
-                  <code className="bg-gray-100 px-1 rounded">community</code> -
+                  <code className="bg-muted px-1 rounded">community</code> -
                   Community string (acts as password)
                 </li>
                 <li>
@@ -157,8 +157,8 @@ export function SnmpHelpDialog({ open, onOpenChange }: SnmpHelpDialogProps) {
 
           {/* Best Practices */}
           <div className="space-y-2 border-t pt-4">
-            <h3 className="text-sm font-semibold text-gray-900">Best Practices</h3>
-            <ul className="text-sm text-gray-600 list-disc list-inside space-y-1">
+            <h3 className="text-sm font-semibold text-foreground">Best Practices</h3>
+            <ul className="text-sm text-muted-foreground list-disc list-inside space-y-1">
               <li>
                 Use SNMPv3 with auth_privacy whenever possible for maximum security
               </li>

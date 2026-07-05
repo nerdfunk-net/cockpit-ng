@@ -102,11 +102,11 @@ export function LocationSearchDropdown({
         onFocus={() => setShowDropdown(true)}
         onBlur={() => setIsUserEditing(false)}
         disabled={disabled}
-        className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+        className="w-full"
       />
       {showDropdown && !disabled && (
         <div
-          className="fixed z-[9999] mt-1 bg-white border border-gray-300 rounded-md shadow-xl max-h-60 overflow-y-auto min-w-[300px]"
+          className="fixed z-[9999] mt-1 bg-popover border border-border rounded-md shadow-xl max-h-60 overflow-y-auto min-w-[300px]"
           style={{
             top: dropdownPosition.top,
             left: dropdownPosition.left,
@@ -117,14 +117,14 @@ export function LocationSearchDropdown({
             filteredLocations.map(location => (
               <div
                 key={location.id}
-                className="px-3 py-2 hover:bg-blue-50 cursor-pointer text-sm border-b border-gray-100 last:border-b-0"
+                className="px-3 py-2 hover:bg-muted cursor-pointer text-sm border-b border-border last:border-b-0"
                 onClick={() => handleSelect(location)}
               >
                 {location.hierarchicalPath}
               </div>
             ))
           ) : (
-            <div className="px-3 py-2 text-sm text-gray-500 italic">
+            <div className="px-3 py-2 text-sm text-muted-foreground italic">
               No locations found
             </div>
           )}

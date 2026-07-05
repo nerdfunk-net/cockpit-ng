@@ -85,7 +85,7 @@ export function ViewSnapshotDialog({
     } else if (status === 'failed') {
       return <Badge variant="destructive">Failed</Badge>
     } else if (status === 'running') {
-      return <Badge className="bg-blue-600">Running</Badge>
+      return <Badge className="bg-primary">Running</Badge>
     } else {
       return <Badge variant="secondary">Pending</Badge>
     }
@@ -108,7 +108,7 @@ export function ViewSnapshotDialog({
           {output.map(item => {
             const itemKey = JSON.stringify(item)
             return (
-              <div key={itemKey} className="bg-gray-50 rounded p-3 border">
+              <div key={itemKey} className="bg-muted rounded p-3 border">
                 <pre className="text-xs font-mono whitespace-pre-wrap">
                   {JSON.stringify(item, null, 2)}
                 </pre>
@@ -122,6 +122,11 @@ export function ViewSnapshotDialog({
     // Handle raw text output
     if (typeof output === 'string') {
       return (
+        // Deliberately kept dark: this is a terminal/console output block.
+        // No semantic token exists for "console output" background; the same
+        // bg-gray-900/text-gray-100 pattern is used unmigrated across other
+        // features (job results, database migration, etc.) so a token should
+        // be introduced codebase-wide rather than diverging here.
         <pre className="bg-gray-900 text-gray-100 rounded p-4 text-xs font-mono whitespace-pre-wrap overflow-x-auto">
           {output}
         </pre>
@@ -130,7 +135,7 @@ export function ViewSnapshotDialog({
 
     // Handle other types
     return (
-      <pre className="bg-gray-50 rounded p-4 text-xs font-mono whitespace-pre-wrap">
+      <pre className="bg-muted rounded p-4 text-xs font-mono whitespace-pre-wrap">
         {JSON.stringify(output, null, 2)}
       </pre>
     )
@@ -151,7 +156,7 @@ export function ViewSnapshotDialog({
 
         {loading ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : snapshot ? (
           <Tabs defaultValue="overview" className="w-full">
@@ -165,41 +170,41 @@ export function ViewSnapshotDialog({
               <div className="h-[500px] overflow-y-auto pr-4">
                 <div className="space-y-6">
                   {/* General Information */}
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-lg p-5 border border-blue-200">
-                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-blue-900">
+                  <div className="bg-info rounded-lg p-5 border border-info-border">
+                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-info-foreground">
                       <FileCode className="h-5 w-5" />
                       General Information
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600">
+                        <label className="text-sm font-medium text-muted-foreground">
                           Name
                         </label>
-                        <p className="text-sm mt-1 font-mono bg-white/70 px-3 py-2 rounded">
+                        <p className="text-sm mt-1 font-mono bg-card/70 px-3 py-2 rounded">
                           {snapshot.name}
                         </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">
+                        <label className="text-sm font-medium text-muted-foreground">
                           Status
                         </label>
                         <div className="mt-1">{getStatusBadge(snapshot.status)}</div>
                       </div>
                       {snapshot.template_name && (
                         <div>
-                          <label className="text-sm font-medium text-gray-600">
+                          <label className="text-sm font-medium text-muted-foreground">
                             Template
                           </label>
-                          <p className="text-sm mt-1 font-mono bg-white/70 px-3 py-2 rounded">
+                          <p className="text-sm mt-1 font-mono bg-card/70 px-3 py-2 rounded">
                             {snapshot.template_name}
                           </p>
                         </div>
                       )}
                       <div>
-                        <label className="text-sm font-medium text-gray-600">
+                        <label className="text-sm font-medium text-muted-foreground">
                           Snapshot Path
                         </label>
-                        <p className="text-sm mt-1 font-mono bg-white/70 px-3 py-2 rounded break-all">
+                        <p className="text-sm mt-1 font-mono bg-card/70 px-3 py-2 rounded break-all">
                           {snapshot.snapshot_path}
                         </p>
                       </div>
@@ -207,44 +212,44 @@ export function ViewSnapshotDialog({
                   </div>
 
                   {/* Execution Details */}
-                  <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-lg p-5 border border-purple-200">
-                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-purple-900">
+                  <div className="bg-muted rounded-lg p-5 border">
+                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-foreground">
                       <Clock className="h-5 w-5" />
                       Execution Details
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                        <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                           <User className="h-4 w-4" />
                           Executed By
                         </label>
-                        <p className="text-sm mt-1 bg-white/70 px-3 py-2 rounded">
+                        <p className="text-sm mt-1 bg-card/70 px-3 py-2 rounded">
                           {snapshot.executed_by}
                         </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                        <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
                           Started At
                         </label>
-                        <p className="text-sm mt-1 bg-white/70 px-3 py-2 rounded">
+                        <p className="text-sm mt-1 bg-card/70 px-3 py-2 rounded">
                           {formatDate(snapshot.started_at)}
                         </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                        <label className="text-sm font-medium text-muted-foreground flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
                           Completed At
                         </label>
-                        <p className="text-sm mt-1 bg-white/70 px-3 py-2 rounded">
+                        <p className="text-sm mt-1 bg-card/70 px-3 py-2 rounded">
                           {formatDate(snapshot.completed_at)}
                         </p>
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">
+                        <label className="text-sm font-medium text-muted-foreground">
                           Duration
                         </label>
-                        <p className="text-sm mt-1 bg-white/70 px-3 py-2 rounded">
+                        <p className="text-sm mt-1 bg-card/70 px-3 py-2 rounded">
                           {snapshot.started_at && snapshot.completed_at
                             ? `${Math.round(
                                 (new Date(snapshot.completed_at).getTime() -
@@ -258,47 +263,47 @@ export function ViewSnapshotDialog({
                   </div>
 
                   {/* Statistics */}
-                  <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-lg p-5 border border-green-200">
-                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-green-900">
+                  <div className="bg-success rounded-lg p-5 border border-success-border">
+                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-success-foreground">
                       <Server className="h-5 w-5" />
                       Device Statistics
                     </h3>
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-white/70 rounded p-4 text-center">
-                        <div className="text-2xl font-bold text-gray-900">
+                      <div className="bg-card/70 rounded p-4 text-center">
+                        <div className="text-2xl font-bold text-foreground">
                           {snapshot.device_count}
                         </div>
-                        <div className="text-sm text-gray-600 mt-1">Total Devices</div>
+                        <div className="text-sm text-muted-foreground mt-1">Total Devices</div>
                       </div>
-                      <div className="bg-white/70 rounded p-4 text-center">
-                        <div className="text-2xl font-bold text-green-600 flex items-center justify-center gap-1">
+                      <div className="bg-card/70 rounded p-4 text-center">
+                        <div className="text-2xl font-bold text-success-foreground flex items-center justify-center gap-1">
                           <CheckCircle2 className="h-6 w-6" />
                           {snapshot.success_count}
                         </div>
-                        <div className="text-sm text-gray-600 mt-1">Successful</div>
+                        <div className="text-sm text-muted-foreground mt-1">Successful</div>
                       </div>
-                      <div className="bg-white/70 rounded p-4 text-center">
-                        <div className="text-2xl font-bold text-red-600 flex items-center justify-center gap-1">
+                      <div className="bg-card/70 rounded p-4 text-center">
+                        <div className="text-2xl font-bold text-error-foreground flex items-center justify-center gap-1">
                           <XCircle className="h-6 w-6" />
                           {snapshot.failed_count}
                         </div>
-                        <div className="text-sm text-gray-600 mt-1">Failed</div>
+                        <div className="text-sm text-muted-foreground mt-1">Failed</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Git Information */}
                   {snapshot.git_repository_id && (
-                    <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-lg p-5 border border-amber-200">
-                      <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-amber-900">
+                    <div className="bg-warning rounded-lg p-5 border border-warning-border">
+                      <h3 className="font-semibold text-lg mb-4 flex items-center gap-2 text-warning-foreground">
                         <GitBranch className="h-5 w-5" />
                         Git Repository
                       </h3>
                       <div>
-                        <label className="text-sm font-medium text-gray-600">
+                        <label className="text-sm font-medium text-muted-foreground">
                           Repository ID
                         </label>
-                        <p className="text-sm mt-1 bg-white/70 px-3 py-2 rounded">
+                        <p className="text-sm mt-1 bg-card/70 px-3 py-2 rounded">
                           {snapshot.git_repository_id}
                         </p>
                       </div>
@@ -321,15 +326,15 @@ export function ViewSnapshotDialog({
                           value={`result-${result.id}`}
                           className="border rounded-lg overflow-hidden"
                         >
-                          <AccordionTrigger className="px-4 hover:bg-gray-50 hover:no-underline">
+                          <AccordionTrigger className="px-4 hover:bg-muted hover:no-underline">
                             <div className="flex items-center justify-between w-full pr-4">
                               <div className="flex items-center gap-3">
-                                <Server className="h-4 w-4 text-gray-500" />
+                                <Server className="h-4 w-4 text-muted-foreground" />
                                 <span className="font-medium">
                                   {result.device_name}
                                 </span>
                                 {result.device_ip && (
-                                  <span className="text-sm text-gray-500 font-mono">
+                                  <span className="text-sm text-muted-foreground font-mono">
                                     ({result.device_ip})
                                   </span>
                                 )}
@@ -342,10 +347,10 @@ export function ViewSnapshotDialog({
                           <AccordionContent className="px-4 pb-4">
                             <div className="space-y-4 pt-2">
                               {/* Result Metadata */}
-                              <div className="bg-gray-50 rounded p-3 space-y-2 text-sm">
+                              <div className="bg-muted rounded p-3 space-y-2 text-sm">
                                 {result.git_file_path && (
                                   <div>
-                                    <span className="font-medium text-gray-600">
+                                    <span className="font-medium text-muted-foreground">
                                       File Path:{' '}
                                     </span>
                                     <span className="font-mono text-xs">
@@ -355,7 +360,7 @@ export function ViewSnapshotDialog({
                                 )}
                                 {result.git_commit_hash && (
                                   <div>
-                                    <span className="font-medium text-gray-600">
+                                    <span className="font-medium text-muted-foreground">
                                       Commit:{' '}
                                     </span>
                                     <span className="font-mono text-xs">
@@ -364,7 +369,7 @@ export function ViewSnapshotDialog({
                                   </div>
                                 )}
                                 {result.error_message && (
-                                  <div className="text-red-600">
+                                  <div className="text-error-foreground">
                                     <span className="font-medium">Error: </span>
                                     {result.error_message}
                                   </div>
@@ -391,7 +396,7 @@ export function ViewSnapshotDialog({
                                           value={`cmd-${command}`}
                                           className="border rounded"
                                         >
-                                          <AccordionTrigger className="px-3 py-2 hover:bg-gray-50 text-sm hover:no-underline">
+                                          <AccordionTrigger className="px-3 py-2 hover:bg-muted text-sm hover:no-underline">
                                             <code className="font-mono text-xs text-left">
                                               {command}
                                             </code>
@@ -405,7 +410,7 @@ export function ViewSnapshotDialog({
                                   </Accordion>
                                 </div>
                               ) : (
-                                <p className="text-sm text-gray-500 italic">
+                                <p className="text-sm text-muted-foreground italic">
                                   No command output available
                                 </p>
                               )}
@@ -416,7 +421,7 @@ export function ViewSnapshotDialog({
                     })}
                   </Accordion>
                 ) : (
-                  <div className="text-center py-12 text-gray-500">
+                  <div className="text-center py-12 text-muted-foreground">
                     No results available for this snapshot
                   </div>
                 )}
@@ -424,7 +429,7 @@ export function ViewSnapshotDialog({
             </TabsContent>
           </Tabs>
         ) : (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-muted-foreground">
             Failed to load snapshot details
           </div>
         )}

@@ -46,11 +46,11 @@ const EMPTY_MATCHES: ConfigContentSearchMatch[] = []
 function sourceBadgeClass(source: ConfigContentSearchMatch['match_source']): string {
   switch (source) {
     case 'history':
-      return 'bg-purple-100 text-purple-800 border-purple-300'
+      return 'bg-muted text-muted-foreground border-border'
     case 'diff':
-      return 'bg-amber-100 text-amber-800 border-amber-300'
+      return 'bg-warning text-warning-foreground border-warning-border'
     default:
-      return 'bg-blue-100 text-blue-800 border-blue-300'
+      return 'bg-info text-info-foreground border-info-border'
   }
 }
 
@@ -186,15 +186,15 @@ export function SearchResultsTable({
   })
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <FileText className="h-4 w-4" />
           <span className="text-sm font-medium">Search Results</span>
         </div>
         <div className="flex items-center gap-2">
           {data && (
-            <div className="text-xs text-blue-100">
+            <div className="text-xs text-panel-header-muted">
               {data.total_matches} match{data.total_matches !== 1 ? 'es' : ''} in{' '}
               {data.files_scanned} file{data.files_scanned !== 1 ? 's' : ''}
               {data.truncated ? ' (truncated)' : ''}
@@ -205,7 +205,7 @@ export function SearchResultsTable({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-7 w-7 p-0 text-white hover:bg-white/20 hover:text-white"
+                className="h-7 w-7 p-0 text-current hover:bg-card/20"
                 aria-label="Toggle columns"
               >
                 <SlidersHorizontal className="h-4 w-4" />
@@ -231,16 +231,16 @@ export function SearchResultsTable({
         </div>
       </div>
 
-      <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+      <div className="p-6 panel-content">
         {isSearching && (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500" />
-            <span className="ml-2 text-sm text-gray-600">Searching config files...</span>
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+            <span className="ml-2 text-sm text-muted-foreground">Searching config files...</span>
           </div>
         )}
 
         {!isSearching && !hasSearched && (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-muted-foreground">
             <p className="text-lg font-medium">No search performed yet</p>
             <p className="text-sm mt-1">
               Select a repository, enter a search string, and click Search
@@ -249,7 +249,7 @@ export function SearchResultsTable({
         )}
 
         {!isSearching && hasSearched && data && data.matches.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-12 text-muted-foreground">
             <p className="text-lg font-medium">No matches found</p>
             <p className="text-sm mt-1">Try a different search string or adjust your filters</p>
           </div>
@@ -279,8 +279,8 @@ export function SearchResultsTable({
                             onTouchStart={header.getResizeHandler()}
                             className={`absolute right-0 top-0 h-full w-1 cursor-col-resize transition-colors ${
                               header.column.getIsResizing()
-                                ? 'bg-blue-500'
-                                : 'bg-transparent hover:bg-blue-400'
+                                ? 'bg-primary'
+                                : 'bg-transparent hover:bg-primary/70'
                             }`}
                           />
                         )}

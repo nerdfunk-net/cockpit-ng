@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
+import { IconChip } from '@/components/shared/icon-chip'
 import { FileCode, Download, Plus } from 'lucide-react'
 import { TemplatesList } from './components/templates-list'
 import { ImportTemplates } from './components/import-templates'
@@ -31,14 +32,14 @@ export default function TemplateManagement() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="border-b border-gray-200 pb-4">
+      <div className="border-b border-border pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="bg-purple-100 p-2 rounded-lg">
-              <FileCode className="h-6 w-6 text-purple-600" />
-            </div>
+            <IconChip variant="primary">
+              <FileCode className="h-6 w-6" />
+            </IconChip>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">
+              <h1 className="text-3xl font-bold text-foreground">
                 Templates - List & Import
               </h1>
               <p className="text-muted-foreground mt-2">
@@ -46,7 +47,7 @@ export default function TemplateManagement() {
               </p>
             </div>
           </div>
-          <Button onClick={handleCreateNew} className="bg-green-600 hover:bg-green-700">
+          <Button onClick={handleCreateNew}>
             <Plus className="h-4 w-4 mr-2" />
             Create New Template
           </Button>

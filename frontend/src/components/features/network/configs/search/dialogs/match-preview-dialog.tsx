@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Eye, FileText, Loader2, XCircle } from 'lucide-react'
+import { Eye, FileText, Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -10,9 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { StatusAlert } from '@/components/shared/status-alert'
 import { useApi } from '@/hooks/use-api'
 import type { ConfigContentSearchMatch, PreviewMatch } from '../types'
 
@@ -26,11 +26,11 @@ interface MatchPreviewDialogProps {
 function sourceBadgeClass(source: ConfigContentSearchMatch['match_source']): string {
   switch (source) {
     case 'history':
-      return 'bg-purple-100 text-purple-800 border-purple-300'
+      return 'bg-muted text-muted-foreground border-border'
     case 'diff':
-      return 'bg-amber-100 text-amber-800 border-amber-300'
+      return 'bg-warning text-warning-foreground border-warning-border'
     default:
-      return 'bg-blue-100 text-blue-800 border-blue-300'
+      return 'bg-info text-info-foreground border-info-border'
   }
 }
 
@@ -147,27 +147,27 @@ export function MatchPreviewDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 pr-14 flex items-center justify-between rounded-t-lg">
+        <div className="panel-header py-2 px-4 pr-14 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center gap-2 min-w-0">
             <Eye className="h-4 w-4 shrink-0" />
             <div className="min-w-0">
               <span className="text-sm font-medium">Match Preview</span>
               {preview && (
-                <p className="text-xs text-blue-100 font-mono break-all">
+                <p className="text-xs text-panel-header-muted font-mono break-all">
                   {preview.match.file_path}
                 </p>
               )}
             </div>
           </div>
           {preview && (
-            <div className="text-xs text-blue-100 shrink-0 ml-4 text-right">
+            <div className="text-xs text-panel-header-muted shrink-0 ml-4 text-right">
               Line {preview.match.line_number}
               {preview.match.commit ? ` · ${preview.match.commit}` : ''}
             </div>
           )}
         </div>
 
-        <div className="flex-1 min-h-0 flex flex-col p-6 bg-gradient-to-b from-white to-gray-50 overflow-hidden">
+        <div className="flex-1 min-h-0 flex flex-col p-6 panel-content overflow-hidden">
           {preview && !isLoading && !error && (
             <div className="flex flex-wrap items-center gap-2 mb-4 shrink-0">
               <Badge className={sourceBadgeClass(preview.match.match_source)}>
@@ -189,7 +189,7 @@ export function MatchPreviewDialog({
 
           {isLoading && (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-6 w-6 animate-spin text-blue-500" />
+              <Loader2 className="h-6 w-6 animate-spin text-primary" />
               <span className="ml-2 text-sm text-muted-foreground">
                 Loading file content...
               </span>
@@ -197,22 +197,21 @@ export function MatchPreviewDialog({
           )}
 
           {error && (
-            <Alert className="bg-red-50 border-red-200" role="alert">
-              <XCircle className="h-4 w-4 text-red-600" />
-              <AlertDescription className="text-red-800">{error}</AlertDescription>
-            </Alert>
+            <StatusAlert variant="error">
+              {error}
+            </StatusAlert>
           )}
 
           {!isLoading && !error && content && preview && (
-            <div className="shadow-lg border-0 p-0 bg-white rounded-lg flex-1 min-h-0 flex flex-col overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center gap-2 rounded-t-lg shrink-0">
+            <div className="shadow-lg border-0 p-0 bg-card rounded-lg flex-1 min-h-0 flex flex-col overflow-hidden">
+              <div className="panel-header py-2 px-4 flex items-center gap-2 rounded-t-lg shrink-0">
                 <FileText className="h-4 w-4" />
                 <span className="text-sm font-medium">File Content</span>
-                <span className="text-xs text-blue-100 ml-auto">
+                <span className="text-xs text-panel-header-muted ml-auto">
                   {lineCount} line{lineCount !== 1 ? 's' : ''}
                 </span>
               </div>
-              <div className="flex-1 min-h-0 overflow-auto p-3 bg-gradient-to-b from-white to-gray-50">
+              <div className="flex-1 min-h-0 overflow-auto p-3 panel-content">
                   <pre className="text-xs font-mono leading-relaxed min-w-max">
                     {renderedLines.map(({ lineNumber, line, isMatchLine }) => {
                       const highlighted = highlightLine(line, preview.query, false)
@@ -224,7 +223,7 @@ export function MatchPreviewDialog({
                           ref={isMatchLine ? matchLineRef : undefined}
                           className={
                             isMatchLine
-                              ? 'bg-amber-50 -mx-3 px-3 py-px border-l-4 border-amber-500 whitespace-pre'
+                              ? 'bg-warning -mx-3 px-3 py-px border-l-4 border-warning-border whitespace-pre'
                               : 'whitespace-pre'
                           }
                         >
@@ -239,7 +238,7 @@ export function MatchPreviewDialog({
                               return (
                                 <mark
                                   key={key}
-                                  className="bg-amber-200 text-amber-900 px-0.5 rounded-sm"
+                                  className="bg-warning text-warning-foreground px-0.5 rounded-sm"
                                 >
                                   {part}
                                 </mark>

@@ -140,11 +140,11 @@ export function AgentModal({
   return (
     <Dialog open={isOpen} onOpenChange={open => !open && onCancel()}>
       <DialogContent className="sm:max-w-[600px]">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 -mt-6 -mx-6 mb-4 rounded-t-lg">
-          <DialogTitle className="text-white">
+        <div className="panel-header py-2 px-4 -mt-6 -mx-6 mb-4 rounded-t-lg">
+          <DialogTitle>
             {agent ? 'Edit Agent' : 'Add New Agent'}
           </DialogTitle>
-          <DialogDescription className="text-blue-100">
+          <DialogDescription className="text-panel-header-muted">
             {agent
               ? 'Update the agent configuration details below.'
               : 'Configure a new agent for monitoring and observability.'}
@@ -155,17 +155,17 @@ export function AgentModal({
           {/* Agent ID */}
           <div className="space-y-2">
             <Label htmlFor="agent-id">
-              Agent ID <span className="text-red-500">*</span>
+              Agent ID <span className="text-destructive">*</span>
             </Label>
             <Input
               id="agent-id"
               placeholder="e.g., grafana-01, telegraf-prod, netmiko-probe-01"
               value={formData.agent_id}
               onChange={e => setFormData({ ...formData, agent_id: e.target.value })}
-              className={errors.agent_id ? 'border-red-500' : ''}
+              className={errors.agent_id ? 'border-destructive' : ''}
             />
             {errors.agent_id && (
-              <p className="text-xs text-red-500">{errors.agent_id}</p>
+              <p className="text-xs text-destructive">{errors.agent_id}</p>
             )}
             <p className="text-xs text-muted-foreground">
               Unique identifier used by the cockpit agent to register with Redis
@@ -175,16 +175,16 @@ export function AgentModal({
           {/* Name */}
           <div className="space-y-2">
             <Label htmlFor="agent-name">
-              Agent Name <span className="text-red-500">*</span>
+              Agent Name <span className="text-destructive">*</span>
             </Label>
             <Input
               id="agent-name"
               placeholder="e.g., Grafana, Telegraf, Netmiko Probe"
               value={formData.name}
               onChange={e => setFormData({ ...formData, name: e.target.value })}
-              className={errors.name ? 'border-red-500' : ''}
+              className={errors.name ? 'border-destructive' : ''}
             />
-            {errors.name && <p className="text-xs text-red-500">{errors.name}</p>}
+            {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
           </div>
 
           {/* Description */}
@@ -205,7 +205,7 @@ export function AgentModal({
           {/* Agent Type */}
           <div className="space-y-2">
             <Label htmlFor="agent-type">
-              Agent Type <span className="text-red-500">*</span>
+              Agent Type <span className="text-destructive">*</span>
             </Label>
             <Select value={formData.type} onValueChange={handleTypeChange}>
               <SelectTrigger id="agent-type">
@@ -235,7 +235,7 @@ export function AgentModal({
           {/* Shared Secret (all agent types) */}
           <div className="space-y-2">
             <Label htmlFor="agent-shared-secret">
-              Shared Secret <span className="text-red-500">*</span>
+              Shared Secret <span className="text-destructive">*</span>
             </Label>
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -247,7 +247,7 @@ export function AgentModal({
                   onChange={e =>
                     setFormData({ ...formData, shared_secret: e.target.value })
                   }
-                  className={`pr-10 font-mono text-sm ${errors.shared_secret ? 'border-red-500' : ''}`}
+                  className={`pr-10 font-mono text-sm ${errors.shared_secret ? 'border-destructive' : ''}`}
                 />
                 <button
                   type="button"
@@ -275,12 +275,12 @@ export function AgentModal({
               </Button>
             </div>
             {errors.shared_secret && (
-              <p className="text-xs text-red-500">{errors.shared_secret}</p>
+              <p className="text-xs text-destructive">{errors.shared_secret}</p>
             )}
             <p className="text-xs text-muted-foreground">
               This value must match{' '}
-              <code className="bg-gray-100 px-1 rounded">COCKPIT_SHARED_SECRET</code>{' '}
-              in the agent&apos;s <code className="bg-gray-100 px-1 rounded">.env</code>{' '}
+              <code className="bg-muted px-1 rounded">COCKPIT_SHARED_SECRET</code>{' '}
+              in the agent&apos;s <code className="bg-muted px-1 rounded">.env</code>{' '}
               file. Used to sign and authenticate all Redis messages.
             </p>
           </div>
@@ -290,12 +290,12 @@ export function AgentModal({
             <div className="space-y-2">
               <Label htmlFor="agent-git-repo">
                 Configuration Repository{' '}
-                {isGitRepoRequired && <span className="text-red-500">*</span>}
+                {isGitRepoRequired && <span className="text-destructive">*</span>}
               </Label>
               {loadingGitRepos ? (
-                <div className="flex items-center gap-2 p-3 border border-blue-200 rounded-md bg-blue-50">
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                  <span className="text-sm text-blue-800">Loading repositories...</span>
+                <div className="flex items-center gap-2 p-3 border border-info-border rounded-md bg-info">
+                  <Loader2 className="h-4 w-4 animate-spin text-info-foreground" />
+                  <span className="text-sm text-info-foreground">Loading repositories...</span>
                 </div>
               ) : gitRepositories.length > 0 ? (
                 <>
@@ -310,7 +310,7 @@ export function AgentModal({
                   >
                     <SelectTrigger
                       id="agent-git-repo"
-                      className={`h-auto min-h-[44px] ${errors.git_repository_id ? 'border-red-500' : ''}`}
+                      className={`h-auto min-h-[44px] ${errors.git_repository_id ? 'border-destructive' : ''}`}
                     >
                       <SelectValue
                         placeholder={
@@ -325,7 +325,7 @@ export function AgentModal({
                         <SelectItem
                           key={repo.id}
                           value={repo.id.toString()}
-                          className="cursor-pointer focus:bg-blue-50 focus:text-gray-900"
+                          className="cursor-pointer"
                         >
                           <div className="flex flex-col py-1">
                             <span className="font-medium">{repo.name}</span>
@@ -338,7 +338,7 @@ export function AgentModal({
                     </SelectContent>
                   </Select>
                   {errors.git_repository_id && (
-                    <p className="text-xs text-red-500">{errors.git_repository_id}</p>
+                    <p className="text-xs text-destructive">{errors.git_repository_id}</p>
                   )}
                   <p className="text-xs text-muted-foreground">
                     {isGitRepoRequired
@@ -347,8 +347,8 @@ export function AgentModal({
                   </p>
                 </>
               ) : (
-                <div className="p-4 border border-amber-200 rounded-md bg-amber-50">
-                  <p className="text-sm text-amber-800">
+                <div className="p-4 border border-warning-border rounded-md bg-warning">
+                  <p className="text-sm text-warning-foreground">
                     <strong>No repositories found.</strong> Please add an Agent repository
                     in Settings → Git Management.
                   </p>

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Terminal } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 import type { DeviceInfo } from '@/components/shared/device-selector'
 
 // Hooks
@@ -105,11 +106,11 @@ export default function NetmikoPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Terminal className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <Terminal className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">
+            <h1 className="text-3xl font-bold text-foreground">
               Netmiko Command Execution
             </h1>
             <p className="text-muted-foreground mt-2">

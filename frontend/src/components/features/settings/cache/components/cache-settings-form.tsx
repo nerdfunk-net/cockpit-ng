@@ -81,39 +81,39 @@ export function CacheSettingsForm() {
 
   if (isLoading) {
     return (
-      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg overflow-hidden">
+        <div className="panel-header py-2 px-4">
           <div className="flex items-center space-x-2">
             <Settings className="h-4 w-4" />
             <div>
               <h1 className="text-sm font-semibold">Cache Configuration</h1>
-              <p className="text-blue-100 text-xs">Loading settings...</p>
+              <p className="text-panel-header-muted text-xs">Loading settings...</p>
             </div>
           </div>
         </div>
-        <div className="p-6 flex items-center justify-center">
-          <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
+        <div className="p-6 panel-content flex items-center justify-center">
+          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg overflow-hidden">
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between">
+      <div className="panel-header py-2 px-4 flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <Settings className="h-4 w-4" />
           <div>
             <h1 className="text-sm font-semibold">Cache Configuration</h1>
-            <p className="text-blue-100 text-xs">
+            <p className="text-panel-header-muted text-xs">
               Configure caching behavior to optimize performance
             </p>
           </div>
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 panel-content">
         <Form {...form}>
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Enable Cache */}
@@ -238,7 +238,7 @@ export function CacheSettingsForm() {
                   )}
                 />
               </div>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-muted-foreground">
                 Select items to warm on backend startup
               </p>
             </div>
@@ -273,7 +273,7 @@ export function CacheSettingsForm() {
             <div className="space-y-4">
               <div>
                 <h3 className="text-base font-medium">Background Cache Tasks</h3>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   Configure how often background tasks refresh the cache. Set to 0 to
                   disable a task. These tasks will appear in Jobs → View.
                 </p>
@@ -361,7 +361,7 @@ export function CacheSettingsForm() {
               <Button
                 type="submit"
                 disabled={saveSettings.isPending || !form.formState.isDirty}
-                className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
+                className="flex items-center gap-2"
               >
                 {saveSettings.isPending ? (
                   <RefreshCw className="h-4 w-4 animate-spin" />

@@ -5,15 +5,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { AlertTriangle } from 'lucide-react'
+import { StatusAlert } from '@/components/shared/status-alert'
 import { RepositorySelector } from './repository-selector'
 import { CommitRangePicker } from './commit-range-picker'
 import type { GitRepository } from '@/hooks/queries/use-git-repositories-query'
 import type { SearchCriteria } from '../types'
 
 const SEARCH_INPUT_CLASS =
-  'border-2 border-slate-300 bg-white text-foreground shadow-sm placeholder:text-slate-500 focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-200'
+  'border-2 border-border bg-card text-foreground shadow-sm placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring/30'
 
 interface SearchCriteriaFormProps {
   repositories: GitRepository[]
@@ -46,16 +45,16 @@ export function SearchCriteriaForm({
   const showSlowSearchWarning = criteria.includeHistory || criteria.diffMode
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <Search className="h-4 w-4" />
           <span className="text-sm font-medium">Search Criteria</span>
         </div>
-        <div className="text-xs text-blue-100">Search inside config file contents</div>
+        <div className="text-xs text-panel-header-muted">Search inside config file contents</div>
       </div>
 
-      <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+      <div className="p-6 panel-content space-y-4">
         <RepositorySelector
           repositories={repositories}
           selectedRepositoryId={selectedRepositoryId}
@@ -100,7 +99,7 @@ export function SearchCriteriaForm({
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-lg shadow-sm">
+          <div className="flex items-center space-x-3 p-4 bg-muted border rounded-lg shadow-sm">
             <Switch
               id="include-history"
               checked={criteria.includeHistory}
@@ -113,13 +112,13 @@ export function SearchCriteriaForm({
               <Label htmlFor="include-history" className="text-sm font-medium cursor-pointer">
                 Include historical versions
               </Label>
-              <p className="text-xs text-gray-600 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Search older commits for each file (slower; off by default)
               </p>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 p-4 bg-gradient-to-r from-slate-50 to-slate-100 border border-slate-200 rounded-lg shadow-sm">
+          <div className="flex items-center space-x-3 p-4 bg-muted border rounded-lg shadow-sm">
             <Switch
               id="diff-mode"
               checked={criteria.diffMode}
@@ -137,7 +136,7 @@ export function SearchCriteriaForm({
               <Label htmlFor="diff-mode" className="text-sm font-medium cursor-pointer">
                 Search in diff only
               </Label>
-              <p className="text-xs text-gray-600 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Find matches only in lines changed between two commits
               </p>
             </div>
@@ -156,18 +155,15 @@ export function SearchCriteriaForm({
         )}
 
         {showSlowSearchWarning && (
-          <Alert className="bg-amber-50 border-amber-200">
-            <AlertTriangle className="h-4 w-4 text-amber-600" />
-            <AlertDescription className="text-amber-800">
-              Historical and diff searches scan more data and may return truncated results.
-            </AlertDescription>
-          </Alert>
+          <StatusAlert variant="warning">
+            Historical and diff searches scan more data and may return truncated results.
+          </StatusAlert>
         )}
 
         <div className="flex items-center gap-2 pt-2">
           <Button onClick={onSearch} disabled={!canSearch || isSearching}>
             {isSearching && (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2" />
             )}
             {isSearching ? 'Searching...' : 'Search'}
           </Button>

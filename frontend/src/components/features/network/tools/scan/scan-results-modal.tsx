@@ -30,6 +30,7 @@ import {
   Network,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { IconChip } from '@/components/shared/icon-chip'
 
 const EMPTY_NETWORKS: NmapNetworkResult[] = []
 
@@ -160,10 +161,10 @@ export default function ScanResultsModal({ taskId, onClose }: ScanResultsModalPr
       <DialogContent className="!max-w-6xl max-h-[85vh] overflow-y-auto w-[90vw]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <Radar className="w-5 h-5 text-blue-600" />
-            </div>
-            <span className="text-gray-900">Nmap Scan Results</span>
+            <IconChip variant="primary">
+              <Radar className="w-5 h-5" />
+            </IconChip>
+            <span className="text-foreground">Nmap Scan Results</span>
           </DialogTitle>
           <DialogDescription>
             {taskStatus === 'PENDING' && 'Task is queued and waiting to start...'}
@@ -174,18 +175,18 @@ export default function ScanResultsModal({ taskId, onClose }: ScanResultsModalPr
         </DialogHeader>
 
         {(taskStatus === 'PENDING' || taskStatus === 'PROGRESS') && (
-          <div className="space-y-4 bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
+          <div className="space-y-4 bg-info p-6 rounded-lg border border-info-border">
             <div className="flex items-center gap-3">
-              <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
-              <span className="text-sm font-medium text-slate-700">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <span className="text-sm font-medium text-info-foreground">
                 {progress?.status || 'Starting...'}
               </span>
             </div>
             <Progress
               value={progressPercentage}
-              className="w-full [&>div]:bg-blue-600"
+              className="w-full [&>div]:bg-primary"
             />
-            <div className="text-sm text-slate-600 font-medium">
+            <div className="text-sm text-info-foreground font-medium">
               {progress?.current || 0} / {progress?.total || 0} processed
             </div>
           </div>
@@ -199,18 +200,14 @@ export default function ScanResultsModal({ taskId, onClose }: ScanResultsModalPr
               <SummaryCard
                 label="Reachable"
                 value={taskResult.total_reachable ?? 0}
-                accent="green"
+                accent="success"
               />
               <SummaryCard
                 label="Open TCP"
                 value={taskResult.total_open_tcp_ports ?? 0}
-                accent="blue"
+                accent="info"
               />
-              <SummaryCard
-                label="Open UDP"
-                value={taskResult.total_open_udp_ports ?? 0}
-                accent="purple"
-              />
+              <SummaryCard label="Open UDP" value={taskResult.total_open_udp_ports ?? 0} />
             </div>
 
             {taskResult.agent_id && (
@@ -229,12 +226,12 @@ export default function ScanResultsModal({ taskId, onClose }: ScanResultsModalPr
               {taskResult.networks.map(network => (
                 <Card
                   key={network.network}
-                  className="border-l-4 border-l-blue-500 shadow-md overflow-hidden p-0"
+                  className="border-l-4 border-l-primary shadow-md overflow-hidden p-0"
                 >
-                  <CardHeader className="bg-gradient-to-r from-blue-50 to-blue-100 border-b-0 rounded-none m-0 py-3 px-4">
+                  <CardHeader className="bg-info border-b-0 rounded-none m-0 py-3 px-4">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg font-mono text-slate-700 flex items-center gap-2">
-                        <Network className="h-4 w-4 text-blue-600" />
+                      <CardTitle className="text-lg font-mono text-info-foreground flex items-center gap-2">
+                        <Network className="h-4 w-4 text-info-foreground" />
                         {network.network}
                       </CardTitle>
                       <Badge variant="outline" className="font-semibold">
@@ -272,24 +269,24 @@ export default function ScanResultsModal({ taskId, onClose }: ScanResultsModalPr
           <Card className="status-error shadow-md">
             <CardContent className="pt-6">
               <div className="flex items-start gap-3">
-                <div className="bg-red-100 p-2 rounded-lg">
-                  <XCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                </div>
+                <IconChip variant="error">
+                  <XCircle className="w-5 h-5 flex-shrink-0" />
+                </IconChip>
                 <div>
-                  <p className="font-semibold text-red-800 mb-1 text-lg">Scan Failed</p>
-                  <p className="text-sm text-red-700 font-medium">{taskResult.error}</p>
+                  <p className="font-semibold text-error-foreground mb-1 text-lg">
+                    Scan Failed
+                  </p>
+                  <p className="text-sm text-error-foreground font-medium">
+                    {taskResult.error}
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
         )}
 
-        <div className="flex justify-end gap-2 pt-4 border-t border-slate-200">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="hover:bg-slate-100 border-slate-300 text-slate-700 font-medium"
-          >
+        <div className="flex justify-end gap-2 pt-4 border-t">
+          <Button variant="outline" onClick={onClose} className="font-medium">
             <X className="w-4 h-4 mr-2" />
             Close
           </Button>
@@ -306,30 +303,33 @@ function SummaryCard({
 }: {
   label: string
   value: number
-  accent?: 'green' | 'blue' | 'purple'
+  accent?: 'success' | 'info'
 }) {
-  const accentClasses =
-    accent === 'green'
-      ? 'from-green-50 to-emerald-50 border-green-300'
-      : accent === 'blue'
-        ? 'from-blue-50 to-sky-50 border-blue-300'
-        : accent === 'purple'
-          ? 'from-violet-50 to-purple-50 border-violet-300'
-          : 'from-slate-50 to-slate-100 border-slate-200'
+  const containerClasses =
+    accent === 'success'
+      ? 'bg-success border-success-border'
+      : accent === 'info'
+        ? 'bg-info border-info-border'
+        : 'bg-muted border-border'
+
+  const labelClasses =
+    accent === 'success'
+      ? 'text-success-foreground'
+      : accent === 'info'
+        ? 'text-info-foreground'
+        : 'text-muted-foreground'
 
   const valueClasses =
-    accent === 'green'
-      ? 'text-green-600'
-      : accent === 'blue'
-        ? 'text-blue-600'
-        : accent === 'purple'
-          ? 'text-violet-600'
-          : 'text-slate-700'
+    accent === 'success'
+      ? 'text-success-foreground'
+      : accent === 'info'
+        ? 'text-info-foreground'
+        : 'text-foreground'
 
   return (
-    <Card className={`bg-gradient-to-br ${accentClasses}`}>
+    <Card className={containerClasses}>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm text-slate-600 font-semibold">{label}</CardTitle>
+        <CardTitle className={`text-sm font-semibold ${labelClasses}`}>{label}</CardTitle>
       </CardHeader>
       <CardContent>
         <div className={`text-2xl font-bold ${valueClasses}`}>{value}</div>
@@ -351,21 +351,21 @@ function HostResultCard({
   const udpCount = host.udp_ports?.length ?? 0
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-lg border border-border bg-card shadow-sm overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        className="w-full flex items-center justify-between gap-3 p-3 text-left hover:bg-slate-50 transition-colors"
+        className="w-full flex items-center justify-between gap-3 p-3 text-left hover:bg-muted transition-colors"
       >
         <div className="flex items-center gap-3 min-w-0">
           {host.success ? (
-            <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+            <CheckCircle className="h-4 w-4 text-success-foreground shrink-0" />
           ) : (
-            <XCircle className="h-4 w-4 text-red-600 shrink-0" />
+            <XCircle className="h-4 w-4 text-error-foreground shrink-0" />
           )}
-          <Server className="h-4 w-4 text-blue-600 shrink-0" />
+          <Server className="h-4 w-4 text-primary shrink-0" />
           <div className="min-w-0">
-            <p className="font-mono text-sm font-medium text-slate-800 truncate">
+            <p className="font-mono text-sm font-medium text-foreground truncate">
               {host.ip_address}
             </p>
             {host.hostname && host.hostname !== host.ip_address && (
@@ -388,13 +388,13 @@ function HostResultCard({
       </button>
 
       {expanded && host.success && (
-        <div className="border-t border-slate-100 p-4 space-y-4 bg-slate-50/50">
+        <div className="border-t border-border p-4 space-y-4 bg-muted/50">
           <PortSection title="TCP Ports" ports={host.tcp_ports} />
           <PortSection title="UDP Ports" ports={host.udp_ports} />
 
           {host.services && host.services.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-sm font-semibold text-slate-700">Detected Services</h4>
+              <h4 className="text-sm font-semibold text-foreground">Detected Services</h4>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -434,7 +434,7 @@ function PortSection({
 }) {
   return (
     <div>
-      <h4 className="text-sm font-semibold text-slate-700 mb-2">
+      <h4 className="text-sm font-semibold text-foreground mb-2">
         {title}{' '}
         <span className="font-normal text-muted-foreground">({ports.length})</span>
       </h4>

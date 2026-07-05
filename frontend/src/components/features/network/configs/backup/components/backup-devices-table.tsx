@@ -82,34 +82,34 @@ export function BackupDevicesTable({
 
   const getSortIcon = (column: string) => {
     if (sorting.column !== column || sorting.order === 'none') {
-      return <ArrowUpDown className="h-3 w-3 ml-1 text-gray-400" />
+      return <ArrowUpDown className="h-3 w-3 ml-1 text-muted-foreground" />
     }
     if (sorting.order === 'desc') {
-      return <ArrowDown className="h-3 w-3 ml-1 text-blue-600" />
+      return <ArrowDown className="h-3 w-3 ml-1 text-primary" />
     }
-    return <ArrowUp className="h-3 w-3 ml-1 text-blue-600" />
+    return <ArrowUp className="h-3 w-3 ml-1 text-primary" />
   }
 
   return (
     <div className="rounded-xl border shadow-sm overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+      <div className="panel-header py-2 px-4">
         <div className="flex items-center space-x-2">
           <Search className="h-4 w-4" />
           <div>
             <h3 className="text-sm font-semibold">Device Backup Management</h3>
-            <p className="text-blue-100 text-xs">
+            <p className="text-panel-header-muted text-xs">
               Showing {devices.length} of {total} devices
             </p>
           </div>
         </div>
       </div>
 
-      <div className="p-4 bg-white">
+      <div className="p-4 panel-content">
         <div className="overflow-x-auto">
           <table className="w-full table-fixed">
-            <thead className="bg-gray-100 border-b">
+            <thead className="bg-muted border-b">
               <tr>
-                <th className="pl-4 pr-2 py-3 w-48 text-left text-xs font-medium text-gray-600 uppercase">
+                <th className="pl-4 pr-2 py-3 w-48 text-left text-xs font-medium text-muted-foreground uppercase">
                   <div className="space-y-1">
                     <div>Device Name</div>
                     <div>
@@ -119,15 +119,15 @@ export function BackupDevicesTable({
                         onChange={e =>
                           onFiltersChange({ ...filters, name: e.target.value })
                         }
-                        className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+                        className="h-8 text-xs border-2 bg-card border-border hover:border-muted-foreground focus:border-primary"
                       />
                     </div>
                   </div>
                 </th>
-                <th className="px-4 py-3 w-32 text-left text-xs font-medium text-gray-600 uppercase">
+                <th className="px-4 py-3 w-32 text-left text-xs font-medium text-muted-foreground uppercase">
                   IP Address
                 </th>
-                <th className="px-4 py-3 w-36 text-left text-xs font-medium text-gray-600 uppercase">
+                <th className="px-4 py-3 w-36 text-left text-xs font-medium text-muted-foreground uppercase">
                   <div className="space-y-1">
                     <div>Role</div>
                     <div>
@@ -140,7 +140,7 @@ export function BackupDevicesTable({
                           })
                         }
                       >
-                        <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                        <SelectTrigger className="h-8 text-xs border-2 bg-card border-border hover:border-muted-foreground focus:border-primary">
                           <SelectValue placeholder="All Roles" />
                         </SelectTrigger>
                         <SelectContent>
@@ -155,7 +155,7 @@ export function BackupDevicesTable({
                     </div>
                   </div>
                 </th>
-                <th className="pl-12 pr-4 py-3 w-56 text-left text-xs font-medium text-gray-600 uppercase">
+                <th className="pl-12 pr-4 py-3 w-56 text-left text-xs font-medium text-muted-foreground uppercase">
                   <div className="space-y-1">
                     <div>Location</div>
                     <div>
@@ -168,7 +168,7 @@ export function BackupDevicesTable({
                           })
                         }
                       >
-                        <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                        <SelectTrigger className="h-8 text-xs border-2 bg-card border-border hover:border-muted-foreground focus:border-primary">
                           <SelectValue placeholder="All Locations" />
                         </SelectTrigger>
                         <SelectContent>
@@ -186,7 +186,7 @@ export function BackupDevicesTable({
                     </div>
                   </div>
                 </th>
-                <th className="px-4 py-3 w-36 text-left text-xs font-medium text-gray-600 uppercase">
+                <th className="px-4 py-3 w-36 text-left text-xs font-medium text-muted-foreground uppercase">
                   <div className="space-y-1">
                     <div>Device Type</div>
                     <div>
@@ -199,7 +199,7 @@ export function BackupDevicesTable({
                           })
                         }
                       >
-                        <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                        <SelectTrigger className="h-8 text-xs border-2 bg-card border-border hover:border-muted-foreground focus:border-primary">
                           <SelectValue placeholder="All Types" />
                         </SelectTrigger>
                         <SelectContent>
@@ -217,7 +217,7 @@ export function BackupDevicesTable({
                     </div>
                   </div>
                 </th>
-                <th className="px-4 py-3 w-44 text-left text-xs font-medium text-gray-600 uppercase">
+                <th className="px-4 py-3 w-44 text-left text-xs font-medium text-muted-foreground uppercase">
                   <div className="space-y-1">
                     <div>Status</div>
                     <div>
@@ -230,7 +230,7 @@ export function BackupDevicesTable({
                           })
                         }
                       >
-                        <SelectTrigger className="h-8 text-xs border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                        <SelectTrigger className="h-8 text-xs border-2 bg-card border-border hover:border-muted-foreground focus:border-primary">
                           <SelectValue placeholder="All Statuses" />
                         </SelectTrigger>
                         <SelectContent>
@@ -245,16 +245,16 @@ export function BackupDevicesTable({
                     </div>
                   </div>
                 </th>
-                <th className="pl-12 pr-4 py-3 w-40 text-left text-xs font-medium text-gray-600 uppercase">
+                <th className="pl-12 pr-4 py-3 w-40 text-left text-xs font-medium text-muted-foreground uppercase">
                   <button
-                    className="flex items-center hover:text-blue-600 transition-colors cursor-pointer"
+                    className="flex items-center hover:text-primary transition-colors cursor-pointer"
                     onClick={() => onSortChange('last_backup')}
                   >
                     Last Backup
                     {getSortIcon('last_backup')}
                   </button>
                 </th>
-                <th className="pl-16 pr-4 py-3 w-32 text-left text-xs font-medium text-gray-600 uppercase">
+                <th className="pl-16 pr-4 py-3 w-32 text-left text-xs font-medium text-muted-foreground uppercase">
                   Actions
                 </th>
               </tr>
@@ -276,19 +276,19 @@ export function BackupDevicesTable({
                       key={`backup-device-${device.id}`}
                       className="border-b hover:bg-muted/50"
                     >
-                      <td className="pl-4 pr-2 py-3 w-48 text-sm font-medium text-gray-900">
+                      <td className="pl-4 pr-2 py-3 w-48 text-sm font-medium text-foreground">
                         {device.name}
                       </td>
-                      <td className="px-4 py-3 w-32 text-sm text-gray-600">
+                      <td className="px-4 py-3 w-32 text-sm text-muted-foreground">
                         {device.primary_ip4?.address || 'N/A'}
                       </td>
-                      <td className="px-4 py-3 w-36 text-sm text-gray-600">
+                      <td className="px-4 py-3 w-36 text-sm text-muted-foreground">
                         {device.role?.name || 'Unknown'}
                       </td>
-                      <td className="pl-12 pr-4 py-3 w-56 text-sm text-gray-600">
+                      <td className="pl-12 pr-4 py-3 w-56 text-sm text-muted-foreground">
                         {device.location?.name || 'Unknown'}
                       </td>
-                      <td className="px-4 py-3 w-36 text-sm text-gray-600">
+                      <td className="px-4 py-3 w-36 text-sm text-muted-foreground">
                         {device.device_type?.model || 'Unknown'}
                       </td>
                       <td className="px-4 py-3 w-44">
@@ -298,7 +298,7 @@ export function BackupDevicesTable({
                           {device.status?.name || 'Unknown'}
                         </Badge>
                       </td>
-                      <td className="pl-12 pr-4 py-3 w-40 text-sm text-gray-600">
+                      <td className="pl-12 pr-4 py-3 w-40 text-sm text-muted-foreground">
                         {device.cf_last_backup || 'Never'}
                       </td>
                       <td className="pl-16 pr-4 py-3 w-32">
@@ -410,7 +410,7 @@ export function BackupDevicesTable({
                 value={pageSize.toString()}
                 onValueChange={value => onPageSizeChange(parseInt(value))}
               >
-                <SelectTrigger className="w-20 h-8 border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+                <SelectTrigger className="w-20 h-8 border-2 bg-card border-border hover:border-muted-foreground focus:border-primary">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>

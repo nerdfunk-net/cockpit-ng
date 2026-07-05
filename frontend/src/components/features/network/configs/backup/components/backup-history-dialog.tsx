@@ -60,7 +60,7 @@ export function BackupHistoryDialog({
         <div className="overflow-x-auto">
           {isLoading ? (
             <div className="text-center p-8">
-              <Loader2 className="h-8 w-8 animate-spin text-blue-500 mx-auto" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
               <p className="mt-2 text-sm text-muted-foreground">Loading history...</p>
             </div>
           ) : (

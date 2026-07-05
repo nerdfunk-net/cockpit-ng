@@ -335,10 +335,10 @@ export function FileDiffDialog({
     switch (type) {
       case 'insert':
       case 'replace-insert':
-        return 'bg-green-50 dark:bg-green-950/30 border-l-4 border-green-500'
+        return 'bg-success border-l-4 border-success-border'
       case 'delete':
       case 'replace-delete':
-        return 'bg-red-50 dark:bg-red-950/30 border-l-4 border-red-500'
+        return 'bg-error border-l-4 border-error-border'
       default:
         return 'hover:bg-muted/50'
     }
@@ -382,7 +382,7 @@ export function FileDiffDialog({
         {isLoading && (
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
               <p className="mt-2 text-sm text-muted-foreground">Loading diff...</p>
             </div>
           </div>
@@ -427,10 +427,10 @@ export function FileDiffDialog({
               {/* Toggle buttons */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4 text-sm">
-                  <span className="text-green-600 dark:text-green-400">
+                  <span className="text-success-foreground">
                     +{data.stats.additions} additions
                   </span>
-                  <span className="text-red-600 dark:text-red-400">
+                  <span className="text-error-foreground">
                     -{data.stats.deletions} deletions
                   </span>
                   <span className="text-muted-foreground">
@@ -510,11 +510,11 @@ export function FileDiffDialog({
               <ScrollArea className="flex-1 h-[60vh]">
                 <div className="font-mono text-xs">
                   {/* Side-by-side header */}
-                  <div className="grid grid-cols-2 bg-gray-100 dark:bg-gray-800 border-b sticky top-0">
-                    <div className="p-2 border-r font-semibold text-gray-700 dark:text-gray-300">
+                  <div className="grid grid-cols-2 bg-muted border-b sticky top-0">
+                    <div className="p-2 border-r font-semibold text-foreground">
                       {data.commit1}: {data.left_file}
                     </div>
-                    <div className="p-2 font-semibold text-gray-700 dark:text-gray-300">
+                    <div className="p-2 font-semibold text-foreground">
                       {data.commit2}: {data.right_file}
                     </div>
                   </div>
@@ -535,13 +535,13 @@ export function FileDiffDialog({
                         rows.push(
                           <div
                             key={`side-by-side-row-${i}`}
-                            className="grid grid-cols-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                            className="grid grid-cols-2 border-b border-border hover:bg-muted"
                           >
                             {/* Left side (old commit) */}
                             <div
                               className={`flex items-start border-r ${getLeftLineClass(leftLine?.type || 'equal')}`}
                             >
-                              <div className="flex-shrink-0 w-12 text-gray-500 text-right text-xs p-1 bg-gray-50 dark:bg-gray-800 border-r">
+                              <div className="flex-shrink-0 w-12 text-muted-foreground text-right text-xs p-1 bg-muted border-r">
                                 {leftLine?.line_number || ''}
                               </div>
                               <div className="flex-1 p-2 whitespace-pre-wrap break-all min-h-[1.4em]">
@@ -553,7 +553,7 @@ export function FileDiffDialog({
                             <div
                               className={`flex items-start ${getRightLineClass(rightLine?.type || 'equal')}`}
                             >
-                              <div className="flex-shrink-0 w-12 text-gray-500 text-right text-xs p-1 bg-gray-50 dark:bg-gray-800 border-r">
+                              <div className="flex-shrink-0 w-12 text-muted-foreground text-right text-xs p-1 bg-muted border-r">
                                 {rightLine?.line_number || ''}
                               </div>
                               <div className="flex-1 p-2 whitespace-pre-wrap break-all min-h-[1.4em]">
@@ -602,13 +602,13 @@ export function FileDiffDialog({
                       rows.push(
                         <div
                           key={`side-by-side-row-${i}`}
-                          className="grid grid-cols-2 border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+                          className="grid grid-cols-2 border-b border-border hover:bg-muted"
                         >
                           {/* Left side (old commit) */}
                           <div
                             className={`flex items-start border-r ${getLeftLineClass(leftLine?.type || 'equal')}`}
                           >
-                            <div className="flex-shrink-0 w-12 text-gray-500 text-right text-xs p-1 bg-gray-50 dark:bg-gray-800 border-r">
+                            <div className="flex-shrink-0 w-12 text-muted-foreground text-right text-xs p-1 bg-muted border-r">
                               {leftLine?.line_number || ''}
                             </div>
                             <div className="flex-1 p-2 whitespace-pre-wrap break-all min-h-[1.4em]">
@@ -620,7 +620,7 @@ export function FileDiffDialog({
                           <div
                             className={`flex items-start ${getRightLineClass(rightLine?.type || 'equal')}`}
                           >
-                            <div className="flex-shrink-0 w-12 text-gray-500 text-right text-xs p-1 bg-gray-50 dark:bg-gray-800 border-r">
+                            <div className="flex-shrink-0 w-12 text-muted-foreground text-right text-xs p-1 bg-muted border-r">
                               {rightLine?.line_number || ''}
                             </div>
                             <div className="flex-1 p-2 whitespace-pre-wrap break-all min-h-[1.4em]">

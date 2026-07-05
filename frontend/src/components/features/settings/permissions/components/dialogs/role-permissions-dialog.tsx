@@ -101,19 +101,19 @@ export function RolePermissionsDialog({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[180px] border-r bg-gray-100">
+                  <TableHead className="w-[180px] border-r bg-muted">
                     Name of Permission
                   </TableHead>
-                  <TableHead className="text-center w-[100px] border-r bg-gray-100">
+                  <TableHead className="text-center w-[100px] border-r bg-muted">
                     Read
                   </TableHead>
-                  <TableHead className="text-center w-[100px] border-r bg-gray-100">
+                  <TableHead className="text-center w-[100px] border-r bg-muted">
                     Write
                   </TableHead>
-                  <TableHead className="text-center w-[100px] border-r bg-gray-100">
+                  <TableHead className="text-center w-[100px] border-r bg-muted">
                     Delete
                   </TableHead>
-                  <TableHead className="text-center w-[100px] bg-gray-100">
+                  <TableHead className="text-center w-[100px] bg-muted">
                     Execute
                   </TableHead>
                 </TableRow>

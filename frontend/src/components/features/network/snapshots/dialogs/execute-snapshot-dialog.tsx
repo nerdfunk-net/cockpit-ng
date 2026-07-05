@@ -160,14 +160,14 @@ export function ExecuteSnapshotDialog({
             />
           </div>
 
-          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md space-y-1">
-            <p className="text-sm font-medium text-blue-900">Configuration Summary</p>
-            <p className="text-xs text-blue-700">
+          <div className="p-3 bg-info border border-info-border rounded-md space-y-1">
+            <p className="text-sm font-medium text-info-foreground">Configuration Summary</p>
+            <p className="text-xs text-info-foreground">
               Git Repository: {snapshotGitRepoId ? `ID ${snapshotGitRepoId}` : 'None'}
             </p>
-            <p className="text-xs text-blue-700">Path: {snapshotPath}</p>
-            <p className="text-xs text-blue-700">Commands: {commands.length}</p>
-            <p className="text-xs text-blue-700">
+            <p className="text-xs text-info-foreground">Path: {snapshotPath}</p>
+            <p className="text-xs text-info-foreground">Commands: {commands.length}</p>
+            <p className="text-xs text-info-foreground">
               Credentials:{' '}
               {selectedCredentialId === 'manual'
                 ? 'Manual'

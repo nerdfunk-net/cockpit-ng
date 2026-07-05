@@ -1,7 +1,6 @@
 import { Fragment, useState } from 'react'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import {
   Table,
   TableBody,
@@ -10,7 +9,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { CheckCircle2, XCircle, ChevronDown, ChevronUp, Terminal } from 'lucide-react'
+import { StatusIcon } from '@/components/shared/status-icon'
+import { StatusBadge } from '@/components/shared/status-badge'
+import { ChevronDown, ChevronUp, Terminal } from 'lucide-react'
 import type { CommandResult, ExecutionSummary } from '../types'
 
 interface ExecutionResultsProps {
@@ -31,66 +32,68 @@ export function ExecutionResults({ results, summary }: ExecutionResultsProps) {
     setExpandedDevices(newExpanded)
   }
 
-  const getResultIcon = (success: boolean) => {
-    if (success) {
-      return <CheckCircle2 className="h-5 w-5 text-green-600" />
-    }
-    return <XCircle className="h-5 w-5 text-red-600" />
-  }
+  const getResultIcon = (success: boolean) => (
+    <StatusIcon variant={success ? 'success' : 'error'} className="h-5 w-5" />
+  )
 
-  const getResultBadge = (success: boolean) => {
-    if (success) {
-      return <Badge className="bg-green-100 text-green-800">Success</Badge>
-    }
-    return <Badge className="bg-red-100 text-red-800">Failed</Badge>
-  }
+  const getResultBadge = (success: boolean) => (
+    <StatusBadge variant={success ? 'success' : 'error'}>
+      {success ? 'Success' : 'Failed'}
+    </StatusBadge>
+  )
 
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-green-400/80 to-green-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <Terminal className="h-4 w-4" />
           <span className="text-sm font-medium">Execution Results</span>
         </div>
-        <div className="text-xs text-green-100">
+        <div className="text-xs text-panel-header-muted">
           {summary.successful} successful, {summary.failed} failed of {summary.total}{' '}
           devices
         </div>
       </div>
-      <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+      <div className="p-6 panel-content">
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <Card className="border-2 border-blue-200 bg-blue-50">
+          <Card className="border-2 border-info-border bg-info">
             <CardHeader className="pb-3">
-              <CardDescription className="text-xs text-blue-600">
+              <CardDescription className="text-xs text-info-foreground">
                 Total Devices
               </CardDescription>
-              <CardTitle className="text-2xl text-blue-800">{summary.total}</CardTitle>
+              <CardTitle className="text-2xl text-info-foreground">
+                {summary.total}
+              </CardTitle>
             </CardHeader>
           </Card>
-          <Card className="border-2 border-green-200 bg-green-50">
+          <Card className="border-2 border-success-border bg-success">
             <CardHeader className="pb-3">
-              <CardDescription className="text-xs text-green-600">
+              <CardDescription className="text-xs text-success-foreground">
                 Successful
               </CardDescription>
-              <CardTitle className="text-2xl text-green-800">
+              <CardTitle className="text-2xl text-success-foreground">
                 {summary.successful}
               </CardTitle>
             </CardHeader>
           </Card>
-          <Card className="border-2 border-red-200 bg-red-50">
+          <Card className="border-2 border-error-border bg-error">
             <CardHeader className="pb-3">
-              <CardDescription className="text-xs text-red-600">Failed</CardDescription>
-              <CardTitle className="text-2xl text-red-800">{summary.failed}</CardTitle>
+              <CardDescription className="text-xs text-error-foreground">
+                Failed
+              </CardDescription>
+              <CardTitle className="text-2xl text-error-foreground">
+                {summary.failed}
+              </CardTitle>
             </CardHeader>
           </Card>
           {summary.cancelled > 0 && (
-            <Card className="border-2 border-orange-200 bg-orange-50">
+            <Card className="border-2 border-warning-border bg-warning">
               <CardHeader className="pb-3">
-                <CardDescription className="text-xs text-orange-600">
+                <CardDescription className="text-xs text-warning-foreground">
                   Cancelled
                 </CardDescription>
-                <CardTitle className="text-2xl text-orange-800">
+                <CardTitle className="text-2xl text-warning-foreground">
                   {summary.cancelled}
                 </CardTitle>
               </CardHeader>
@@ -113,11 +116,11 @@ export function ExecutionResults({ results, summary }: ExecutionResultsProps) {
             <TableBody>
               {results.map((result, index) => (
                 <Fragment key={result.device || `result-${index}`}>
-                  <TableRow className="hover:bg-gray-50">
+                  <TableRow className="hover:bg-muted/50">
                     <TableCell>{getResultIcon(result.success)}</TableCell>
                     <TableCell className="font-medium">{result.device}</TableCell>
                     <TableCell>{getResultBadge(result.success)}</TableCell>
-                    <TableCell className="text-sm text-gray-600">
+                    <TableCell className="text-sm text-muted-foreground">
                       {result.success
                         ? 'Commands executed successfully'
                         : result.error || 'Execution failed'}

@@ -240,7 +240,7 @@ export function SettingsTab({
                   <Button variant="outline" size="sm" onClick={handleDeselectAllLogins}>
                     Deselect All
                   </Button>
-                  <div className="ml-auto text-sm text-gray-500">
+                  <div className="ml-auto text-sm text-muted-foreground">
                     {selectedLoginIds.length} of{' '}
                     {loginCredentials.filter(c => c.is_active).length} selected
                   </div>
@@ -251,7 +251,7 @@ export function SettingsTab({
                     .map(credential => (
                       <div
                         key={credential.id}
-                        className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50"
+                        className="flex items-center space-x-2 p-2 rounded hover:bg-muted"
                       >
                         <Checkbox
                           id={`login-${credential.id}`}
@@ -266,7 +266,7 @@ export function SettingsTab({
                         >
                           <div className="font-medium">{credential.username}</div>
                           {credential.description && (
-                            <div className="text-sm text-gray-500">
+                            <div className="text-sm text-muted-foreground">
                               {credential.description}
                             </div>
                           )}
@@ -324,7 +324,7 @@ export function SettingsTab({
                   <Button variant="outline" size="sm" onClick={handleDeselectAllSnmp}>
                     Deselect All
                   </Button>
-                  <div className="ml-auto text-sm text-gray-500">
+                  <div className="ml-auto text-sm text-muted-foreground">
                     {selectedSnmpIds.length} of{' '}
                     {snmpMappings.filter(m => m.is_active).length} selected
                   </div>
@@ -335,7 +335,7 @@ export function SettingsTab({
                     .map(mapping => (
                       <div
                         key={mapping.id}
-                        className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50"
+                        className="flex items-center space-x-2 p-2 rounded hover:bg-muted"
                       >
                         <Checkbox
                           id={`snmp-${mapping.id}`}
@@ -349,7 +349,7 @@ export function SettingsTab({
                           className="flex-1 cursor-pointer"
                         >
                           <div className="font-medium">{mapping.device_type}</div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-muted-foreground">
                             {mapping.snmp_version} -{' '}
                             {mapping.snmp_version === 'v3'
                               ? mapping.snmp_v3_user
@@ -410,7 +410,7 @@ export function SettingsTab({
                   <Button variant="outline" size="sm" onClick={handleDeselectAllRegex}>
                     Deselect All
                   </Button>
-                  <div className="ml-auto text-sm text-gray-500">
+                  <div className="ml-auto text-sm text-muted-foreground">
                     {selectedRegexIds.length} of{' '}
                     {regexPatterns.filter(p => p.is_active).length} selected
                   </div>
@@ -421,7 +421,7 @@ export function SettingsTab({
                     .map(pattern => (
                       <div
                         key={pattern.id}
-                        className="flex items-center space-x-2 p-2 rounded hover:bg-gray-50"
+                        className="flex items-center space-x-2 p-2 rounded hover:bg-muted"
                       >
                         <Checkbox
                           id={`regex-${pattern.id}`}
@@ -437,7 +437,7 @@ export function SettingsTab({
                           <div className="font-medium font-mono text-sm">
                             {pattern.pattern}
                           </div>
-                          <div className="text-sm text-gray-500">
+                          <div className="text-sm text-muted-foreground">
                             {pattern.pattern_type === 'must_match'
                               ? '✓ Must Match'
                               : '✗ Must Not Match'}

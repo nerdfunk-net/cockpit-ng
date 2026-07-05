@@ -8,15 +8,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import {
-  RefreshCw,
-  FileText,
-  Edit,
-  X,
-  Upload,
-  CheckCircle,
-  AlertCircle,
-} from 'lucide-react'
+import { RefreshCw, FileText, Edit, X, Upload } from 'lucide-react'
+import { StatusAlert } from '@/components/shared/status-alert'
 import type { DebugResult, DebugOperation } from '../types'
 
 interface TestOperationTabProps {
@@ -67,24 +60,19 @@ export function TestOperationTab({
       </CardHeader>
       <CardContent className="space-y-4">
         {warning && (
-          <div className="bg-yellow-50 border border-yellow-200 rounded-md p-4 mb-4">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-              <div className="text-sm text-yellow-800">
-                <div className="font-medium mb-1">Important:</div>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>{warning}</li>
-                  <li>Requires write access and valid credentials</li>
-                  <li>
-                    Test file:{' '}
-                    <code className="bg-yellow-100 px-1 rounded">
-                      .cockpit_debug_test.txt
-                    </code>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
+          <StatusAlert variant="warning" className="mb-4">
+            <div className="font-medium mb-1">Important:</div>
+            <ul className="list-disc list-inside space-y-1">
+              <li>{warning}</li>
+              <li>Requires write access and valid credentials</li>
+              <li>
+                Test file:{' '}
+                <code className="bg-warning-border/40 px-1 rounded">
+                  .cockpit_debug_test.txt
+                </code>
+              </li>
+            </ul>
+          </StatusAlert>
         )}
 
         <Button
@@ -99,45 +87,18 @@ export function TestOperationTab({
 
         {result && (
           <div className="space-y-4">
-            <div
-              className={`p-4 rounded-md ${
-                result.success
-                  ? 'bg-green-50 border border-green-200'
-                  : operation === 'read'
-                    ? 'bg-yellow-50 border border-yellow-200'
-                    : 'bg-red-50 border border-red-200'
-              }`}
+            <StatusAlert
+              variant={
+                result.success ? 'success' : operation === 'read' ? 'warning' : 'error'
+              }
             >
-              <div className="flex items-start gap-2">
-                {result.success ? (
-                  <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                ) : (
-                  <AlertCircle
-                    className={`h-5 w-5 mt-0.5 ${
-                      operation === 'read' ? 'text-yellow-600' : 'text-red-600'
-                    }`}
-                  />
-                )}
-                <div>
-                  <div
-                    className={`font-medium ${
-                      result.success
-                        ? 'text-green-800'
-                        : operation === 'read'
-                          ? 'text-yellow-800'
-                          : 'text-red-800'
-                    }`}
-                  >
-                    {result.message}
-                  </div>
-                  {result.details?.suggestion != null && (
-                    <div className="text-sm text-gray-600 mt-1">
-                      {String(result.details.suggestion)}
-                    </div>
-                  )}
+              <div className="font-medium">{result.message}</div>
+              {result.details?.suggestion != null && (
+                <div className="text-sm mt-1">
+                  {String(result.details.suggestion)}
                 </div>
-              </div>
-            </div>
+              )}
+            </StatusAlert>
 
             {result.details && (
               <Card>
@@ -149,15 +110,15 @@ export function TestOperationTab({
                     {Object.entries(result.details).map(([key, value]) => (
                       <div key={key} className="space-y-1">
                         <div className="flex justify-between">
-                          <span className="font-medium text-gray-700">{key}:</span>
+                          <span className="font-medium text-muted-foreground">{key}:</span>
                         </div>
                         {(key === 'content' || key === 'commit_message') &&
                         typeof value === 'string' ? (
-                          <pre className="bg-gray-100 p-2 rounded text-xs overflow-x-auto">
+                          <pre className="bg-muted p-2 rounded text-xs overflow-x-auto">
                             {value}
                           </pre>
                         ) : (
-                          <span className="text-gray-900 break-all">
+                          <span className="text-foreground break-all">
                             {String(value)}
                           </span>
                         )}

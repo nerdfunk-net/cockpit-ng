@@ -71,13 +71,13 @@ export function ConnectionSettingsForm({
 
   return (
     <Card className="shadow-lg border-0 overflow-hidden p-0">
-      <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+      <CardHeader className="panel-header border-b-0 rounded-none m-0 py-2 px-4">
         <CardTitle className="flex items-center space-x-2 text-sm font-medium">
           <Settings className="h-4 w-4" />
           <span>CheckMK Connection Settings</span>
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
+      <CardContent className="panel-content p-6 space-y-6">
         <Form {...form}>
           <form onSubmit={handleSave} className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -88,7 +88,7 @@ export function ConnectionSettingsForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      CheckMK Server URL <span className="text-red-500">*</span>
+                      CheckMK Server URL <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -112,7 +112,7 @@ export function ConnectionSettingsForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Site <span className="text-red-500">*</span>
+                      Site <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -137,7 +137,7 @@ export function ConnectionSettingsForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Username <span className="text-red-500">*</span>
+                      Username <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -159,7 +159,7 @@ export function ConnectionSettingsForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Password <span className="text-red-500">*</span>
+                      Password <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -183,14 +183,14 @@ export function ConnectionSettingsForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>SSL Verification</FormLabel>
-                    <div className="flex items-center space-x-2 p-3 bg-white rounded-lg border border-gray-200">
+                    <div className="flex items-center space-x-2 p-3 bg-card rounded-lg border border-border">
                       <FormControl>
                         <Checkbox
                           checked={field.value ?? false}
                           onCheckedChange={field.onChange}
                         />
                       </FormControl>
-                      <label className="text-sm text-gray-700">
+                      <label className="text-sm text-muted-foreground">
                         Verify SSL certificates
                       </label>
                     </div>
@@ -204,8 +204,8 @@ export function ConnectionSettingsForm({
             </div>
 
             {/* Test Connection Button */}
-            <div className="pt-4 border-t border-gray-200">
-              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div className="pt-4 border-t border-border">
+              <div className="bg-info p-4 rounded-lg border border-info-border">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4">
                     <Button
@@ -213,7 +213,7 @@ export function ConnectionSettingsForm({
                       variant="outline"
                       onClick={handleTest}
                       disabled={isTesting || !form.formState.isValid}
-                      className="flex items-center space-x-2 border-blue-300 text-blue-700 hover:bg-blue-100"
+                      className="flex items-center space-x-2 border-info-border text-info-foreground hover:bg-info"
                     >
                       {isTesting ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -225,7 +225,7 @@ export function ConnectionSettingsForm({
 
                     {/* Connection Status */}
                     {testStatus === 'success' && (
-                      <div className="flex items-center space-x-2 text-green-600">
+                      <div className="flex items-center space-x-2 text-success-foreground">
                         <CheckCircle className="h-4 w-4" />
                         <span className="text-sm font-medium">
                           Connection successful!
@@ -234,13 +234,13 @@ export function ConnectionSettingsForm({
                     )}
 
                     {testStatus === 'error' && testMessage && (
-                      <div className="flex items-center space-x-2 text-red-600">
+                      <div className="flex items-center space-x-2 text-error-foreground">
                         <XCircle className="h-4 w-4" />
                         <span className="text-sm font-medium">{testMessage}</span>
                       </div>
                     )}
                   </div>
-                  <div className="text-xs text-blue-600 font-medium">
+                  <div className="text-xs text-info-foreground font-medium">
                     Test your connection before saving
                   </div>
                 </div>
@@ -250,13 +250,13 @@ export function ConnectionSettingsForm({
         </Form>
 
         {/* Action Buttons - Outside form to prevent submit trigger */}
-        <div className="bg-white p-6 rounded-lg border border-gray-200 shadow-sm">
+        <div className="bg-card p-6 rounded-lg border border-border shadow-sm">
           <div className="flex items-center justify-between">
             <Button
               type="button"
               variant="outline"
               onClick={onReset}
-              className="flex items-center space-x-2 border-gray-300 text-gray-700 hover:bg-gray-50"
+              className="flex items-center space-x-2"
             >
               <RotateCcw className="h-4 w-4" />
               <span>Reset to Defaults</span>
@@ -266,7 +266,7 @@ export function ConnectionSettingsForm({
               type="button"
               onClick={handleSave}
               disabled={isSaving || !form.formState.isValid}
-              className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2 text-base font-medium"
+              className="flex items-center space-x-2 px-6 py-2 text-base font-medium"
             >
               {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
               <span>{isSaving ? 'Saving...' : 'Save Settings'}</span>

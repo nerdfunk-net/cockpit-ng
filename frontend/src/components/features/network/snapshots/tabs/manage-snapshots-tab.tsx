@@ -131,14 +131,14 @@ export function ManageSnapshotsTab() {
   return (
     <div className="space-y-6">
       {/* Snapshots List */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+        <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Snapshots</span>
             {snapshots.length > 0 && (
               <Badge
                 variant="secondary"
-                className="bg-white/20 text-white border-white/30"
+                className="bg-card/20 text-current border-current/30"
               >
                 {snapshots.length}
               </Badge>
@@ -149,12 +149,12 @@ export function ManageSnapshotsTab() {
             variant="ghost"
             size="sm"
             disabled={loading}
-            className="h-7 text-white hover:bg-white/20 hover:text-white"
+            className="h-7 text-current hover:bg-card/20"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+        <div className="p-6 panel-content">
           {loading && snapshots.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               Loading snapshots...
@@ -168,7 +168,7 @@ export function ManageSnapshotsTab() {
               <div className="border rounded-lg overflow-hidden">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-gray-50">
+                    <TableRow className="bg-muted">
                       <TableHead className="w-12"></TableHead>
                       <TableHead>Name</TableHead>
                       <TableHead>Template</TableHead>
@@ -185,7 +185,7 @@ export function ManageSnapshotsTab() {
                       <TableRow
                         key={snapshot.id}
                         className={
-                          selectedSnapshotIds.includes(snapshot.id) ? 'bg-blue-50' : ''
+                          selectedSnapshotIds.includes(snapshot.id) ? 'bg-info' : ''
                         }
                       >
                         <TableCell>
@@ -207,11 +207,11 @@ export function ManageSnapshotsTab() {
                         </TableCell>
                         <TableCell>{getStatusBadge(snapshot.status)}</TableCell>
                         <TableCell>
-                          <span className="text-green-600 font-medium">
+                          <span className="text-success-foreground font-medium">
                             {snapshot.success_count}
                           </span>
                           {' / '}
-                          <span className="text-red-600 font-medium">
+                          <span className="text-error-foreground font-medium">
                             {snapshot.failed_count}
                           </span>
                         </TableCell>
@@ -241,7 +241,7 @@ export function ManageSnapshotsTab() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="h-8 w-8 p-0 text-error-foreground hover:bg-error"
                               title="Delete snapshot"
                               onClick={() =>
                                 handleDeleteClick(snapshot.id, snapshot.name)
@@ -262,7 +262,6 @@ export function ManageSnapshotsTab() {
                 <Button
                   onClick={handleCompare}
                   disabled={selectedSnapshotIds.length !== 2}
-                  className="bg-blue-600 hover:bg-blue-700"
                 >
                   <GitCompare className="mr-2 h-4 w-4" />
                   Compare Selected ({selectedSnapshotIds.length}/2)

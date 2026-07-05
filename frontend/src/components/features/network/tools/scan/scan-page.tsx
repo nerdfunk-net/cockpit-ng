@@ -23,6 +23,7 @@ import {
   ChevronRight,
 } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
+import { IconChip } from '@/components/shared/icon-chip'
 import { useAgentsQuery } from '@/hooks/queries/use-agents-query'
 import { useSavedInventoriesQuery } from '@/hooks/queries/use-saved-inventories-queries'
 import ScanResultsModal from '@/components/features/network/tools/scan/scan-results-modal'
@@ -262,13 +263,13 @@ export default function ScanToolPage() {
     <>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <Radar className="h-6 w-6 text-blue-600" />
-            </div>
+          <div className="flex items-center gap-4">
+            <IconChip variant="primary">
+              <Radar className="h-6 w-6" />
+            </IconChip>
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Network Port Scan</h1>
-              <p className="text-gray-600 mt-1">
+              <h1 className="text-3xl font-bold text-foreground">Network Port Scan</h1>
+              <p className="text-muted-foreground mt-2">
                 Scan open ports on reachable hosts via CIDR networks or a saved inventory
               </p>
             </div>
@@ -276,13 +277,13 @@ export default function ScanToolPage() {
         </div>
 
         <Card className="shadow-lg border-0 overflow-hidden p-0">
-          <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+          <CardHeader className="panel-header border-b-0 rounded-none m-0 py-2 px-4">
             <CardTitle className="flex items-center space-x-2 text-sm font-medium">
               <Radar className="h-4 w-4" />
               <span>Scan Configuration</span>
             </CardTitle>
           </CardHeader>
-          <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
+          <CardContent className="p-6 panel-content space-y-6">
             <ScanInventorySection
               targetSource={targetSource}
               setTargetSource={setTargetSource}
@@ -294,7 +295,7 @@ export default function ScanToolPage() {
 
             {targetSource === 'cidr' && (
             <div className="space-y-4">
-              <Label className="text-base font-semibold text-slate-700">
+              <Label className="text-base font-semibold text-foreground">
                 CIDR Networks
               </Label>
               <div className="space-y-3">
@@ -309,12 +310,12 @@ export default function ScanToolPage() {
                           onChange={e => handleCidrChange(input.id, e.target.value)}
                           className={
                             input.error
-                              ? 'border-red-500 focus:ring-red-500 bg-white'
-                              : 'focus:ring-blue-500 focus:border-blue-500 border-slate-300 bg-white font-mono text-slate-900 placeholder:text-slate-400 shadow-sm'
+                              ? 'border-destructive focus:ring-destructive bg-card'
+                              : 'focus:ring-ring/30 focus:border-primary border-border bg-card font-mono text-foreground placeholder:text-muted-foreground shadow-sm'
                           }
                         />
                         {input.error && (
-                          <div className="flex items-center gap-1 mt-1 text-sm text-red-600 bg-red-50 p-2 rounded-md border border-red-200">
+                          <div className="flex items-center gap-1 mt-1 text-sm text-error-foreground bg-error p-2 rounded-md border border-error-border">
                             <AlertCircle className="w-4 h-4 flex-shrink-0" />
                             <span>{input.error}</span>
                           </div>
@@ -325,7 +326,7 @@ export default function ScanToolPage() {
                         size="icon"
                         variant="outline"
                         onClick={handleAddRow}
-                        className="flex-shrink-0 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-colors"
+                        className="flex-shrink-0 hover:bg-info hover:border-info-border hover:text-info-foreground transition-colors"
                       >
                         <Plus className="w-4 h-4" />
                       </Button>
@@ -335,7 +336,7 @@ export default function ScanToolPage() {
                         variant="outline"
                         onClick={() => handleRemoveRow(input.id)}
                         disabled={cidrInputs.length === 1}
-                        className="flex-shrink-0 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors disabled:opacity-50"
+                        className="flex-shrink-0 hover:bg-error hover:border-error-border hover:text-error-foreground transition-colors disabled:opacity-50"
                       >
                         <Minus className="w-4 h-4" />
                       </Button>
@@ -343,7 +344,7 @@ export default function ScanToolPage() {
                   </div>
                 ))}
               </div>
-              <p className="text-sm text-slate-500 bg-slate-50 p-3 rounded-md border border-slate-200">
+              <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md border border-border">
                 Enter CIDR networks (netmask /19 to /32). Alive hosts are discovered via
                 ping before nmap scanning.
               </p>
@@ -351,7 +352,7 @@ export default function ScanToolPage() {
             )}
 
             {targetSource === 'inventory' && (
-              <p className="text-sm text-slate-500 bg-slate-50 p-3 rounded-md border border-slate-200">
+              <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md border border-border">
                 Device IP addresses are resolved from the selected inventory via Nautobot.
                 Alive hosts are discovered via ping before nmap scanning.
               </p>
@@ -361,16 +362,18 @@ export default function ScanToolPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="nmap-agent">
-                  Nmap Agent <span className="text-red-500">*</span>
+                  Nmap Agent <span className="text-destructive">*</span>
                 </Label>
                 {loadingAgents ? (
-                  <div className="flex items-center gap-2 p-3 border border-blue-200 rounded-md bg-blue-50">
-                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                    <span className="text-sm text-blue-800">Loading agents...</span>
+                  <div className="flex items-center gap-2 p-3 border border-info-border rounded-md bg-info">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                    <span className="text-sm text-info-foreground">
+                      Loading agents...
+                    </span>
                   </div>
                 ) : nmapAgents.length === 0 ? (
-                  <div className="p-4 border border-amber-200 rounded-md bg-amber-50">
-                    <p className="text-sm text-amber-800">
+                  <div className="p-4 border border-warning-border rounded-md bg-warning">
+                    <p className="text-sm text-warning-foreground">
                       No Nmap agents configured. Add one in{' '}
                       <strong>Settings → Connections → Agents</strong> with type{' '}
                       <strong>Nmap</strong>.
@@ -418,7 +421,7 @@ export default function ScanToolPage() {
                 placeholder="1-1024"
                 value={ports}
                 onChange={e => setPorts(e.target.value)}
-                className="font-mono focus:ring-blue-500 focus:border-blue-500"
+                className="font-mono focus:ring-ring/30 focus:border-primary"
               />
               <p className="text-xs text-muted-foreground">
                 Port specification passed to nmap, e.g. &quot;22,80,443&quot; or
@@ -427,32 +430,31 @@ export default function ScanToolPage() {
             </div>
 
             {/* Service detection */}
-            <div className="flex items-center space-x-2 bg-gradient-to-br from-slate-50 to-slate-100 p-4 rounded-lg border border-slate-200">
+            <div className="flex items-center space-x-2 bg-muted p-4 rounded-lg border border-border">
               <Checkbox
                 id="service-detection"
                 checked={serviceDetection}
                 onCheckedChange={checked => setServiceDetection(checked as boolean)}
-                className="data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
               />
               <div>
                 <Label
                   htmlFor="service-detection"
-                  className="text-sm font-medium leading-none cursor-pointer text-slate-700"
+                  className="text-sm font-medium leading-none cursor-pointer text-foreground"
                 >
                   Service detection (-sV)
                 </Label>
-                <p className="text-sm text-slate-600 mt-1">
+                <p className="text-sm text-muted-foreground mt-1">
                   Identify service names and versions (slower)
                 </p>
               </div>
             </div>
 
             {/* Advanced */}
-            <div className="border-t border-slate-200 pt-4">
+            <div className="border-t border-border pt-4">
               <button
                 type="button"
                 onClick={() => setShowAdvanced(!showAdvanced)}
-                className="flex items-center gap-2 text-sm font-semibold text-slate-700 hover:text-blue-600 transition-colors"
+                className="flex items-center gap-2 text-sm font-semibold text-foreground hover:text-primary transition-colors"
               >
                 {showAdvanced ? (
                   <ChevronDown className="w-4 h-4" />
@@ -463,9 +465,12 @@ export default function ScanToolPage() {
               </button>
 
               {showAdvanced && (
-                <div className="mt-4 bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border border-blue-200">
+                <div className="mt-4 bg-info p-4 rounded-lg border border-info-border">
                   <div className="space-y-2 max-w-xs">
-                    <Label htmlFor="scan-timeout" className="text-sm font-medium text-slate-700">
+                    <Label
+                      htmlFor="scan-timeout"
+                      className="text-sm font-medium text-info-foreground"
+                    >
                       Scan Timeout (seconds)
                     </Label>
                     <Input
@@ -475,19 +480,21 @@ export default function ScanToolPage() {
                       max={3600}
                       value={timeout}
                       onChange={e => setTimeout(parseInt(e.target.value, 10) || 300)}
-                      className="focus:ring-blue-500 focus:border-blue-500 border-blue-300 bg-white font-mono"
+                      className="focus:ring-ring/30 focus:border-primary border-info-border bg-card font-mono"
                     />
-                    <p className="text-xs text-slate-600">Per-host nmap timeout (30–3600s)</p>
+                    <p className="text-xs text-info-foreground">
+                      Per-host nmap timeout (30–3600s)
+                    </p>
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end pt-4 border-t border-slate-200">
+            <div className="flex justify-end pt-4 border-t">
               <Button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className="min-w-[150px] bg-blue-600 hover:bg-blue-700 text-white shadow-md hover:shadow-lg transition-all"
+                className="min-w-[150px] shadow-md hover:shadow-lg transition-all"
               >
                 {isSubmitting ? (
                   <>

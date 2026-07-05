@@ -137,43 +137,43 @@ export function SnapshotsTab({
   return (
     <div className="space-y-6">
       {/* Execute Snapshot */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+        <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Execute Snapshot</span>
           </div>
-          <div className="text-xs text-blue-100">
+          <div className="text-xs text-panel-header-muted">
             Configure and execute a new snapshot for selected devices
           </div>
         </div>
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
+        <div className="p-6 panel-content space-y-6">
           {/* Path Configuration */}
-          <div className="rounded-lg border border-amber-200 bg-amber-50/30 p-4 space-y-4">
+          <div className="rounded-lg border border-warning-border bg-warning/30 p-4 space-y-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-amber-900">
+              <span className="text-sm font-semibold text-warning-foreground">
                 Snapshot Path
               </span>
             </div>
 
-            <div className="bg-amber-100/50 border border-amber-200 rounded-md px-3 py-2 space-y-1">
-              <p className="text-xs text-amber-800 leading-relaxed">
+            <div className="bg-warning/50 border border-warning-border rounded-md px-3 py-2 space-y-1">
+              <p className="text-xs text-warning-foreground leading-relaxed">
                 <span className="font-semibold">Available variables:</span>
               </p>
-              <p className="text-xs text-amber-700 leading-relaxed">
+              <p className="text-xs text-warning-foreground leading-relaxed">
                 Template: {'{template_name}'}
               </p>
-              <p className="text-xs text-amber-700 leading-relaxed">
+              <p className="text-xs text-warning-foreground leading-relaxed">
                 Device: {'{device_name}'}, {'{hostname}'}, {'{serial}'}, {'{asset_tag}'}
               </p>
-              <p className="text-xs text-amber-700 leading-relaxed">
+              <p className="text-xs text-warning-foreground leading-relaxed">
                 Location: {'{location.name}'}, {'{location.parent.name}'},{' '}
                 {'{location.parent.parent.name}'}
               </p>
-              <p className="text-xs text-amber-700 leading-relaxed">
+              <p className="text-xs text-warning-foreground leading-relaxed">
                 Platform: {'{platform.name}'}, {'{platform.manufacturer.name}'},{' '}
                 {'{device_type.model}'}
               </p>
-              <p className="text-xs text-amber-700 leading-relaxed">
+              <p className="text-xs text-warning-foreground leading-relaxed">
                 Other: {'{role.name}'}, {'{status.name}'}, {'{tenant.name}'},{' '}
                 {'{rack.name}'}, {'{custom_field_data.FIELD_NAME}'}
               </p>
@@ -185,15 +185,15 @@ export function SnapshotsTab({
                 value={snapshotPath}
                 onChange={e => onSnapshotPathChange(e.target.value)}
                 placeholder="snapshots/{device_name}-{template_name}"
-                className="h-9 bg-white border-amber-200 font-mono text-sm focus:ring-amber-500 focus:border-amber-500"
+                className="h-9 bg-card border-warning-border font-mono text-sm focus:ring-warning-border focus:border-warning-border"
               />
             </div>
           </div>
 
           {/* Credentials Selection */}
-          <div className="rounded-lg border border-purple-200 bg-purple-50/30 p-4 space-y-4">
+          <div className="rounded-lg border border-info-border bg-info/30 p-4 space-y-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-purple-900">
+              <span className="text-sm font-semibold text-info-foreground">
                 SSH Credentials
               </span>
             </div>
@@ -210,9 +210,9 @@ export function SnapshotsTab({
           </div>
 
           {/* Git Repository Selection */}
-          <div className="rounded-lg border border-teal-200 bg-teal-50/30 p-4 space-y-4">
+          <div className="rounded-lg border bg-muted/30 p-4 space-y-4">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-teal-900">
+              <span className="text-sm font-semibold text-foreground">
                 Git Repository
               </span>
             </div>
@@ -225,7 +225,7 @@ export function SnapshotsTab({
                 }
                 disabled={reposLoading}
               >
-                <SelectTrigger id="git-repo" className="h-9 bg-white border-teal-200">
+                <SelectTrigger id="git-repo" className="h-9 bg-card border-border">
                   <SelectValue placeholder="Select a git repository..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -237,7 +237,7 @@ export function SnapshotsTab({
                   ))}
                 </SelectContent>
               </Select>
-              <p className="text-xs text-teal-700">
+              <p className="text-xs text-muted-foreground">
                 Select a git repository to store snapshot results
               </p>
             </div>
@@ -255,8 +255,7 @@ export function SnapshotsTab({
                 !snapshotGitRepoId ||
                 (selectedCredentialId === 'manual' && (!username || !password))
               }
-              className="bg-blue-600 hover:bg-blue-700"
-            >
+              >
               {executing ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

@@ -48,12 +48,12 @@ export function LoginCredentialDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl p-0">
-        <DialogHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white px-6 py-4 rounded-t-lg">
-          <DialogTitle className="flex items-center gap-2 text-white text-lg">
+        <DialogHeader className="panel-header px-6 py-4 rounded-t-lg">
+          <DialogTitle className="flex items-center gap-2 text-lg">
             <Key className="h-5 w-5" />
             {credential ? 'Edit' : 'Add'} Login Credential
           </DialogTitle>
-          <DialogDescription className="text-blue-50">
+          <DialogDescription className="text-panel-header-muted">
             Configure a username and password for compliance checks
           </DialogDescription>
         </DialogHeader>
@@ -62,19 +62,19 @@ export function LoginCredentialDialog({
           <div className="space-y-2">
             <Label
               htmlFor="credential-name"
-              className="text-sm font-semibold text-gray-700 flex items-center gap-1"
+              className="text-sm font-semibold text-foreground flex items-center gap-1"
             >
               Credential Name
-              <span className="text-red-500">*</span>
+              <span className="text-destructive">*</span>
             </Label>
             <Input
               id="credential-name"
               value={formData.name}
               onChange={e => onFormChange({ ...formData, name: e.target.value })}
               placeholder="Production Admin"
-              className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              className="bg-muted border-border focus:border-primary focus:ring-ring/30"
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               A friendly name to identify this credential (e.g., &quot;Production
               Admin&quot;, &quot;ReadOnly User&quot;)
             </p>
@@ -84,19 +84,19 @@ export function LoginCredentialDialog({
           <div className="space-y-2">
             <Label
               htmlFor="username"
-              className="text-sm font-semibold text-gray-700 flex items-center gap-1"
+              className="text-sm font-semibold text-foreground flex items-center gap-1"
             >
               Username
-              <span className="text-red-500">*</span>
+              <span className="text-destructive">*</span>
             </Label>
             <Input
               id="username"
               value={formData.username}
               onChange={e => onFormChange({ ...formData, username: e.target.value })}
               placeholder="admin"
-              className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              className="bg-muted border-border focus:border-primary focus:ring-ring/30"
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Username for device authentication during compliance checks
             </p>
           </div>
@@ -105,10 +105,10 @@ export function LoginCredentialDialog({
           <div className="space-y-2">
             <Label
               htmlFor="password"
-              className="text-sm font-semibold text-gray-700 flex items-center gap-1"
+              className="text-sm font-semibold text-foreground flex items-center gap-1"
             >
               Password
-              <span className="text-red-500">*</span>
+              <span className="text-destructive">*</span>
             </Label>
             <Input
               id="password"
@@ -118,10 +118,10 @@ export function LoginCredentialDialog({
               placeholder={
                 credential ? '(leave blank to keep current)' : 'Enter password'
               }
-              className="bg-gray-50 border-gray-300 focus:border-green-500 focus:ring-green-500"
+              className="bg-muted border-border focus:border-primary focus:ring-ring/30"
             />
             {credential && (
-              <p className="text-xs text-amber-600">
+              <p className="text-xs text-warning-foreground">
                 Leave blank to keep the existing password unchanged
               </p>
             )}
@@ -131,7 +131,7 @@ export function LoginCredentialDialog({
           <div className="space-y-2">
             <Label
               htmlFor="login-description"
-              className="text-sm font-semibold text-gray-700"
+              className="text-sm font-semibold text-foreground"
             >
               Description
             </Label>
@@ -141,7 +141,7 @@ export function LoginCredentialDialog({
               onChange={e => onFormChange({ ...formData, description: e.target.value })}
               placeholder="Describe this credential"
               rows={3}
-              className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
+              className="bg-muted border-border focus:border-primary focus:ring-ring/30 resize-none"
             />
           </div>
         </div>
@@ -149,16 +149,11 @@ export function LoginCredentialDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="border-gray-300 hover:bg-gray-50"
             disabled={isSaving}
           >
             Cancel
           </Button>
-          <Button
-            onClick={handleSave}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-            disabled={isSaving}
-          >
+          <Button onClick={handleSave} disabled={isSaving}>
             {credential ? 'Update Credential' : 'Add Credential'}
           </Button>
         </DialogFooter>

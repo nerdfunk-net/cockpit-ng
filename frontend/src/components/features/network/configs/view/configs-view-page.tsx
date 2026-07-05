@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from 'react'
 import { Eye, RotateCcw, FolderTree, Search, GitCompare } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { IconChip } from '@/components/shared/icon-chip'
 import {
   Select,
   SelectContent,
@@ -320,7 +321,7 @@ export default function ConfigsViewPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2 text-sm text-muted-foreground">Loading repositories...</p>
         </div>
       </div>
@@ -332,11 +333,11 @@ export default function ConfigsViewPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Eye className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <Eye className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Config File Browser</h1>
+            <h1 className="text-3xl font-bold text-foreground">Config File Browser</h1>
             <p className="text-muted-foreground mt-2">
               Browse and compare configuration files from Git repositories
             </p>
@@ -347,7 +348,7 @@ export default function ConfigsViewPage() {
         <div className="flex items-center space-x-2">
           <Button onClick={handleRefresh} variant="outline" disabled={loading}>
             {loading ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2" />
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-foreground mr-2" />
             ) : (
               <RotateCcw className="h-4 w-4 mr-2" />
             )}
@@ -357,17 +358,17 @@ export default function ConfigsViewPage() {
       </div>
 
       {/* Repository Selection */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+        <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
             <FolderTree className="h-4 w-4" />
             <span className="text-sm font-medium">Repository Selection</span>
           </div>
-          <div className="text-xs text-blue-100">
+          <div className="text-xs text-panel-header-muted">
             Select a Git repository to browse device configuration files
           </div>
         </div>
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+        <div className="p-6 panel-content">
           <div className="flex items-center gap-4">
             <Label
               htmlFor="repository-select"
@@ -380,7 +381,7 @@ export default function ConfigsViewPage() {
               onValueChange={handleRepositoryChange}
             >
               <SelectTrigger
-                className="w-96 border-2 border-gray-400 shadow-sm"
+                className="w-96 border-2 border-border shadow-sm"
                 id="repository-select"
               >
                 <SelectValue placeholder="Select a config repository..." />
@@ -395,16 +396,16 @@ export default function ConfigsViewPage() {
             </Select>
             {selectedRepository && (
               <div className="relative w-80">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Search files in repository..."
                   value={globalSearchText}
                   onChange={e => setGlobalSearchText(e.target.value)}
-                  className="pl-9 border-2 border-gray-300 focus:border-blue-400"
+                  className="pl-9 border-2 border-border focus:border-primary"
                 />
                 {isSearching && (
                   <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-muted-foreground"></div>
                   </div>
                 )}
               </div>
@@ -425,7 +426,7 @@ export default function ConfigsViewPage() {
             </div>
           )}
           {globalSearchText && searchResults && searchResults.files.length === 0 && (
-            <div className="mt-3 text-sm text-amber-600">
+            <div className="mt-3 text-sm text-warning-foreground">
               No files found matching &quot;{globalSearchText}&quot;
             </div>
           )}
@@ -450,13 +451,13 @@ export default function ConfigsViewPage() {
 
       {/* File Browser */}
       {selectedRepository && (
-        <div className="shadow-lg border-0 p-0 bg-white rounded-lg h-[calc(100vh-400px)] min-h-[600px] flex flex-col">
-          <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg flex-shrink-0">
+        <div className="shadow-lg border-0 p-0 bg-card rounded-lg h-[calc(100vh-400px)] min-h-[600px] flex flex-col">
+          <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg flex-shrink-0">
             <div className="flex items-center space-x-2">
               <FolderTree className="h-4 w-4" />
               <span className="text-sm font-medium">Configuration File Browser</span>
             </div>
-            <div className="text-xs text-blue-100">
+            <div className="text-xs text-panel-header-muted">
               Browse directory structure and view configuration files
             </div>
           </div>
@@ -467,8 +468,8 @@ export default function ConfigsViewPage() {
               maxLeftWidth={600}
               leftPanel={
                 <div className="flex flex-col h-full overflow-hidden border-r">
-                  <div className="bg-gray-100 px-4 py-2 border-b flex-shrink-0">
-                    <h3 className="text-sm font-medium text-gray-700">
+                  <div className="bg-muted px-4 py-2 border-b flex-shrink-0">
+                    <h3 className="text-sm font-medium text-foreground">
                       Directory Structure
                     </h3>
                   </div>
@@ -476,7 +477,7 @@ export default function ConfigsViewPage() {
                     {treeLoading ? (
                       <div className="flex items-center justify-center h-64">
                         <div className="text-center">
-                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
                           <p className="mt-2 text-sm text-muted-foreground">
                             Loading tree...
                           </p>
@@ -495,9 +496,9 @@ export default function ConfigsViewPage() {
               }
               rightPanel={
                 <div className="flex flex-col h-full overflow-hidden">
-                  <div className="bg-gray-100 px-4 py-2 border-b flex-shrink-0">
+                  <div className="bg-muted px-4 py-2 border-b flex-shrink-0">
                     <div className="flex items-center justify-between gap-4">
-                      <h3 className="text-sm font-medium text-gray-700">
+                      <h3 className="text-sm font-medium text-foreground">
                         Files in: {selectedDirectoryPath || '/'}
                       </h3>
                       <div className="flex items-center gap-2">
@@ -519,7 +520,7 @@ export default function ConfigsViewPage() {
                           </div>
                         )}
                         <div className="relative w-64">
-                          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                          <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                           <Input
                             placeholder="Filter files..."
                             value={filterText}

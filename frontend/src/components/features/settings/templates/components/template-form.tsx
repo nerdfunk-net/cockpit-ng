@@ -227,7 +227,7 @@ export function TemplateForm({
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-12">
-          <div className="flex items-center gap-3 text-gray-600">
+          <div className="flex items-center gap-3 text-muted-foreground">
             <RefreshCw className="h-5 w-5 animate-spin" />
             <span>Loading template data...</span>
           </div>
@@ -238,8 +238,8 @@ export function TemplateForm({
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
-        <CardTitle className="flex items-center gap-2 text-white text-base">
+      <CardHeader className="panel-header py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+        <CardTitle className="flex items-center gap-2 text-base">
           <Plus className="h-4 w-4" />
           {isEditMode ? `Edit Template: ${template?.name}` : 'Create New Template'}
         </CardTitle>
@@ -255,7 +255,7 @@ export function TemplateForm({
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>
-                      Template Name <span className="text-red-500">*</span>
+                      Template Name <span className="text-destructive">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., cisco-ios-base" {...field} />
@@ -322,7 +322,7 @@ export function TemplateForm({
                 render={({ field }) => (
                   <FormItem className="md:col-span-1">
                     <FormLabel>
-                      Source <span className="text-red-500">*</span>
+                      Source <span className="text-destructive">*</span>
                     </FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
@@ -361,7 +361,7 @@ export function TemplateForm({
               control={form.control}
               name="scope"
               render={({ field }) => (
-                <FormItem className="flex items-center space-x-2 p-4 bg-gray-50 rounded-lg">
+                <FormItem className="flex items-center space-x-2 p-4 bg-muted rounded-lg">
                   <FormControl>
                     <Checkbox
                       checked={field.value === 'global'}
@@ -387,7 +387,7 @@ export function TemplateForm({
                 control={form.control}
                 name="use_nautobot_context"
                 render={({ field }) => (
-                  <FormItem className="flex items-center space-x-2 p-4 bg-purple-50 rounded-lg">
+                  <FormItem className="flex items-center space-x-2 p-4 bg-info rounded-lg">
                     <FormControl>
                       <Checkbox
                         checked={field.value}
@@ -423,7 +423,7 @@ export function TemplateForm({
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>
-                            Repository URL <span className="text-red-500">*</span>
+                            Repository URL <span className="text-destructive">*</span>
                           </FormLabel>
                           <FormControl>
                             <Input
@@ -511,7 +511,7 @@ export function TemplateForm({
                       onChange={handleFileChange}
                     />
                     {selectedFile && (
-                      <p className="text-sm text-gray-600">
+                      <p className="text-sm text-muted-foreground">
                         Selected: {selectedFile.name} (
                         {(selectedFile.size / 1024).toFixed(1)} KB)
                       </p>
@@ -536,11 +536,11 @@ export function TemplateForm({
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>
-                          Template Content <span className="text-red-500">*</span>
+                          Template Content <span className="text-destructive">*</span>
                         </FormLabel>
                         <FormControl>
                           <textarea
-                            className="w-full h-64 p-3 border-2 bg-white border-gray-300 rounded-md font-mono text-sm"
+                            className="w-full h-64 p-3 border-2 bg-card border-border rounded-md font-mono text-sm"
                             placeholder="Enter your template content here..."
                             {...field}
                           />
@@ -562,12 +562,7 @@ export function TemplateForm({
                 </Button>
 
                 {watchedCategory === 'agent' && onSelectInventory && (
-                  <Button
-                    variant="outline"
-                    onClick={onSelectInventory}
-                    type="button"
-                    className="border-purple-300 text-purple-700"
-                  >
+                  <Button variant="outline" onClick={onSelectInventory} type="button">
                     <FolderOpen className="h-4 w-4" />
                     <span>
                       {selectedInventory
@@ -590,7 +585,6 @@ export function TemplateForm({
                       !form.getValues('name') ||
                       (watchedCategory === 'agent' && !selectedInventory)
                     }
-                    className="border-blue-300 text-blue-700 hover:bg-blue-50"
                   >
                     {isRendering && <RefreshCw className="h-4 w-4 animate-spin" />}
                     {!isRendering && <Play className="h-4 w-4" />}
@@ -601,7 +595,6 @@ export function TemplateForm({
                 <Button
                   type="submit"
                   disabled={createTemplate.isPending || updateTemplate.isPending}
-                  className="bg-green-600 hover:bg-green-700"
                 >
                   {(createTemplate.isPending || updateTemplate.isPending) && (
                     <RefreshCw className="h-4 w-4 animate-spin" />

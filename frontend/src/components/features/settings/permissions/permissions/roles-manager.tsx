@@ -129,7 +129,7 @@ export function RolesManager() {
             header: 'Name',
             accessor: role => (
               <div className="flex items-center gap-2">
-                <Shield className="h-4 w-4 text-blue-500" />
+                <Shield className="h-4 w-4 text-primary" />
                 <span className="font-medium">{role.name}</span>
               </div>
             ),

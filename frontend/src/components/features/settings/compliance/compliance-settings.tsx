@@ -5,6 +5,7 @@ import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CheckCircle, FileText, Key, Network } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 
 import { RegexPatternsTab } from './components/regex-patterns-tab'
 import { LoginCredentialsTab } from './components/login-credentials-tab'
@@ -18,9 +19,9 @@ export default function ComplianceSettingsForm() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-green-100 p-2 rounded-lg">
-            <CheckCircle className="h-6 w-6 text-green-600" />
-          </div>
+          <IconChip variant="success">
+            <CheckCircle className="h-6 w-6" />
+          </IconChip>
           <div>
             <h1 className="text-3xl font-bold">Compliance Settings</h1>
             <p className="text-muted-foreground">

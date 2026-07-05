@@ -1,34 +1,28 @@
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/shared/status-badge'
 import { AlertTriangle, Clock, CheckCircle } from 'lucide-react'
 
 export function getStatusBadge(status: string) {
   switch (status) {
     case 'expired':
       return (
-        <Badge variant="destructive" className="flex items-center gap-1">
+        <StatusBadge variant="error" className="flex items-center gap-1">
           <AlertTriangle className="h-3 w-3" />
           Expired
-        </Badge>
+        </StatusBadge>
       )
     case 'expiring':
       return (
-        <Badge
-          variant="secondary"
-          className="flex items-center gap-1 bg-amber-100 text-amber-800 border-amber-300"
-        >
+        <StatusBadge variant="warning" className="flex items-center gap-1">
           <Clock className="h-3 w-3" />
           Expiring
-        </Badge>
+        </StatusBadge>
       )
     default:
       return (
-        <Badge
-          variant="default"
-          className="flex items-center gap-1 bg-green-100 text-green-800 border-green-300"
-        >
+        <StatusBadge variant="success" className="flex items-center gap-1">
           <CheckCircle className="h-3 w-3" />
           Active
-        </Badge>
+        </StatusBadge>
       )
   }
 }

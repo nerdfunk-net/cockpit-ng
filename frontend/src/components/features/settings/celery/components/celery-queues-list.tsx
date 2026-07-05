@@ -111,7 +111,7 @@ export function CeleryQueuesList() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Layers className="h-4 w-4 text-blue-600" />
+                    <Layers className="h-4 w-4 text-info-foreground" />
                     Total Queues
                   </CardTitle>
                 </CardHeader>
@@ -124,7 +124,7 @@ export function CeleryQueuesList() {
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-orange-600" />
+                      <Clock className="h-4 w-4 text-warning-foreground" />
                       Pending Tasks
                     </div>
                     <TooltipProvider>
@@ -141,7 +141,7 @@ export function CeleryQueuesList() {
                                 disabled={totalPendingTasks === 0 || purgingAll}
                                 className="h-6 w-6 p-0"
                               >
-                                <Eraser className="h-3.5 w-3.5 text-orange-600" />
+                                <Eraser className="h-3.5 w-3.5 text-warning-foreground" />
                               </Button>
                             </AlertDialogTrigger>
                           </TooltipTrigger>
@@ -187,7 +187,7 @@ export function CeleryQueuesList() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <Users className="h-4 w-4 text-green-600" />
+                    <Users className="h-4 w-4 text-success-foreground" />
                     Active Workers
                   </CardTitle>
                 </CardHeader>
@@ -201,7 +201,7 @@ export function CeleryQueuesList() {
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium flex items-center gap-2">
-                    <AlertCircle className="h-4 w-4 text-red-600" />
+                    <AlertCircle className="h-4 w-4 text-error-foreground" />
                     Unassigned
                   </CardTitle>
                 </CardHeader>
@@ -261,7 +261,7 @@ export function CeleryQueuesList() {
                     <TableCell className="text-right">
                       <span
                         className={
-                          queue.pending_tasks > 0 ? 'font-bold text-orange-600' : ''
+                          queue.pending_tasks > 0 ? 'font-bold text-warning-foreground' : ''
                         }
                       >
                         {queue.pending_tasks}
@@ -270,7 +270,7 @@ export function CeleryQueuesList() {
                     <TableCell className="text-right">
                       <span
                         className={
-                          queue.active_tasks > 0 ? 'font-bold text-blue-600' : ''
+                          queue.active_tasks > 0 ? 'font-bold text-info-foreground' : ''
                         }
                       >
                         {queue.active_tasks}
@@ -352,7 +352,7 @@ export function CeleryQueuesList() {
                                   }
                                   className="h-8 w-8 p-0"
                                 >
-                                  <Eraser className="h-4 w-4 text-orange-600" />
+                                  <Eraser className="h-4 w-4 text-warning-foreground" />
                                 </Button>
                               </AlertDialogTrigger>
                             </TooltipTrigger>

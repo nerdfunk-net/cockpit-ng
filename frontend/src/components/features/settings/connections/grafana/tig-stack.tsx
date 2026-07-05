@@ -13,14 +13,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { useApi } from '@/hooks/use-api'
-import { cn } from '@/lib/utils'
-import {
-  Loader2,
-  CheckCircle,
-  XCircle,
-  BarChart3,
-  Settings as SettingsIcon,
-} from 'lucide-react'
+import { StatusAlert } from '@/components/shared/status-alert'
+import { IconChip } from '@/components/shared/icon-chip'
+import { Loader2, BarChart3, Settings as SettingsIcon } from 'lucide-react'
 
 interface GrafanaSettings {
   deployment_method: 'local' | 'sftp' | 'git'
@@ -181,9 +176,9 @@ export default function TigStackSettingsForm() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <BarChart3 className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip>
+            <BarChart3 className="h-6 w-6" />
+          </IconChip>
           <div>
             <h1 className="text-3xl font-bold">TIG-Stack Settings</h1>
             <p className="text-muted-foreground">
@@ -194,45 +189,33 @@ export default function TigStackSettingsForm() {
       </div>
 
       {message && (
-        <div
-          className={cn(
-            'flex items-center gap-2 p-4 rounded-md',
-            status === 'success'
-              ? 'bg-green-50 text-green-800'
-              : 'bg-red-50 text-red-800'
-          )}
-        >
-          {status === 'success' ? (
-            <CheckCircle className="h-5 w-5" />
-          ) : (
-            <XCircle className="h-5 w-5" />
-          )}
-          <span>{message}</span>
-        </div>
+        <StatusAlert variant={status === 'success' ? 'success' : 'error'}>
+          {message}
+        </StatusAlert>
       )}
 
       <Card className="shadow-lg border-0 overflow-hidden p-0">
-        <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+        <CardHeader className="panel-header border-b-0 rounded-none m-0 py-2 px-4">
           <CardTitle className="flex items-center space-x-2 text-sm font-medium">
             <SettingsIcon className="h-4 w-4" />
             <span>Deployment Configuration</span>
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-6">
+        <CardContent className="panel-content p-6 space-y-6">
           {/* Git Repository */}
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-md space-y-4">
-            <h3 className="font-semibold text-blue-900">Git Repository</h3>
+          <div className="p-4 bg-info border border-info-border rounded-md space-y-4">
+            <h3 className="font-semibold text-info-foreground">Git Repository</h3>
             <div className="space-y-2">
               <Label
                 htmlFor="git-repository-id"
-                className="text-sm font-medium text-gray-700"
+                className="text-sm font-medium text-muted-foreground"
               >
-                Git Repository <span className="text-red-500">*</span>
+                Git Repository <span className="text-destructive">*</span>
               </Label>
               {loadingGitRepos ? (
-                <div className="flex items-center space-x-2 p-2 border border-blue-300 rounded-md">
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
-                  <span className="text-sm text-gray-600">Loading repositories...</span>
+                <div className="flex items-center space-x-2 p-2 border border-info-border rounded-md">
+                  <Loader2 className="h-4 w-4 animate-spin text-info-foreground" />
+                  <span className="text-sm text-muted-foreground">Loading repositories...</span>
                 </div>
               ) : gitRepositories.length > 0 ? (
                 <Select
@@ -243,7 +226,7 @@ export default function TigStackSettingsForm() {
                 >
                   <SelectTrigger
                     id="git-repository-id"
-                    className="w-full border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                    className="w-full border-info-border focus:border-ring focus:ring-ring"
                   >
                     <SelectValue placeholder="Select a repository" />
                   </SelectTrigger>
@@ -252,7 +235,7 @@ export default function TigStackSettingsForm() {
                       <SelectItem key={repo.id} value={repo.id.toString()}>
                         <div className="flex flex-col">
                           <span className="font-medium">{repo.name}</span>
-                          <span className="text-xs text-gray-500">
+                          <span className="text-xs text-muted-foreground">
                             {repo.url} • {repo.branch}
                           </span>
                         </div>
@@ -261,28 +244,28 @@ export default function TigStackSettingsForm() {
                   </SelectContent>
                 </Select>
               ) : (
-                <div className="p-3 border border-blue-200 rounded-md bg-blue-50">
-                  <p className="text-sm text-blue-700">
+                <div className="p-3 border border-info-border rounded-md bg-info">
+                  <p className="text-sm text-info-foreground">
                     No Cockpit Configs repositories found. Go to Settings / Git
                     Management to add one.
                   </p>
                 </div>
               )}
-              <p className="text-xs text-blue-700">
+              <p className="text-xs text-info-foreground">
                 Select a Cockpit Configs repository from Settings / Git Management
               </p>
             </div>
           </div>
 
           {/* Configuration Paths */}
-          <div className="pt-4 border-t border-gray-200 space-y-4">
-            <h3 className="font-semibold text-gray-900">Configuration Paths</h3>
+          <div className="pt-4 border-t border-border space-y-4">
+            <h3 className="font-semibold text-foreground">Configuration Paths</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label
                   htmlFor="dashboards-path"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-muted-foreground"
                 >
                   Dashboards Path
                 </Label>
@@ -292,14 +275,14 @@ export default function TigStackSettingsForm() {
                   placeholder="dashboards/"
                   value={settings.dashboards_path}
                   onChange={e => updateSetting('dashboards_path', e.target.value)}
-                  className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                  className="w-full"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label
                   htmlFor="datasources-path"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-muted-foreground"
                 >
                   Datasources Path
                 </Label>
@@ -309,14 +292,14 @@ export default function TigStackSettingsForm() {
                   placeholder="datasources/"
                   value={settings.datasources_path}
                   onChange={e => updateSetting('datasources_path', e.target.value)}
-                  className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                  className="w-full"
                 />
               </div>
 
               <div className="space-y-2">
                 <Label
                   htmlFor="telegraf-path"
-                  className="text-sm font-medium text-gray-700"
+                  className="text-sm font-medium text-muted-foreground"
                 >
                   Telegraf Path
                 </Label>
@@ -326,23 +309,23 @@ export default function TigStackSettingsForm() {
                   placeholder="telegraf/"
                   value={settings.telegraf_config_path}
                   onChange={e => updateSetting('telegraf_config_path', e.target.value)}
-                  className="w-full border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                  className="w-full"
                 />
               </div>
             </div>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Relative paths within the deployment root for different configuration
               types
             </p>
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-end pt-4 border-t border-gray-200">
+          <div className="flex justify-end pt-4 border-t border-border">
             <Button
               type="button"
               onClick={saveSettings}
               disabled={status === 'saving'}
-              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white"
+              className="flex items-center space-x-2"
             >
               {status === 'saving' ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

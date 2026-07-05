@@ -74,7 +74,7 @@ export function CeleryCleanupJobs() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5 text-red-500" />
+              <Trash2 className="h-5 w-5 text-destructive" />
               <div>
                 <CardTitle>Data Cleanup</CardTitle>
                 <CardDescription>
@@ -181,7 +181,7 @@ export function CeleryCleanupJobs() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-orange-500" />
+              <Database className="h-5 w-5 text-warning-foreground" />
               <div>
                 <CardTitle>Cleanup Client Data</CardTitle>
                 <CardDescription>

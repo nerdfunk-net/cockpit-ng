@@ -75,9 +75,9 @@ export function ResizableLayout({
       <div
         onMouseDown={handleMouseDown}
         className={`
-          w-1.5 bg-border hover:bg-blue-400 cursor-col-resize
+          w-1.5 bg-border hover:bg-primary/70 cursor-col-resize
           flex-shrink-0 transition-all hover:w-2
-          ${isDragging ? 'bg-blue-500 w-2' : ''}
+          ${isDragging ? 'bg-primary w-2' : ''}
         `}
         title="Drag to resize"
       />

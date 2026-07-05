@@ -68,8 +68,8 @@ export function CeleryTestPanel() {
 
                 {taskStatus.error && (
                   <div>
-                    <p className="text-sm font-medium text-red-600">Error:</p>
-                    <p className="text-sm text-red-600">{taskStatus.error}</p>
+                    <p className="text-sm font-medium text-error-foreground">Error:</p>
+                    <p className="text-sm text-error-foreground">{taskStatus.error}</p>
                   </div>
                 )}
 

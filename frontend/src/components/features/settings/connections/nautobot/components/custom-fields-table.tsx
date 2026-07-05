@@ -27,7 +27,7 @@ export function CustomFieldsTable({
 }: CustomFieldsTableProps) {
   if (customFields.length === 0) {
     return (
-      <div className="text-xs text-gray-500 text-center py-4 bg-white">
+      <div className="text-xs text-muted-foreground text-center py-4 bg-card">
         No custom fields available
       </div>
     )
@@ -35,33 +35,33 @@ export function CustomFieldsTable({
 
   return (
     <div className="rounded-lg border shadow-sm overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-1 px-3">
+      <div className="panel-header py-1 px-3">
         <div className="flex items-center space-x-2">
           <Settings className="h-3 w-3" />
           <div>
             <h3 className="text-xs font-semibold">Custom Fields</h3>
-            <p className="text-blue-100 text-xs">
+            <p className="text-panel-header-muted text-xs">
               Configure custom field settings for device offboarding
             </p>
           </div>
         </div>
       </div>
-      <div className="bg-white">
+      <div className="bg-card">
         <table className="w-full">
-          <thead className="bg-gray-50">
+          <thead className="bg-muted">
             <tr>
-              <th className="px-2 py-2 text-left text-xs font-medium text-gray-900">
+              <th className="px-2 py-2 text-left text-xs font-medium text-foreground">
                 Custom Field
               </th>
-              <th className="px-2 py-2 text-left text-xs font-medium text-gray-900">
+              <th className="px-2 py-2 text-left text-xs font-medium text-foreground">
                 Value
               </th>
-              <th className="px-2 py-2 text-center text-xs font-medium text-gray-900">
+              <th className="px-2 py-2 text-center text-xs font-medium text-foreground">
                 Clear Custom Field
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-card divide-y divide-border">
             {customFields.map(field => {
               const fieldName = field.name || field.key || field.id
               if (!fieldName) return null
@@ -70,15 +70,19 @@ export function CustomFieldsTable({
               const fieldValue = isClearSelected ? '' : values[fieldName] || ''
 
               return (
-                <tr key={field.id} className="hover:bg-gray-50">
+                <tr key={field.id} className="hover:bg-muted">
                   <td className="px-2 py-2">
                     <div>
-                      <div className="text-xs font-medium text-gray-900">
+                      <div className="text-xs font-medium text-foreground">
                         {fieldName}
-                        {field.required && <span className="text-red-500 ml-1">*</span>}
+                        {field.required && (
+                          <span className="text-destructive ml-1">*</span>
+                        )}
                       </div>
                       {field.description && (
-                        <div className="text-xs text-gray-500">{field.description}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {field.description}
+                        </div>
                       )}
                     </div>
                   </td>

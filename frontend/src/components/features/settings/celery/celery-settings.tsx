@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Server, Database, CheckCircle, XCircle, Activity, Clock } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 import { useCeleryStatus } from './hooks/use-celery-queries'
 import { CeleryStatusOverview } from './components/celery-status-overview'
 import { CelerySettingsForm } from './components/celery-settings-form'
@@ -19,9 +20,9 @@ export function CelerySettingsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <div className="bg-purple-100 p-2 rounded-lg">
-          <Server className="h-6 w-6 text-purple-600" />
-        </div>
+        <IconChip variant="primary">
+          <Server className="h-6 w-6" />
+        </IconChip>
         <div>
           <h1 className="text-3xl font-bold">Celery Task Queue</h1>
           <p className="text-muted-foreground mt-2">
@@ -40,8 +41,8 @@ export function CelerySettingsPage() {
             <Database
               className={
                 celeryStatus?.redis_connected
-                  ? 'h-4 w-4 text-green-600'
-                  : 'h-4 w-4 text-red-600'
+                  ? 'h-4 w-4 text-success-foreground'
+                  : 'h-4 w-4 text-error-foreground'
               }
             />
           </CardHeader>
@@ -49,12 +50,12 @@ export function CelerySettingsPage() {
             <div className="flex items-center space-x-2">
               {celeryStatus?.redis_connected ? (
                 <>
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <CheckCircle className="h-5 w-5 text-success-foreground" />
                   <span className="text-xl font-bold">Connected</span>
                 </>
               ) : (
                 <>
-                  <XCircle className="h-5 w-5 text-red-600" />
+                  <XCircle className="h-5 w-5 text-error-foreground" />
                   <span className="text-xl font-bold">Disconnected</span>
                 </>
               )}
@@ -64,9 +65,7 @@ export function CelerySettingsPage() {
 
         <Card
           className={
-            (celeryStatus?.worker_count ?? 0) > 0
-              ? 'status-info'
-              : 'bg-gray-50 border-gray-200'
+            (celeryStatus?.worker_count ?? 0) > 0 ? 'status-info' : 'bg-muted border-border'
           }
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -74,8 +73,8 @@ export function CelerySettingsPage() {
             <Server
               className={
                 (celeryStatus?.worker_count ?? 0) > 0
-                  ? 'h-4 w-4 text-blue-600'
-                  : 'h-4 w-4 text-gray-400'
+                  ? 'h-4 w-4 text-info-foreground'
+                  : 'h-4 w-4 text-muted-foreground'
               }
             />
           </CardHeader>
@@ -84,7 +83,7 @@ export function CelerySettingsPage() {
               className={
                 (celeryStatus?.worker_count ?? 0) > 0
                   ? 'text-2xl font-bold'
-                  : 'text-2xl font-bold text-gray-500'
+                  : 'text-2xl font-bold text-muted-foreground'
               }
             >
               {celeryStatus?.worker_count || 0}
@@ -96,8 +95,8 @@ export function CelerySettingsPage() {
         <Card
           className={
             (celeryStatus?.active_tasks ?? 0) > 0
-              ? 'bg-purple-50 border-purple-200'
-              : 'bg-gray-50 border-gray-200'
+              ? 'bg-primary/10 border-primary/30'
+              : 'bg-muted border-border'
           }
         >
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -105,8 +104,8 @@ export function CelerySettingsPage() {
             <Activity
               className={
                 (celeryStatus?.active_tasks ?? 0) > 0
-                  ? 'h-4 w-4 text-purple-600'
-                  : 'h-4 w-4 text-gray-400'
+                  ? 'h-4 w-4 text-primary'
+                  : 'h-4 w-4 text-muted-foreground'
               }
             />
           </CardHeader>
@@ -114,8 +113,8 @@ export function CelerySettingsPage() {
             <div
               className={
                 (celeryStatus?.active_tasks ?? 0) > 0
-                  ? 'text-2xl font-bold text-purple-700'
-                  : 'text-2xl font-bold text-gray-500'
+                  ? 'text-2xl font-bold text-primary'
+                  : 'text-2xl font-bold text-muted-foreground'
               }
             >
               {celeryStatus?.active_tasks || 0}
@@ -132,8 +131,8 @@ export function CelerySettingsPage() {
             <Clock
               className={
                 celeryStatus?.beat_running
-                  ? 'h-4 w-4 text-green-600'
-                  : 'h-4 w-4 text-red-600'
+                  ? 'h-4 w-4 text-success-foreground'
+                  : 'h-4 w-4 text-error-foreground'
               }
             />
           </CardHeader>
@@ -141,12 +140,12 @@ export function CelerySettingsPage() {
             <div className="flex items-center space-x-2">
               {celeryStatus?.beat_running ? (
                 <>
-                  <CheckCircle className="h-5 w-5 text-green-600" />
+                  <CheckCircle className="h-5 w-5 text-success-foreground" />
                   <span className="text-xl font-bold">Running</span>
                 </>
               ) : (
                 <>
-                  <XCircle className="h-5 w-5 text-red-600" />
+                  <XCircle className="h-5 w-5 text-error-foreground" />
                   <span className="text-xl font-bold">Stopped</span>
                 </>
               )}

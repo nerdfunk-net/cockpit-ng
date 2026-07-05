@@ -27,16 +27,10 @@ import {
   FormControl,
   FormMessage,
 } from '@/components/ui/form'
-import {
-  Download,
-  Loader2,
-  GitPullRequest,
-  CheckCircle,
-  AlertCircle,
-  FileText,
-} from 'lucide-react'
+import { Download, Loader2, GitPullRequest, FileText } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/hooks/use-toast'
+import { StatusAlert } from '@/components/shared/status-alert'
 import type { GitRepository, GitFile, GitRepoStatus, ImportStep } from '../types'
 import {
   EMPTY_GIT_REPOS,
@@ -371,47 +365,35 @@ export function GitImportDialog({
 
             {/* Step 2: Check Sync Status */}
             {importStep === 'check-sync' && repoStatus && (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="flex items-start space-x-3">
-                  <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-yellow-900">
-                      Repository Not Synced
-                    </h4>
-                    <p className="text-sm text-yellow-800 mt-1">
-                      This repository is {repoStatus.behind_count} commit(s) behind the
-                      remote. Please sync the repository to get the latest files.
-                    </p>
-                    <Button
-                      type="button"
-                      onClick={() => selectedRepoId && syncRepo(selectedRepoId)}
-                      disabled={importLoading}
-                      className="mt-3 flex items-center space-x-2"
-                    >
-                      {importLoading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <GitPullRequest className="h-4 w-4" />
-                      )}
-                      <span>Sync Repository (Git Pull)</span>
-                    </Button>
-                  </div>
-                </div>
-              </div>
+              <StatusAlert variant="warning">
+                <h4 className="font-semibold">Repository Not Synced</h4>
+                <p className="text-sm mt-1">
+                  This repository is {repoStatus.behind_count} commit(s) behind the
+                  remote. Please sync the repository to get the latest files.
+                </p>
+                <Button
+                  type="button"
+                  onClick={() => selectedRepoId && syncRepo(selectedRepoId)}
+                  disabled={importLoading}
+                  className="mt-3 flex items-center space-x-2"
+                >
+                  {importLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <GitPullRequest className="h-4 w-4" />
+                  )}
+                  <span>Sync Repository (Git Pull)</span>
+                </Button>
+              </StatusAlert>
             )}
 
             {/* Step 3: Select File */}
             {importStep === 'select-file' && (
               <div className="space-y-4">
                 {repoStatus && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                    <div className="flex items-center space-x-2">
-                      <CheckCircle className="h-4 w-4 text-green-600" />
-                      <span className="text-sm text-green-800">
-                        Repository is up to date
-                      </span>
-                    </div>
-                  </div>
+                  <StatusAlert variant="success">
+                    <span className="text-sm">Repository is up to date</span>
+                  </StatusAlert>
                 )}
 
                 <FormField

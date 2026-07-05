@@ -13,6 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { GitBranch, Plus, RefreshCw } from 'lucide-react'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+import { StatusAlert } from '@/components/shared/status-alert'
 
 // TanStack Query Hooks
 import { useGitRepositoriesQuery } from '@/hooks/queries/use-git-repositories-query'
@@ -176,27 +177,21 @@ const GitManagement: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl font-semibold text-gray-900 flex items-center gap-2">
+      <div className="border-b border-border pb-4">
+        <h1 className="text-2xl font-semibold text-foreground flex items-center gap-2">
           <GitBranch className="h-6 w-6" />
           Git Repository Management
         </h1>
-        <p className="mt-1 text-sm text-gray-600">
+        <p className="mt-1 text-sm text-muted-foreground">
           Manage Git repositories for configurations, templates, and other resources
         </p>
       </div>
 
       {/* Status Message */}
       {message && (
-        <div
-          className={`p-4 rounded-md ${
-            message.type === 'success'
-              ? 'bg-green-50 border border-green-200 text-green-800'
-              : 'bg-red-50 border border-red-200 text-red-800'
-          }`}
-        >
+        <StatusAlert variant={message.type === 'success' ? 'success' : 'error'}>
           {message.text}
-        </div>
+        </StatusAlert>
       )}
 
       <Tabs defaultValue="list" className="space-y-4">
@@ -229,12 +224,12 @@ const GitManagement: React.FC = () => {
         {/* Add Repository Tab */}
         <TabsContent value="add" className="space-y-4">
           <Card className="overflow-hidden">
-            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
-              <CardTitle className="flex items-center gap-2 text-white text-base">
+            <CardHeader className="panel-header py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+              <CardTitle className="flex items-center gap-2 text-base">
                 <Plus className="h-4 w-4" />
                 Add New Git Repository
               </CardTitle>
-              <CardDescription className="text-blue-50 text-sm">
+              <CardDescription className="text-panel-header-muted text-sm">
                 Configure a new Git repository for configurations, templates, or other
                 resources
               </CardDescription>
@@ -254,13 +249,9 @@ const GitManagement: React.FC = () => {
                   isTestingConnection={connectionTest.isLoading}
                 />
 
-                <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+                <div className="bg-card p-4 rounded-lg border border-border shadow-sm">
                   <div className="flex gap-4">
-                    <Button
-                      type="submit"
-                      disabled={isSubmitting}
-                      className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-                    >
+                    <Button type="submit" disabled={isSubmitting}>
                       {isSubmitting ? (
                         <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
                       ) : (
@@ -275,7 +266,6 @@ const GitManagement: React.FC = () => {
                         connectionTest.clearStatus()
                       }}
                       variant="outline"
-                      className="border-gray-300 text-gray-700 hover:bg-gray-50"
                     >
                       Reset Form
                     </Button>

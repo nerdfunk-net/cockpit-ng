@@ -34,8 +34,8 @@ export function CacheEntriesList() {
     return (
       <Card>
         <CardContent className="flex items-center justify-center py-8">
-          <RefreshCw className="h-6 w-6 animate-spin text-gray-400" />
-          <span className="ml-2 text-gray-500">Loading cache entries...</span>
+          <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+          <span className="ml-2 text-muted-foreground">Loading cache entries...</span>
         </CardContent>
       </Card>
     )
@@ -87,26 +87,26 @@ export function CacheEntriesList() {
                   <div
                     key={entry.key}
                     className={`p-3 rounded-lg border ${
-                      entry.is_expired ? 'status-error' : 'bg-white border-gray-200'
+                      entry.is_expired ? 'status-error' : 'bg-card border-border'
                     }`}
                   >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <div className="font-mono text-sm text-gray-900 truncate">
+                        <div className="font-mono text-sm text-foreground truncate">
                           {entry.key}
                         </div>
-                        <div className="flex items-center gap-4 mt-1 text-xs text-gray-500">
+                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                           <span>NS: {entry.namespace}</span>
                           <span>Size: {(entry.size_bytes / 1024).toFixed(1)}KB</span>
                           <span>Accessed: {entry.access_count}x</span>
                           <span>Age: {Math.floor(entry.age_seconds / 60)}m</span>
                           {!entry.is_expired && (
-                            <span className="text-green-600">
+                            <span className="text-success-foreground">
                               TTL: {Math.floor(entry.ttl_seconds / 60)}m
                             </span>
                           )}
                           {entry.is_expired && (
-                            <span className="text-red-600">EXPIRED</span>
+                            <span className="text-error-foreground">EXPIRED</span>
                           )}
                         </div>
                       </div>
@@ -123,7 +123,7 @@ export function CacheEntriesList() {
                           })
                         }}
                         disabled={clearCache.isPending}
-                        className="text-red-600 hover:text-red-700 border-red-200 hover:border-red-300"
+                        className="text-error-foreground hover:text-error-foreground border-error-border hover:border-error-border"
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
@@ -132,12 +132,14 @@ export function CacheEntriesList() {
                 ))}
               </div>
 
-              <div className="text-sm text-gray-500 text-center">
+              <div className="text-sm text-muted-foreground text-center">
                 Showing {entries.length} entries
               </div>
             </>
           ) : (
-            <div className="text-center py-8 text-gray-500">No cache entries found</div>
+            <div className="text-center py-8 text-muted-foreground">
+              No cache entries found
+            </div>
           )}
         </div>
       </CardContent>

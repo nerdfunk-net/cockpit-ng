@@ -34,13 +34,13 @@ export function CredentialSelect({
 
   return (
     <div className="space-y-2">
-      <Label htmlFor="credential" className="text-sm font-semibold text-gray-800">
+      <Label htmlFor="credential" className="text-sm font-semibold text-foreground">
         {getCredentialLabel(authType)}
       </Label>
       <Select value={value} onValueChange={onChange} disabled={disabled}>
         <SelectTrigger
           id="credential"
-          className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+          className="border-2 border-border bg-card shadow-sm focus:border-primary focus:ring-2 focus:ring-ring/30 transition-all duration-200"
         >
           <SelectValue placeholder={getCredentialPlaceholder(authType)} />
         </SelectTrigger>
@@ -61,7 +61,7 @@ export function CredentialSelect({
           })}
         </SelectContent>
       </Select>
-      <p className="text-xs text-gray-600">
+      <p className="text-xs text-muted-foreground">
         {authType === 'ssh_key'
           ? 'Select an SSH key credential for authentication'
           : authType === 'generic'

@@ -1,3 +1,4 @@
+import type { StatusVariant } from '@/components/shared/status-badge'
 import type { Permission } from '../types'
 
 /**
@@ -19,20 +20,20 @@ export function groupPermissionsByResource(
 }
 
 /**
- * Get action badge color based on permission action
+ * Get status badge variant based on permission action
  */
-export function getActionColor(action: string): string {
+export function getActionVariant(action: string): StatusVariant | null {
   switch (action) {
     case 'read':
-      return 'bg-green-100 text-green-800'
+      return 'success'
     case 'write':
-      return 'bg-blue-100 text-blue-800'
+      return 'info'
     case 'delete':
-      return 'bg-red-100 text-red-800'
+      return 'error'
     case 'execute':
-      return 'bg-purple-100 text-purple-800'
+      return 'warning'
     default:
-      return 'bg-slate-100 text-slate-800'
+      return null
   }
 }
 

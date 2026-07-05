@@ -38,7 +38,7 @@ export function RepositoryDebugDialog({
       <DialogContent className="!max-w-[90vw] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Bug className="h-5 w-5 text-purple-600" />
+            <Bug className="h-5 w-5 text-primary" />
             Debug Repository: {repository?.name}
           </DialogTitle>
         </DialogHeader>

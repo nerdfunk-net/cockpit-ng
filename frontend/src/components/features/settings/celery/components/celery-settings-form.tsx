@@ -70,7 +70,7 @@ export function CelerySettingsForm() {
         <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Server className="h-5 w-5 text-blue-500" />
+              <Server className="h-5 w-5 text-primary" />
               <div>
                 <CardTitle>Worker Configuration</CardTitle>
                 <CardDescription>Configure Celery worker settings</CardDescription>

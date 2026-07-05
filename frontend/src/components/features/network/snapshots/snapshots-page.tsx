@@ -8,6 +8,7 @@
 import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Camera } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 import { useCredentialManager } from '../automation/netmiko/hooks/use-credential-manager'
 import type { DeviceInfo, LogicalCondition } from '@/components/shared/device-selector'
 import type { SnapshotCommand } from './types/snapshot-types'
@@ -71,11 +72,11 @@ export default function SnapshotsPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Camera className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <Camera className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Network Snapshots</h1>
+            <h1 className="text-3xl font-bold text-foreground">Network Snapshots</h1>
             <p className="text-muted-foreground mt-2">
               Capture and compare device state snapshots
             </p>

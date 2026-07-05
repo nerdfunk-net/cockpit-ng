@@ -35,7 +35,7 @@ export function YamlEditorCard({
 }: YamlEditorCardProps) {
   return (
     <Card className="shadow-lg border-0 overflow-hidden p-0">
-      <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+      <CardHeader className="panel-header border-b-0 rounded-none m-0 py-2 px-4">
         <CardTitle className="flex items-center justify-between">
           <div className="flex items-center space-x-2 text-sm font-medium">
             <FileText className="h-4 w-4" />
@@ -46,7 +46,7 @@ export function YamlEditorCard({
               variant="ghost"
               size="sm"
               onClick={onHelpClick}
-              className="h-7 w-7 p-0 text-white hover:bg-white/20 hover:text-white"
+              className="h-7 w-7 p-0 hover:bg-panel-header-foreground/20"
               title="Show help and examples"
             >
               <HelpCircle className="h-4 w-4" />
@@ -54,19 +54,19 @@ export function YamlEditorCard({
           )}
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+      <CardContent className="panel-content p-6 space-y-4">
         <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700">
+          <Label className="text-sm font-medium text-muted-foreground">
             Configuration Content
           </Label>
           <Textarea
             value={value}
             onChange={e => onChange(e.target.value)}
             placeholder="YAML content will be loaded here..."
-            className="w-full h-96 font-mono text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+            className="w-full h-96 font-mono text-sm border-border focus:border-ring focus:ring-ring"
             disabled={isLoading}
           />
-          <p className="text-xs text-gray-500">{description}</p>
+          <p className="text-xs text-muted-foreground">{description}</p>
         </div>
 
         <div className="flex justify-end space-x-2">
@@ -102,7 +102,7 @@ export function YamlEditorCard({
             type="button"
             onClick={onSave}
             disabled={isLoading || isValidating || isSaving}
-            className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
+            className="flex items-center space-x-2"
           >
             {isSaving ? (
               <Loader2 className="h-4 w-4 animate-spin" />

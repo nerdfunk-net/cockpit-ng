@@ -34,7 +34,7 @@ export function CredentialSelector({
       <div className="space-y-2">
         <Label htmlFor="credential-select">Credentials *</Label>
         <Select value={selectedCredentialId} onValueChange={onCredentialChange}>
-          <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm">
+          <SelectTrigger className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm">
             <SelectValue placeholder="Select credentials..." />
           </SelectTrigger>
           <SelectContent>
@@ -59,7 +59,7 @@ export function CredentialSelector({
               placeholder="Enter SSH username"
               value={username}
               onChange={e => onUsernameChange(e.target.value)}
-              className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+              className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
             />
           </div>
           <div className="space-y-2">
@@ -70,7 +70,7 @@ export function CredentialSelector({
               placeholder="Enter SSH password"
               value={password}
               onChange={e => onPasswordChange(e.target.value)}
-              className="border-2 border-slate-300 bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 shadow-sm"
+              className="border-2 border-border bg-card focus:border-primary focus:ring-2 focus:ring-ring/30 shadow-sm"
             />
           </div>
         </div>
@@ -78,8 +78,8 @@ export function CredentialSelector({
 
       {/* Stored credential info */}
       {selectedCredentialId !== 'manual' && (
-        <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-          <p className="text-sm text-green-800">
+        <div className="p-3 bg-success border border-success-border rounded-md">
+          <p className="text-sm text-success-foreground">
             Using stored credentials:{' '}
             <strong>
               {

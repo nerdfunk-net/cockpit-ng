@@ -43,7 +43,7 @@ export function CredentialsTable({
   return (
     <>
       <div className="rounded-xl border shadow-sm overflow-hidden">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+        <div className="panel-header py-2 px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Lock className="h-4 w-4" />
@@ -51,7 +51,7 @@ export function CredentialsTable({
                 <h3 className="text-sm font-semibold">
                   System Credentials ({credentials.length})
                 </h3>
-                <p className="text-blue-100 text-xs">
+                <p className="text-panel-header-muted text-xs">
                   Shared system credentials. Passwords are encrypted and never
                   displayed.
                 </p>
@@ -65,7 +65,7 @@ export function CredentialsTable({
               />
               <Label
                 htmlFor="include-expired"
-                className="text-sm text-blue-100 cursor-pointer"
+                className="text-sm text-panel-header-muted cursor-pointer"
               >
                 Include expired
               </Label>
@@ -73,7 +73,7 @@ export function CredentialsTable({
           </div>
         </div>
 
-        <div className="bg-white">
+        <div className="bg-card">
           {credentials.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <Key className="h-12 w-12 mx-auto text-muted mb-4" />

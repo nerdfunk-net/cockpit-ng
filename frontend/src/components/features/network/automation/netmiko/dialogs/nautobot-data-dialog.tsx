@@ -37,24 +37,15 @@ export function NautobotDataDialog({
               {/* Device Overview */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <InfoCard
-                    label="Device Name"
-                    value={nautobotData.name}
-                    colorScheme="blue"
-                  />
+                  <InfoCard label="Device Name" value={nautobotData.name} />
                   {nautobotData.primary_ip4 && (
                     <InfoCard
                       label="Primary IPv4"
                       value={nautobotData.primary_ip4.address}
-                      colorScheme="green"
                     />
                   )}
                   {nautobotData.role && (
-                    <InfoCard
-                      label="Role"
-                      value={nautobotData.role.name}
-                      colorScheme="purple"
-                    />
+                    <InfoCard label="Role" value={nautobotData.role.name} />
                   )}
                 </div>
                 <div className="space-y-3">
@@ -62,23 +53,14 @@ export function NautobotDataDialog({
                     <InfoCard
                       label="Device Type"
                       value={nautobotData.device_type.model}
-                      colorScheme="orange"
                       sublabel={nautobotData.device_type.manufacturer?.name}
                     />
                   )}
                   {nautobotData.platform && (
-                    <InfoCard
-                      label="Platform"
-                      value={nautobotData.platform.name}
-                      colorScheme="indigo"
-                    />
+                    <InfoCard label="Platform" value={nautobotData.platform.name} />
                   )}
                   {nautobotData.status && (
-                    <InfoCard
-                      label="Status"
-                      value={nautobotData.status.name}
-                      colorScheme="teal"
-                    />
+                    <InfoCard label="Status" value={nautobotData.status.name} />
                   )}
                 </div>
               </div>
@@ -88,7 +70,6 @@ export function NautobotDataDialog({
                 <InfoCard
                   label="Location"
                   value={`${nautobotData.location.name}${nautobotData.location.parent ? ` (${nautobotData.location.parent.name})` : ''}`}
-                  colorScheme="gray"
                 />
               )}
 
@@ -96,18 +77,10 @@ export function NautobotDataDialog({
               {(nautobotData.serial || nautobotData.asset_tag) && (
                 <div className="grid grid-cols-2 gap-4">
                   {nautobotData.serial && (
-                    <InfoCard
-                      label="Serial Number"
-                      value={nautobotData.serial}
-                      colorScheme="gray"
-                    />
+                    <InfoCard label="Serial Number" value={nautobotData.serial} />
                   )}
                   {nautobotData.asset_tag && (
-                    <InfoCard
-                      label="Asset Tag"
-                      value={nautobotData.asset_tag}
-                      colorScheme="gray"
-                    />
+                    <InfoCard label="Asset Tag" value={nautobotData.asset_tag} />
                   )}
                 </div>
               )}

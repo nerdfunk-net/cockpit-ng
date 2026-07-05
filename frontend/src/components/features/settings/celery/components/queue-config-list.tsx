@@ -129,7 +129,7 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <List className="h-5 w-5 text-purple-500" />
+          <List className="h-5 w-5 text-primary" />
           <div className="flex-1">
             <CardTitle>Queue Configuration</CardTitle>
             <CardDescription>
@@ -203,7 +203,7 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDelete(index)}
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                              className="text-destructive hover:text-destructive hover:bg-destructive/10"
                               title="Delete queue"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -240,13 +240,13 @@ export function QueueConfigList({ queues, onChange }: QueueConfigListProps) {
                   placeholder="e.g., monitoring, custom"
                   value={formData.name}
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
-                  className={error ? 'border-red-500' : ''}
+                  className={error ? 'border-destructive' : ''}
                   disabled={
                     editingIndex !== null && queues[editingIndex]?.built_in === true
                   }
                 />
                 {editingIndex !== null && queues[editingIndex]?.built_in === true ? (
-                  <p className="text-xs text-muted-foreground text-amber-600">
+                  <p className="text-xs text-warning-foreground">
                     Built-in queue names cannot be changed
                   </p>
                 ) : (

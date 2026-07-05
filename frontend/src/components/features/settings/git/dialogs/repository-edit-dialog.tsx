@@ -105,11 +105,7 @@ export function RepositoryEditDialog({
             <Button onClick={onClose} variant="outline" type="button">
               Cancel
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting}
-              className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-            >
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
                 <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
               ) : (

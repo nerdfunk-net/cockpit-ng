@@ -17,6 +17,7 @@ import {
   Download,
   HelpCircle,
 } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 import { useSnmpMappingQuery } from './hooks/use-snmp-mapping-query'
 import { useSnmpMutations } from './hooks/use-snmp-mutations'
 import { SnmpValidationDialog } from './dialogs/snmp-validation-dialog'
@@ -94,9 +95,9 @@ export default function CommonSettingsForm() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Settings className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip>
+            <Settings className="h-6 w-6" />
+          </IconChip>
           <div>
             <h1 className="text-3xl font-bold">Common Settings</h1>
             <p className="text-muted-foreground">
@@ -126,7 +127,7 @@ export default function CommonSettingsForm() {
         {/* SNMP Mapping Tab */}
         <TabsContent value="snmp-mapping" className="space-y-6">
           <Card className="shadow-lg border-0 overflow-hidden p-0">
-            <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white border-b-0 rounded-none m-0 py-2 px-4">
+            <CardHeader className="panel-header border-b-0 rounded-none m-0 py-2 px-4">
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center space-x-2 text-sm font-medium">
                   <Network className="h-4 w-4" />
@@ -136,26 +137,26 @@ export default function CommonSettingsForm() {
                   variant="ghost"
                   size="sm"
                   onClick={handleOpenHelpDialog}
-                  className="h-7 w-7 p-0 text-white hover:bg-white/20 hover:text-white"
+                  className="h-7 w-7 p-0 text-current hover:bg-card/20"
                   title="Show help and examples"
                 >
                   <HelpCircle className="h-4 w-4" />
                 </Button>
               </CardTitle>
             </CardHeader>
-            <CardContent className="p-6 bg-gradient-to-b from-white to-gray-50 space-y-4">
+            <CardContent className="p-6 panel-content space-y-4">
               <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">
+                <Label className="text-sm font-medium text-muted-foreground">
                   SNMP Mapping Content
                 </Label>
                 <Textarea
                   value={localContent}
                   onChange={e => setLocalContent(e.target.value)}
                   placeholder="YAML content will be loaded here..."
-                  className="w-full h-96 font-mono text-sm border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                  className="w-full h-96 font-mono text-sm border-border focus:border-primary focus:ring-ring/30"
                   disabled={isLoading}
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   Edit the SNMP mapping configuration YAML file. This defines SNMP
                   credentials and mapping for different devices.
                 </p>
@@ -215,7 +216,7 @@ export default function CommonSettingsForm() {
                   disabled={
                     isLoading || validateYaml.isPending || saveMapping.isPending
                   }
-                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white"
+                  className="flex items-center space-x-2"
                 >
                   {saveMapping.isPending ? (
                     <Loader2 className="h-4 w-4 animate-spin" />

@@ -18,6 +18,7 @@ import { CacheEntriesList } from './components/cache-entries-list'
 import { useCacheMutations } from './hooks/use-cache-mutations'
 import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
 import { ConfirmDialog } from '@/components/shared/confirm-dialog'
+import { IconChip } from '@/components/shared/icon-chip'
 
 export default function CacheManagement() {
   const [showStats, setShowStats] = useState(false)
@@ -39,14 +40,14 @@ export default function CacheManagement() {
   return (
     <div className="space-y-4">
       {/* Page Header */}
-      <div className="border-b border-gray-200 pb-4">
-        <div className="flex items-center space-x-3">
-          <div className="bg-yellow-100 p-2 rounded-lg">
-            <Zap className="h-6 w-6 text-yellow-600" />
-          </div>
+      <div className="border-b border-border pb-4">
+        <div className="flex items-center gap-4">
+          <IconChip variant="warning">
+            <Zap className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">Cache Settings</h1>
-            <p className="text-gray-600">Control performance-related caching</p>
+            <h1 className="text-2xl font-semibold text-foreground">Cache Settings</h1>
+            <p className="text-muted-foreground">Control performance-related caching</p>
           </div>
         </div>
       </div>

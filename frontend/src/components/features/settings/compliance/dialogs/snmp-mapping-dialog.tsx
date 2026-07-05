@@ -55,12 +55,12 @@ export function SNMPMappingDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto p-0">
-        <DialogHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white px-6 py-4 rounded-t-lg sticky top-0">
-          <DialogTitle className="flex items-center gap-2 text-white text-lg">
+        <DialogHeader className="panel-header px-6 py-4 rounded-t-lg sticky top-0">
+          <DialogTitle className="flex items-center gap-2 text-lg">
             <Network className="h-5 w-5" />
             {mapping ? 'Edit' : 'Add'} SNMP Credential
           </DialogTitle>
-          <DialogDescription className="text-blue-50">
+          <DialogDescription className="text-panel-header-muted">
             Configure SNMP credentials for compliance checks
           </DialogDescription>
         </DialogHeader>
@@ -69,19 +69,19 @@ export function SNMPMappingDialog({
           <div className="space-y-2">
             <Label
               htmlFor="snmp-name"
-              className="text-sm font-semibold text-gray-700 flex items-center gap-1"
+              className="text-sm font-semibold text-foreground flex items-center gap-1"
             >
               SNMP Mapping Name
-              <span className="text-red-500">*</span>
+              <span className="text-destructive">*</span>
             </Label>
             <Input
               id="snmp-name"
               value={formData.name}
               onChange={e => onFormChange({ ...formData, name: e.target.value })}
               placeholder="snmp-prod-1"
-              className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              className="bg-muted border-border focus:border-primary focus:ring-ring/30"
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               A unique identifier for this SNMP credential (e.g.,
               &quot;snmp-prod-1&quot;, &quot;lab-snmpv3&quot;). SNMP credentials are
               device-type independent.
@@ -92,10 +92,10 @@ export function SNMPMappingDialog({
           <div className="space-y-2">
             <Label
               htmlFor="snmp-version"
-              className="text-sm font-semibold text-gray-700 flex items-center gap-1"
+              className="text-sm font-semibold text-foreground flex items-center gap-1"
             >
               SNMP Version
-              <span className="text-red-500">*</span>
+              <span className="text-destructive">*</span>
             </Label>
             <Select
               value={formData.snmp_version}
@@ -103,7 +103,7 @@ export function SNMPMappingDialog({
                 onFormChange({ ...formData, snmp_version: value })
               }
             >
-              <SelectTrigger className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+              <SelectTrigger className="bg-muted border-border focus:border-primary focus:ring-ring/30">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -115,13 +115,13 @@ export function SNMPMappingDialog({
           </div>
 
           {(formData.snmp_version === 'v1' || formData.snmp_version === 'v2c') && (
-            <div className="space-y-2 p-4 bg-amber-50 border border-amber-200 rounded-md">
+            <div className="space-y-2 p-4 bg-warning border border-warning-border rounded-md">
               <Label
                 htmlFor="snmp-community"
-                className="text-sm font-semibold text-gray-700 flex items-center gap-1"
+                className="text-sm font-semibold text-foreground flex items-center gap-1"
               >
                 Community String
-                <span className="text-red-500">*</span>
+                <span className="text-destructive">*</span>
               </Label>
               <Input
                 id="snmp-community"
@@ -131,9 +131,9 @@ export function SNMPMappingDialog({
                   onFormChange({ ...formData, snmp_community: e.target.value })
                 }
                 placeholder="public"
-                className="bg-white border-amber-300 focus:border-amber-500 focus:ring-amber-500"
+                className="bg-card border-warning-border focus:border-primary focus:ring-ring/30"
               />
-              <p className="text-xs text-amber-700">
+              <p className="text-xs text-warning-foreground">
                 Community string for SNMP v1 or v2c authentication (usually
                 &quot;public&quot; for read-only)
               </p>
@@ -141,14 +141,14 @@ export function SNMPMappingDialog({
           )}
 
           {formData.snmp_version === 'v3' && (
-            <div className="space-y-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
+            <div className="space-y-4 p-4 bg-info border border-info-border rounded-md">
               <div className="space-y-2">
                 <Label
                   htmlFor="snmp-v3-user"
-                  className="text-sm font-semibold text-gray-700 flex items-center gap-1"
+                  className="text-sm font-semibold text-foreground flex items-center gap-1"
                 >
                   SNMPv3 User
-                  <span className="text-red-500">*</span>
+                  <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="snmp-v3-user"
@@ -157,21 +157,21 @@ export function SNMPMappingDialog({
                     onFormChange({ ...formData, snmp_v3_user: e.target.value })
                   }
                   placeholder="snmpuser"
-                  className="bg-white border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                  className="bg-card border-info-border focus:border-primary focus:ring-ring/30"
                 />
-                <p className="text-xs text-blue-700">
+                <p className="text-xs text-info-foreground">
                   Username for SNMPv3 authentication
                 </p>
               </div>
 
               {/* Authentication Section */}
               <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-gray-700">Authentication</h4>
+                <h4 className="text-sm font-semibold text-foreground">Authentication</h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label
                       htmlFor="auth-protocol"
-                      className="text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-foreground"
                     >
                       Auth Protocol
                     </Label>
@@ -184,7 +184,7 @@ export function SNMPMappingDialog({
                         })
                       }
                     >
-                      <SelectTrigger className="bg-white border-blue-300 focus:border-blue-500 focus:ring-blue-500">
+                      <SelectTrigger className="bg-card border-info-border focus:border-primary focus:ring-ring/30">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -200,7 +200,7 @@ export function SNMPMappingDialog({
                   <div className="space-y-2">
                     <Label
                       htmlFor="auth-password"
-                      className="text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-foreground"
                     >
                       Auth Password
                     </Label>
@@ -215,7 +215,7 @@ export function SNMPMappingDialog({
                         })
                       }
                       placeholder={mapping ? '(unchanged)' : 'Authentication password'}
-                      className="bg-white border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="bg-card border-info-border focus:border-primary focus:ring-ring/30"
                     />
                   </div>
                 </div>
@@ -223,14 +223,14 @@ export function SNMPMappingDialog({
 
               {/* Privacy Section */}
               <div className="space-y-3">
-                <h4 className="text-sm font-semibold text-gray-700">
+                <h4 className="text-sm font-semibold text-foreground">
                   Privacy (Encryption)
                 </h4>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label
                       htmlFor="priv-protocol"
-                      className="text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-foreground"
                     >
                       Priv Protocol
                     </Label>
@@ -243,7 +243,7 @@ export function SNMPMappingDialog({
                         })
                       }
                     >
-                      <SelectTrigger className="bg-white border-blue-300 focus:border-blue-500 focus:ring-blue-500">
+                      <SelectTrigger className="bg-card border-info-border focus:border-primary focus:ring-ring/30">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -257,7 +257,7 @@ export function SNMPMappingDialog({
                   <div className="space-y-2">
                     <Label
                       htmlFor="priv-password"
-                      className="text-sm font-medium text-gray-700"
+                      className="text-sm font-medium text-foreground"
                     >
                       Priv Password
                     </Label>
@@ -272,11 +272,11 @@ export function SNMPMappingDialog({
                         })
                       }
                       placeholder={mapping ? '(unchanged)' : 'Privacy password'}
-                      className="bg-white border-blue-300 focus:border-blue-500 focus:ring-blue-500"
+                      className="bg-card border-info-border focus:border-primary focus:ring-ring/30"
                     />
                   </div>
                 </div>
-                <p className="text-xs text-blue-700">
+                <p className="text-xs text-info-foreground">
                   Privacy protocol encrypts SNMP messages for enhanced security
                 </p>
               </div>
@@ -287,7 +287,7 @@ export function SNMPMappingDialog({
           <div className="space-y-2">
             <Label
               htmlFor="snmp-description"
-              className="text-sm font-semibold text-gray-700"
+              className="text-sm font-semibold text-foreground"
             >
               Description
             </Label>
@@ -296,9 +296,9 @@ export function SNMPMappingDialog({
               value={formData.description}
               onChange={e => onFormChange({ ...formData, description: e.target.value })}
               placeholder="Describe this SNMP mapping (optional)"
-              className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500 min-h-[80px]"
+              className="bg-muted border-border focus:border-primary focus:ring-ring/30 min-h-[80px]"
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Add notes about when to use this mapping or special configuration details
             </p>
           </div>
@@ -313,7 +313,6 @@ export function SNMPMappingDialog({
           </Button>
           <Button
             onClick={handleSave}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
             disabled={isSaving}
           >
             {mapping ? 'Update' : 'Add'} Mapping

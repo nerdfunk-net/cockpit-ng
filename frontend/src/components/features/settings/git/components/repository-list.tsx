@@ -37,9 +37,9 @@ export function RepositoryList({
 }: RepositoryListProps) {
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 pl-8 pr-8 -mx-6 -mt-6 mb-1">
+      <CardHeader className="panel-header py-2 pl-8 pr-8 -mx-6 -mt-6 mb-1">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2 text-white text-sm font-semibold">
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
             <GitBranch className="h-4 w-4" />
             Managed Repositories ({repositories.length})
           </CardTitle>
@@ -50,7 +50,7 @@ export function RepositoryList({
                   onClick={onRefresh}
                   variant="ghost"
                   size="sm"
-                  className="h-6 px-2 text-xs text-white hover:bg-white/20 shrink-0"
+                  className="h-6 px-2 text-xs text-current hover:bg-card/20 shrink-0"
                 >
                   <RefreshCw className="h-3 w-3 mr-1" />
                   Refresh
@@ -66,14 +66,14 @@ export function RepositoryList({
       <CardContent>
         {isLoading ? (
           <div className="text-center py-8">
-            <RefreshCw className="h-8 w-8 animate-spin mx-auto text-gray-400" />
-            <p className="text-gray-500 mt-2">Loading repositories...</p>
+            <RefreshCw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+            <p className="text-muted-foreground mt-2">Loading repositories...</p>
           </div>
         ) : repositories.length === 0 ? (
           <div className="text-center py-8">
-            <FolderGit className="h-12 w-12 mx-auto text-gray-400" />
-            <p className="text-gray-500 mt-2">No repositories found</p>
-            <p className="text-sm text-gray-400">Add a repository to get started</p>
+            <FolderGit className="h-12 w-12 mx-auto text-muted-foreground" />
+            <p className="text-muted-foreground mt-2">No repositories found</p>
+            <p className="text-sm text-muted-foreground">Add a repository to get started</p>
           </div>
         ) : (
           <div className="space-y-4">

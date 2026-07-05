@@ -124,8 +124,8 @@ const TreeNode = ({
   return (
     <div>
       <div
-        className={`flex items-center gap-1 py-1 px-2 rounded cursor-pointer hover:bg-gray-100 transition-colors ${
-          isSelected ? 'bg-gray-200' : isHighlighted ? 'bg-yellow-100' : ''
+        className={`flex items-center gap-1 py-1 px-2 rounded cursor-pointer hover:bg-muted transition-colors ${
+          isSelected ? 'bg-muted' : isHighlighted ? 'bg-warning' : ''
         }`}
         style={{ paddingLeft: `${level * 16 + 8}px` }}
         onClick={handleClick}
@@ -153,9 +153,9 @@ const TreeNode = ({
 
         {/* Folder icon */}
         {isExpanded ? (
-          <FolderOpen className="h-4 w-4 text-blue-500 flex-shrink-0" />
+          <FolderOpen className="h-4 w-4 text-primary flex-shrink-0" />
         ) : (
-          <Folder className="h-4 w-4 text-blue-500 flex-shrink-0" />
+          <Folder className="h-4 w-4 text-primary flex-shrink-0" />
         )}
 
         {/* Directory name */}

@@ -34,12 +34,12 @@ export function TemplateSelectionPanel({
   handleSaveTemplate,
 }: TemplateSelectionPanelProps) {
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium">Template Selection</span>
         </div>
-        <div className="text-xs text-blue-100">
+        <div className="text-xs text-panel-header-muted">
           Choose a Jinja2 template to generate commands for your devices
         </div>
       </div>
@@ -48,7 +48,7 @@ export function TemplateSelectionPanel({
         <div className="space-y-2">
           <Label htmlFor="template-select">Template</Label>
           <Select value={selectedTemplateId} onValueChange={handleTemplateChange}>
-            <SelectTrigger className="border-2 border-slate-300 bg-white focus:border-blue-500">
+            <SelectTrigger className="border-2 border-border bg-card focus:border-primary">
               <SelectValue placeholder="Select a template..." />
             </SelectTrigger>
             <SelectContent>
@@ -81,8 +81,8 @@ export function TemplateSelectionPanel({
                 rows={12}
                 className={`font-mono text-sm border-2 resize-none ${
                   selectedTemplate.scope === 'private'
-                    ? 'border-blue-300 bg-white'
-                    : 'border-slate-300 bg-gray-50'
+                    ? 'border-primary/40 bg-card'
+                    : 'border-border bg-muted'
                 }`}
                 placeholder={
                   selectedTemplate.scope === 'private'

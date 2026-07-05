@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CheckCircle } from 'lucide-react'
 import type { DeviceInfo } from '@/components/shared/device-selector'
+import { IconChip } from '@/components/shared/icon-chip'
 
 // Tab Components
 import { DeviceSelectionTab } from './tabs/device-selection-tab'
@@ -37,11 +38,11 @@ export default function CompliancePage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-green-100 p-2 rounded-lg">
-            <CheckCircle className="h-6 w-6 text-green-600" />
-          </div>
+          <IconChip variant="success">
+            <CheckCircle className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Compliance Check</h1>
+            <h1 className="text-3xl font-bold text-foreground">Compliance Check</h1>
             <p className="text-muted-foreground">
               Verify network device compliance with your security policies
             </p>

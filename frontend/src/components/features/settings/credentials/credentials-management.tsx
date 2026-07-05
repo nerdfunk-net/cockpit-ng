@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
+import { IconChip } from '@/components/shared/icon-chip'
 import { Key, Plus, RefreshCw } from 'lucide-react'
 import { useCredentialsQuery } from './hooks/queries/use-credentials-query'
 import { CredentialsTable } from './components/credentials-table'
@@ -37,10 +38,10 @@ export default function CredentialsManagement() {
     return (
       <div className="space-y-4">
         <div className="border-b pb-4">
-          <div className="flex items-center space-x-3">
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <Key className="h-6 w-6 text-blue-600 animate-pulse" />
-            </div>
+          <div className="flex items-center gap-4">
+            <IconChip variant="warning">
+              <Key className="h-6 w-6 animate-pulse" />
+            </IconChip>
             <div>
               <h1 className="text-2xl font-semibold">System Credentials</h1>
               <p className="text-muted-foreground">
@@ -61,9 +62,9 @@ export default function CredentialsManagement() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-amber-100 p-2 rounded-lg">
-            <Key className="h-6 w-6 text-amber-600" />
-          </div>
+          <IconChip variant="warning">
+            <Key className="h-6 w-6" />
+          </IconChip>
           <div>
             <h1 className="text-3xl font-bold">System Credentials</h1>
             <p className="text-muted-foreground mt-1">

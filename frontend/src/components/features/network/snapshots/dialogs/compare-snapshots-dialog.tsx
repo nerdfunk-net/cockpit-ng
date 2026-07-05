@@ -189,25 +189,25 @@ export function CompareSnapshotsDialog({
                   </div>
                   <div>
                     <div className="text-muted-foreground">Identical</div>
-                    <div className="text-2xl font-bold text-green-600">
+                    <div className="text-2xl font-bold text-success-foreground">
                       {comparison.summary.same_count}
                     </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Different</div>
-                    <div className="text-2xl font-bold text-orange-600">
+                    <div className="text-2xl font-bold text-warning-foreground">
                       {comparison.summary.different_count}
                     </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Missing #1</div>
-                    <div className="text-2xl font-bold text-red-600">
+                    <div className="text-2xl font-bold text-error-foreground">
                       {comparison.summary.missing_in_snapshot1}
                     </div>
                   </div>
                   <div>
                     <div className="text-muted-foreground">Missing #2</div>
-                    <div className="text-2xl font-bold text-red-600">
+                    <div className="text-2xl font-bold text-error-foreground">
                       {comparison.summary.missing_in_snapshot2}
                     </div>
                   </div>

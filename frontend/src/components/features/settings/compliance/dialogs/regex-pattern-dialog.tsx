@@ -55,12 +55,12 @@ export function RegexPatternDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl p-0">
-        <DialogHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white px-6 py-4 rounded-t-lg">
-          <DialogTitle className="flex items-center gap-2 text-white text-lg">
+        <DialogHeader className="panel-header px-6 py-4 rounded-t-lg">
+          <DialogTitle className="flex items-center gap-2 text-lg">
             <FileText className="h-5 w-5" />
             {pattern ? 'Edit' : 'Add'} Regex Pattern
           </DialogTitle>
-          <DialogDescription className="text-blue-50">
+          <DialogDescription className="text-panel-header-muted">
             Configure a regular expression pattern for compliance checking
           </DialogDescription>
         </DialogHeader>
@@ -69,19 +69,19 @@ export function RegexPatternDialog({
           <div className="space-y-2">
             <Label
               htmlFor="pattern"
-              className="text-sm font-semibold text-gray-700 flex items-center gap-1"
+              className="text-sm font-semibold text-foreground flex items-center gap-1"
             >
               Pattern
-              <span className="text-red-500">*</span>
+              <span className="text-destructive">*</span>
             </Label>
             <Input
               id="pattern"
               value={formData.pattern}
               onChange={e => onFormChange({ ...formData, pattern: e.target.value })}
               placeholder="^logging.*"
-              className="font-mono bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+              className="font-mono bg-muted border-border focus:border-primary focus:ring-ring/30"
             />
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               Enter a regular expression pattern to match against device configurations
             </p>
           </div>
@@ -90,10 +90,10 @@ export function RegexPatternDialog({
           <div className="space-y-2">
             <Label
               htmlFor="pattern-type"
-              className="text-sm font-semibold text-gray-700 flex items-center gap-1"
+              className="text-sm font-semibold text-foreground flex items-center gap-1"
             >
               Type
-              <span className="text-red-500">*</span>
+              <span className="text-destructive">*</span>
             </Label>
             <Select
               value={formData.pattern_type}
@@ -101,25 +101,25 @@ export function RegexPatternDialog({
                 onFormChange({ ...formData, pattern_type: value })
               }
             >
-              <SelectTrigger className="bg-gray-50 border-gray-300 focus:border-purple-500 focus:ring-purple-500">
+              <SelectTrigger className="bg-muted border-border focus:border-primary focus:ring-ring/30">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="must_match">
                   <div className="flex items-center gap-2">
-                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <CheckCircle className="h-4 w-4 text-success-foreground" />
                     <span>Must Match</span>
                   </div>
                 </SelectItem>
                 <SelectItem value="must_not_match">
                   <div className="flex items-center gap-2">
-                    <XCircle className="h-4 w-4 text-red-600" />
+                    <XCircle className="h-4 w-4 text-error-foreground" />
                     <span>Must Not Match</span>
                   </div>
                 </SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-xs text-gray-500">
+            <p className="text-xs text-muted-foreground">
               {formData.pattern_type === 'must_match'
                 ? 'Configuration must contain lines matching this pattern'
                 : 'Configuration must not contain lines matching this pattern'}
@@ -130,7 +130,7 @@ export function RegexPatternDialog({
           <div className="space-y-2">
             <Label
               htmlFor="pattern-description"
-              className="text-sm font-semibold text-gray-700"
+              className="text-sm font-semibold text-foreground"
             >
               Description
             </Label>
@@ -140,7 +140,7 @@ export function RegexPatternDialog({
               onChange={e => onFormChange({ ...formData, description: e.target.value })}
               placeholder="Describe what this pattern checks for (e.g., 'Ensure logging is enabled')"
               rows={3}
-              className="bg-gray-50 border-gray-300 focus:border-blue-500 focus:ring-blue-500 resize-none"
+              className="bg-muted border-border focus:border-primary focus:ring-ring/30 resize-none"
             />
           </div>
         </div>
@@ -148,14 +148,12 @@ export function RegexPatternDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="border-gray-300 hover:bg-gray-50"
             disabled={isSaving}
           >
             Cancel
           </Button>
           <Button
             onClick={handleSave}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
             disabled={isSaving}
           >
             {pattern ? 'Update Pattern' : 'Add Pattern'}

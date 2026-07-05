@@ -3,9 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { useApi } from '@/hooks/use-api'
-import { cn } from '@/lib/utils'
-import { Loader2, CheckCircle2, XCircle, BarChart3, Plus } from 'lucide-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Loader2, BarChart3, Plus } from 'lucide-react'
+import { StatusAlert } from '@/components/shared/status-alert'
+import { IconChip } from '@/components/shared/icon-chip'
 import { AgentCard } from './agent-card'
 import { AgentModal } from './agent-modal'
 import { HelpDialog, HelpButton } from './help-dialog'
@@ -194,11 +194,11 @@ export default function AgentsSettingsForm() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <BarChart3 className="h-6 w-6 text-blue-600" />
-            </div>
+            <IconChip>
+              <BarChart3 className="h-6 w-6" />
+            </IconChip>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Agents Configuration</h1>
+              <h1 className="text-3xl font-bold text-foreground">Agents Configuration</h1>
               <p className="text-muted-foreground mt-2">
                 Configure external monitoring and observability agents
               </p>
@@ -216,11 +216,11 @@ export default function AgentsSettingsForm() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <BarChart3 className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip>
+            <BarChart3 className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Agents Configuration</h1>
+            <h1 className="text-3xl font-bold text-foreground">Agents Configuration</h1>
             <p className="text-muted-foreground mt-2">
               Configure external monitoring and observability agents
             </p>
@@ -244,44 +244,29 @@ export default function AgentsSettingsForm() {
       </div>
 
       {message && (
-        <Alert
-          className={cn(
-            status === 'success'
-              ? 'bg-green-50 border-green-200'
-              : 'bg-red-50 border-red-200'
-          )}
-        >
-          {status === 'success' ? (
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-          ) : (
-            <XCircle className="h-4 w-4 text-red-600" />
-          )}
-          <AlertDescription
-            className={status === 'success' ? 'text-green-800' : 'text-red-800'}
-          >
-            {message}
-          </AlertDescription>
-        </Alert>
+        <StatusAlert variant={status === 'success' ? 'success' : 'error'}>
+          {message}
+        </StatusAlert>
       )}
 
       {/* Agents List */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+        <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             <span className="text-sm font-medium">Configured Agents</span>
           </div>
-          <div className="text-xs text-blue-100">
+          <div className="text-xs text-panel-header-muted">
             {agents.length} agent{agents.length !== 1 ? 's' : ''} configured
           </div>
         </div>
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+        <div className="panel-content p-6">
           {agents.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-muted-foreground">
               <div className="flex justify-center mb-4">
-                <div className="bg-blue-100 p-4 rounded-full">
-                  <BarChart3 className="h-8 w-8 text-blue-600" />
-                </div>
+                <IconChip className="p-4 rounded-full">
+                  <BarChart3 className="h-8 w-8" />
+                </IconChip>
               </div>
               <p className="text-lg font-medium">No Agents Configured</p>
               <p className="text-sm mt-1 max-w-md mx-auto text-muted-foreground">

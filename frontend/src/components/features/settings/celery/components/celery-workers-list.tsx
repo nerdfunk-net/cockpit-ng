@@ -104,7 +104,7 @@ export function CeleryWorkersList() {
                       <span
                         className={
                           activeTaskCount > 0
-                            ? 'font-bold text-blue-600'
+                            ? 'font-bold text-primary'
                             : 'text-muted-foreground'
                         }
                       >

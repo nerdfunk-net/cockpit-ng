@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, Search } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 import { useGitRepositoriesQuery } from '@/hooks/queries/use-git-repositories-query'
 import { useConfigContentSearchMutation } from '@/hooks/queries/use-config-content-search-query'
 import { SearchCriteriaForm } from './components/search-criteria-form'
@@ -103,11 +104,11 @@ export default function ConfigsSearchPage() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="bg-blue-100 p-2 rounded-lg">
-              <Search className="h-6 w-6 text-blue-600" />
-            </div>
+            <IconChip variant="primary">
+              <Search className="h-6 w-6" />
+            </IconChip>
             <div>
-              <h1 className="text-3xl font-bold text-slate-900">Config Search</h1>
+              <h1 className="text-3xl font-bold text-foreground">Config Search</h1>
               <p className="text-muted-foreground mt-2">
                 Search for strings inside device configuration backups
               </p>
@@ -125,11 +126,11 @@ export default function ConfigsSearchPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Search className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <Search className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Config Search</h1>
+            <h1 className="text-3xl font-bold text-foreground">Config Search</h1>
             <p className="text-muted-foreground mt-2">
               Search for strings inside device configuration backups
             </p>

@@ -20,12 +20,12 @@ export function VariableManagerPanel({
   validateVariableName,
 }: VariableManagerPanelProps) {
   return (
-    <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+    <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+      <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
         <div className="flex items-center space-x-2">
           <span className="text-sm font-medium">Template Variables</span>
         </div>
-        <div className="text-xs text-blue-100">
+        <div className="text-xs text-panel-header-muted">
           Define variables that will be used in your Jinja2 template
         </div>
       </div>
@@ -55,12 +55,12 @@ export function VariableManagerPanel({
                     onChange={e => updateVariable(variable.id, 'name', e.target.value)}
                     className={`border-2 ${
                       variable.name && !validateVariableName(variable.name)
-                        ? 'border-red-500 focus:border-red-500'
-                        : 'border-slate-300 focus:border-blue-500'
-                    } bg-white`}
+                        ? 'border-destructive focus:border-destructive'
+                        : 'border-border focus:border-primary'
+                    } bg-card`}
                   />
                   {variable.name && !validateVariableName(variable.name) && (
-                    <p className="text-xs text-red-600">
+                    <p className="text-xs text-destructive">
                       Invalid name. Use letters, numbers, underscore. Must start with
                       letter or underscore.
                     </p>
@@ -70,14 +70,14 @@ export function VariableManagerPanel({
                   placeholder="Value"
                   value={variable.value}
                   onChange={e => updateVariable(variable.id, 'value', e.target.value)}
-                  className="border-2 border-slate-300 bg-white focus:border-blue-500"
+                  className="border-2 border-border bg-card focus:border-primary"
                 />
               </div>
               <Button
                 onClick={() => removeVariable(variable.id)}
                 size="icon"
                 variant="ghost"
-                className="h-10 w-10 text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="h-10 w-10 text-destructive hover:text-destructive hover:bg-error"
                 disabled={variables.length === 1}
               >
                 <Trash2 className="h-4 w-4" />

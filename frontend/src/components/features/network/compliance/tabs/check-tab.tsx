@@ -311,10 +311,10 @@ export function CheckTab({
                 </thead>
                 <tbody>
                   {selectedDevices.map(device => (
-                    <tr key={device.id} className="border-b hover:bg-gray-50">
+                    <tr key={device.id} className="border-b hover:bg-muted">
                       <td className="py-3 px-4">
                         <div className="font-medium">{device.name}</div>
-                        <div className="text-sm text-gray-500">
+                        <div className="text-sm text-muted-foreground">
                           {typeof device.primary_ip4 === 'object' &&
                           device.primary_ip4?.address
                             ? device.primary_ip4.address.split('/')[0]
@@ -324,42 +324,42 @@ export function CheckTab({
                       <td className="py-3 px-4 text-center">
                         {checkSshLogins && selectedLogins.length > 0 ? (
                           <div className="flex items-center justify-center gap-1">
-                            <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            <span className="text-sm text-gray-600">
+                            <CheckCircle2 className="h-5 w-5 text-success-foreground" />
+                            <span className="text-sm text-muted-foreground">
                               ({selectedLogins.length})
                             </span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center">
-                            <span className="text-red-600 text-xl">✗</span>
+                            <span className="text-error-foreground text-xl">✗</span>
                           </div>
                         )}
                       </td>
                       <td className="py-3 px-4 text-center">
                         {checkSnmpCredentials && selectedSnmp.length > 0 ? (
                           <div className="flex items-center justify-center gap-1">
-                            <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            <span className="text-sm text-gray-600">
+                            <CheckCircle2 className="h-5 w-5 text-success-foreground" />
+                            <span className="text-sm text-muted-foreground">
                               ({selectedSnmp.length})
                             </span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center">
-                            <span className="text-red-600 text-xl">✗</span>
+                            <span className="text-error-foreground text-xl">✗</span>
                           </div>
                         )}
                       </td>
                       <td className="py-3 px-4 text-center">
                         {checkConfiguration && selectedRegex.length > 0 ? (
                           <div className="flex items-center justify-center gap-1">
-                            <CheckCircle2 className="h-5 w-5 text-green-600" />
-                            <span className="text-sm text-gray-600">
+                            <CheckCircle2 className="h-5 w-5 text-success-foreground" />
+                            <span className="text-sm text-muted-foreground">
                               ({selectedRegex.length})
                             </span>
                           </div>
                         ) : (
                           <div className="flex items-center justify-center">
-                            <span className="text-red-600 text-xl">✗</span>
+                            <span className="text-error-foreground text-xl">✗</span>
                           </div>
                         )}
                       </td>
@@ -368,7 +368,7 @@ export function CheckTab({
                 </tbody>
               </table>
             </div>
-            <div className="mt-4 text-sm text-gray-600">
+            <div className="mt-4 text-sm text-muted-foreground">
               Total: {selectedDevices.length} device
               {selectedDevices.length !== 1 ? 's' : ''} will be checked
               {checkSshLogins &&
@@ -439,9 +439,9 @@ export function CheckTab({
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               {checkResults.summary.devices_failed === 0 ? (
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
+                <CheckCircle2 className="h-5 w-5 text-success-foreground" />
               ) : (
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <AlertTriangle className="h-5 w-5 text-error-foreground" />
               )}
               Compliance Check Results
             </CardTitle>
@@ -459,11 +459,11 @@ export function CheckTab({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         {result.status === 'pass' ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
+                          <CheckCircle2 className="h-5 w-5 text-success-foreground" />
                         ) : result.status === 'fail' ? (
-                          <AlertTriangle className="h-5 w-5 text-red-600" />
+                          <AlertTriangle className="h-5 w-5 text-error-foreground" />
                         ) : (
-                          <Info className="h-5 w-5 text-gray-400" />
+                          <Info className="h-5 w-5 text-muted-foreground" />
                         )}
                         <div>
                           <CardTitle className="text-lg">
@@ -489,7 +489,9 @@ export function CheckTab({
                   </CardHeader>
                   <CardContent>
                     {result.message && (
-                      <div className="mb-4 text-sm text-gray-600">{result.message}</div>
+                      <div className="mb-4 text-sm text-muted-foreground">
+                        {result.message}
+                      </div>
                     )}
 
                     {result.checks.ssh_logins && (
@@ -507,9 +509,9 @@ export function CheckTab({
                                 className="flex items-start gap-2 text-sm"
                               >
                                 {ssh.success ? (
-                                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                                  <CheckCircle2 className="h-4 w-4 text-success-foreground mt-0.5" />
                                 ) : (
-                                  <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                                  <AlertTriangle className="h-4 w-4 text-error-foreground mt-0.5" />
                                 )}
                                 <div>
                                   <div className="font-medium">
@@ -518,12 +520,12 @@ export function CheckTab({
                                     {ssh.details.credential_name &&
                                       ssh.details.credential_name !==
                                         ssh.details.username && (
-                                        <span className="text-gray-500 font-normal ml-2">
+                                        <span className="text-muted-foreground font-normal ml-2">
                                           ({ssh.details.username})
                                         </span>
                                       )}
                                   </div>
-                                  <div className="text-gray-600">{ssh.message}</div>
+                                  <div className="text-muted-foreground">{ssh.message}</div>
                                 </div>
                               </div>
                             )
@@ -548,18 +550,18 @@ export function CheckTab({
                                 className="flex items-start gap-2 text-sm"
                               >
                                 {snmp.success ? (
-                                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                                  <CheckCircle2 className="h-4 w-4 text-success-foreground mt-0.5" />
                                 ) : (
-                                  <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                                  <AlertTriangle className="h-4 w-4 text-error-foreground mt-0.5" />
                                 )}
                                 <div>
                                   <div className="font-medium">
                                     {snmp.details.mapping_name || snmp.details.version}
-                                    <span className="text-gray-500 font-normal ml-2">
+                                    <span className="text-muted-foreground font-normal ml-2">
                                       ({snmp.details.version})
                                     </span>
                                   </div>
-                                  <div className="text-gray-600">{snmp.message}</div>
+                                  <div className="text-muted-foreground">{snmp.message}</div>
                                 </div>
                               </div>
                             )
@@ -577,7 +579,7 @@ export function CheckTab({
                           {result.checks.configuration.result.total_patterns})
                         </h4>
                         {result.checks.configuration.result.note && (
-                          <div className="mb-2 text-sm text-amber-600 pl-6">
+                          <div className="mb-2 text-sm text-warning-foreground pl-6">
                             {result.checks.configuration.result.note}
                           </div>
                         )}
@@ -589,15 +591,15 @@ export function CheckTab({
                                 className="flex items-start gap-2 text-sm"
                               >
                                 {pattern.success ? (
-                                  <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5" />
+                                  <CheckCircle2 className="h-4 w-4 text-success-foreground mt-0.5" />
                                 ) : (
-                                  <AlertTriangle className="h-4 w-4 text-red-600 mt-0.5" />
+                                  <AlertTriangle className="h-4 w-4 text-error-foreground mt-0.5" />
                                 )}
                                 <div>
                                   <div className="font-mono text-xs">
                                     {pattern.details.pattern}
                                   </div>
-                                  <div className="text-gray-600">{pattern.message}</div>
+                                  <div className="text-muted-foreground">{pattern.message}</div>
                                 </div>
                               </div>
                             )

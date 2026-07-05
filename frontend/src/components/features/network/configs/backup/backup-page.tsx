@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Save, RotateCcw } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 import { useBackupDevices, useBackupFilterOptions } from './hooks/use-backup-devices'
 import { useBackupMutations } from './hooks/use-backup-mutations'
 import { BackupFilters } from './components/backup-filters'
@@ -126,7 +127,7 @@ export default function BackupPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2 text-sm text-muted-foreground">Loading devices...</p>
         </div>
       </div>
@@ -138,11 +139,11 @@ export default function BackupPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Save className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip variant="primary">
+            <Save className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-3xl font-bold text-slate-900">Configuration Backup</h1>
+            <h1 className="text-3xl font-bold text-foreground">Configuration Backup</h1>
             <p className="text-muted-foreground mt-2">
               Manage device configuration backups
             </p>
@@ -156,7 +157,7 @@ export default function BackupPage() {
             disabled={isFetching}
           >
             {isFetching ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500 mr-2" />
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2" />
             ) : (
               <RotateCcw className="h-4 w-4 mr-2" />
             )}

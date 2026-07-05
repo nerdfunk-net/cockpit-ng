@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Loader2, Settings, FileText, Shield } from 'lucide-react'
+import { IconChip } from '@/components/shared/icon-chip'
 import { useCheckMKSettingsQuery } from './hooks/use-checkmk-settings-query'
 import {
   useCheckMKQueriesQuery,
@@ -160,8 +161,8 @@ export default function CheckMKSettingsForm() {
   if (settingsLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-        <span className="ml-2 text-gray-600">Loading settings...</span>
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">Loading settings...</span>
       </div>
     )
   }
@@ -169,14 +170,14 @@ export default function CheckMKSettingsForm() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="border-b border-gray-200 pb-4">
+      <div className="border-b border-border pb-4">
         <div className="flex items-center space-x-3">
-          <div className="bg-blue-100 p-2 rounded-lg">
-            <Shield className="h-6 w-6 text-blue-600" />
-          </div>
+          <IconChip>
+            <Shield className="h-6 w-6" />
+          </IconChip>
           <div>
-            <h1 className="text-2xl font-semibold text-gray-900">CheckMK Settings</h1>
-            <p className="text-gray-600">
+            <h1 className="text-2xl font-semibold text-foreground">CheckMK Settings</h1>
+            <p className="text-muted-foreground">
               Configure your CheckMK server connection and configuration files
             </p>
           </div>

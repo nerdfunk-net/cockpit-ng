@@ -14,9 +14,10 @@ import {
 import { Search, Key } from 'lucide-react'
 import { useRbacPermissions } from '../hooks/use-rbac-queries'
 import { RBACLoading } from '../components/rbac-loading'
+import { StatusBadge } from '@/components/shared/status-badge'
 import {
   groupPermissionsByResource,
-  getActionColor,
+  getActionVariant,
   filterBySearchTerm,
 } from '../utils/rbac-utils'
 import { EMPTY_PERMISSIONS } from '../utils/constants'
@@ -75,8 +76,8 @@ export function PermissionsViewer() {
           <div key={resource} className="border rounded-lg overflow-hidden">
             <div className="bg-muted px-4 py-3 border-b">
               <div className="flex items-center gap-2">
-                <Key className="h-4 w-4 text-blue-500" />
-                <h4 className="font-semibold text-blue-600">{resource}</h4>
+                <Key className="h-4 w-4 text-primary" />
+                <h4 className="font-semibold text-primary">{resource}</h4>
                 <Badge variant="secondary" className="ml-auto">
                   {perms.length} {perms.length === 1 ? 'permission' : 'permissions'}
                 </Badge>
@@ -94,9 +95,14 @@ export function PermissionsViewer() {
                 {perms.map(perm => (
                   <TableRow key={perm.id}>
                     <TableCell>
-                      <Badge className={getActionColor(perm.action)}>
-                        {perm.action}
-                      </Badge>
+                      {(() => {
+                        const variant = getActionVariant(perm.action)
+                        return variant ? (
+                          <StatusBadge variant={variant}>{perm.action}</StatusBadge>
+                        ) : (
+                          <Badge variant="secondary">{perm.action}</Badge>
+                        )
+                      })()}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {perm.description}

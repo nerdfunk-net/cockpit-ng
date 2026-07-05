@@ -260,7 +260,7 @@ export function CredentialFormDialog({
                           />
                         </FormControl>
                         {watchedSshKey && (
-                          <p className="text-xs text-green-600 flex items-center gap-1">
+                          <p className="text-xs text-success-foreground flex items-center gap-1">
                             <CheckCircle className="h-3 w-3" />
                             SSH key loaded ({watchedSshKey.length} characters)
                           </p>
@@ -348,11 +348,7 @@ export function CredentialFormDialog({
               >
                 Cancel
               </Button>
-              <Button
-                type="submit"
-                disabled={isSaving}
-                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-              >
+              <Button type="submit" disabled={isSaving}>
                 {isSaving ? (
                   <>
                     <RefreshCw className="h-4 w-4 mr-2 animate-spin" />

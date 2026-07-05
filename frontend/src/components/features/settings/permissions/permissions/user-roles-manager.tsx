@@ -137,7 +137,7 @@ export function UserRolesManager() {
                             {role.name}
                             <button
                               onClick={() => handleRemoveRole(user.id, role.id)}
-                              className="ml-1 hover:bg-white/20 rounded-full p-0.5"
+                              className="ml-1 hover:bg-accent/40 rounded-full p-0.5"
                             >
                               <X className="h-3 w-3" />
                             </button>
@@ -216,19 +216,19 @@ export function UserRolesManager() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
           <div>
             <div className="text-muted-foreground">Total Users</div>
-            <div className="text-2xl font-bold text-blue-600">{users.length}</div>
+            <div className="text-2xl font-bold text-foreground">{users.length}</div>
           </div>
           <div>
             <div className="text-muted-foreground">Total Roles</div>
-            <div className="text-2xl font-bold text-green-600">{roles.length}</div>
+            <div className="text-2xl font-bold text-foreground">{roles.length}</div>
           </div>
           <div>
             <div className="text-muted-foreground">Users with Roles</div>
-            <div className="text-2xl font-bold text-purple-600">{usersWithRoles}</div>
+            <div className="text-2xl font-bold text-success-foreground">{usersWithRoles}</div>
           </div>
           <div>
             <div className="text-muted-foreground">Unassigned Users</div>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-warning-foreground">
               {users.length - usersWithRoles}
             </div>
           </div>

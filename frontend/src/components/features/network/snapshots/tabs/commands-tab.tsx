@@ -110,16 +110,16 @@ export function CommandsTab({
   return (
     <div className="space-y-6">
       {/* Template Selection Section */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+        <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Command Template</span>
           </div>
-          <div className="text-xs text-blue-100">
+          <div className="text-xs text-panel-header-muted">
             Select an existing template or create a new one
           </div>
         </div>
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+        <div className="p-6 panel-content">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="template-select">Template</Label>
@@ -139,7 +139,7 @@ export function CommandsTab({
             </div>
 
             {selectedTemplateId !== 'none' && (
-              <div className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
+              <div className="text-sm text-muted-foreground bg-muted p-3 rounded-md">
                 <p className="font-medium">Description:</p>
                 <p>
                   {
@@ -154,8 +154,8 @@ export function CommandsTab({
       </div>
 
       {/* Commands Section */}
-      <div className="shadow-lg border-0 p-0 bg-white rounded-lg">
-        <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4 flex items-center justify-between rounded-t-lg">
+      <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
+        <div className="panel-header py-2 px-4 flex items-center justify-between rounded-t-lg">
           <div className="flex items-center space-x-2">
             <span className="text-sm font-medium">Commands</span>
           </div>
@@ -164,7 +164,7 @@ export function CommandsTab({
               variant="secondary"
               size="sm"
               onClick={handleAddCommand}
-              className="bg-white text-blue-600 hover:bg-blue-50 border-0"
+              className="bg-card text-primary hover:bg-card/90 border-0"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Command
@@ -174,7 +174,7 @@ export function CommandsTab({
                 variant="secondary"
                 size="sm"
                 onClick={handleSaveTemplate}
-                className="bg-white text-blue-600 hover:bg-blue-50 border-0"
+                className="bg-card text-primary hover:bg-card/90 border-0"
               >
                 <Save className="h-4 w-4 mr-2" />
                 Save Template
@@ -182,9 +182,9 @@ export function CommandsTab({
             )}
           </div>
         </div>
-        <div className="p-6 bg-gradient-to-b from-white to-gray-50">
+        <div className="p-6 panel-content">
           {commands.length === 0 ? (
-            <div className="text-center py-12 text-gray-500">
+            <div className="text-center py-12 text-muted-foreground">
               <p className="text-lg font-medium">No commands added yet</p>
               <p className="text-sm mt-1">
                 Click &quot;Add Command&quot; to get started
@@ -195,7 +195,7 @@ export function CommandsTab({
               {commands.map(cmd => (
                 <div
                   key={cmd.id}
-                  className="flex items-center gap-2 p-2 border rounded-md bg-white shadow-sm hover:shadow-md transition-shadow group"
+                  className="flex items-center gap-2 p-2 border rounded-md bg-card shadow-sm hover:shadow-md transition-shadow group"
                 >
                   <Input
                     id={`command-${cmd.id}`}
@@ -204,7 +204,7 @@ export function CommandsTab({
                       handleUpdateCommand(cmd.id!, 'command', e.target.value)
                     }
                     placeholder="Enter command (e.g., show ip route)"
-                    className="flex-1 font-mono text-sm h-8 focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 font-mono text-sm h-8 focus:ring-2 focus:ring-ring/30"
                   />
                   <div className="flex items-center gap-1.5">
                     <Checkbox
@@ -217,7 +217,7 @@ export function CommandsTab({
                     />
                     <label
                       htmlFor={`textfsm-${cmd.id}`}
-                      className="text-xs text-gray-600 cursor-pointer whitespace-nowrap hover:text-gray-900"
+                      className="text-xs text-muted-foreground cursor-pointer whitespace-nowrap hover:text-foreground"
                       title="Parse output using TextFSM templates"
                     >
                       TextFSM
@@ -227,10 +227,10 @@ export function CommandsTab({
                     variant="ghost"
                     size="sm"
                     onClick={() => handleRemoveCommand(cmd.id!)}
-                    className="h-8 w-8 p-0 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                    className="h-8 w-8 p-0 hover:bg-error opacity-0 group-hover:opacity-100 transition-opacity"
                     title="Remove command"
                   >
-                    <Trash2 className="h-4 w-4 text-red-600" />
+                    <Trash2 className="h-4 w-4 text-error-foreground" />
                   </Button>
                 </div>
               ))}

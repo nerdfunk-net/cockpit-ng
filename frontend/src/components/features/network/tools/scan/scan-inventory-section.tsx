@@ -62,15 +62,20 @@ export function ScanInventorySection({
   }
 
   return (
-    <div className="rounded-lg border border-emerald-200 bg-emerald-50/30 p-4 space-y-3">
+    <div className="rounded-lg border border-success-border bg-success/30 p-4 space-y-3">
       <div className="flex items-center gap-2">
-        <HardDrive className="h-4 w-4 text-emerald-600" />
-        <Label className="text-sm font-semibold text-emerald-900">Scan Targets</Label>
+        <HardDrive className="h-4 w-4 text-success-foreground" />
+        <Label className="text-sm font-semibold text-success-foreground">
+          Scan Targets
+        </Label>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-1.5">
-          <Label htmlFor="scan-target-source" className="text-xs text-emerald-700">
+          <Label
+            htmlFor="scan-target-source"
+            className="text-xs text-success-foreground"
+          >
             Source
           </Label>
           <Select
@@ -79,20 +84,20 @@ export function ScanInventorySection({
           >
             <SelectTrigger
               id="scan-target-source"
-              className="h-9 bg-white border-emerald-200"
+              className="h-9 bg-card border-success-border"
             >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="cidr">
                 <div className="flex items-center gap-2">
-                  <Network className="h-4 w-4 text-blue-500" />
+                  <Network className="h-4 w-4 text-primary" />
                   <span>CIDR Prefixes</span>
                 </div>
               </SelectItem>
               <SelectItem value="inventory">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-green-500" />
+                  <FileText className="h-4 w-4 text-success-foreground" />
                   <span>Use Saved Inventory</span>
                 </div>
               </SelectItem>
@@ -101,7 +106,10 @@ export function ScanInventorySection({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="scan-inventory-group" className="text-xs text-emerald-700">
+          <Label
+            htmlFor="scan-inventory-group"
+            className="text-xs text-success-foreground"
+          >
             Group
           </Label>
           <Select
@@ -114,21 +122,21 @@ export function ScanInventorySection({
           >
             <SelectTrigger
               id="scan-inventory-group"
-              className="h-9 bg-white border-emerald-200 disabled:opacity-50"
+              className="h-9 bg-card border-success-border disabled:opacity-50"
             >
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">
                 <div className="flex items-center gap-2">
-                  <Folder className="h-4 w-4 text-emerald-500" />
+                  <Folder className="h-4 w-4 text-success-foreground" />
                   <span>All</span>
                 </div>
               </SelectItem>
               {groups.map(group => (
                 <SelectItem key={group} value={group}>
                   <div className="flex items-center gap-2">
-                    <Folder className="h-4 w-4 text-emerald-400" />
+                    <Folder className="h-4 w-4 text-success-foreground" />
                     <span>{group}</span>
                   </div>
                 </SelectItem>
@@ -138,13 +146,16 @@ export function ScanInventorySection({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor="scan-inventory-name" className="text-xs text-emerald-700">
+          <Label
+            htmlFor="scan-inventory-name"
+            className="text-xs text-success-foreground"
+          >
             Saved Inventory{' '}
-            {targetSource === 'inventory' && <span className="text-red-500">*</span>}
+            {targetSource === 'inventory' && <span className="text-destructive">*</span>}
           </Label>
           {loadingInventories ? (
-            <div className="flex items-center justify-center h-9 bg-white border border-emerald-200 rounded-md">
-              <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
+            <div className="flex items-center justify-center h-9 bg-card border border-success-border rounded-md">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
             </div>
           ) : (
             <Select
@@ -154,7 +165,7 @@ export function ScanInventorySection({
             >
               <SelectTrigger
                 id="scan-inventory-name"
-                className="h-9 bg-white border-emerald-200 disabled:opacity-50"
+                className="h-9 bg-card border-success-border disabled:opacity-50"
               >
                 <SelectValue placeholder="Select inventory" />
               </SelectTrigger>
@@ -181,7 +192,7 @@ export function ScanInventorySection({
       {targetSource === 'inventory' &&
         filteredInventories.length === 0 &&
         !loadingInventories && (
-          <p className="text-xs text-emerald-600">
+          <p className="text-xs text-success-foreground">
             {selectedGroup === 'all' ? (
               <>
                 No saved inventories found. Create one in{' '}

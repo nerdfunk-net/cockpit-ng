@@ -76,7 +76,7 @@ export function FileList({
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
           <p className="mt-2 text-sm text-muted-foreground">Loading files...</p>
         </div>
       </div>
@@ -151,7 +151,7 @@ export function FileList({
                 )}
                 <td className="p-3">
                   <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                    <FileText className="h-4 w-4 text-primary flex-shrink-0" />
                     <span className="font-medium text-sm truncate" title={file.name}>
                       {file.name}
                     </span>

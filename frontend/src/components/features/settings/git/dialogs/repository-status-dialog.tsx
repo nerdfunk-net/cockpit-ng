@@ -18,6 +18,7 @@ import {
   Edit,
   Plus,
 } from 'lucide-react'
+import { StatusIcon } from '@/components/shared/status-icon'
 import type { GitStatus } from '../types'
 
 interface RepositoryStatusDialogProps {
@@ -45,8 +46,8 @@ export function RepositoryStatusDialog({
         <div className="space-y-6">
           {isLoading || !statusData ? (
             <div className="text-center py-8">
-              <RefreshCw className="h-8 w-8 animate-spin mx-auto text-gray-400" />
-              <p className="text-gray-500 mt-2">Loading repository status...</p>
+              <RefreshCw className="h-8 w-8 animate-spin mx-auto text-muted-foreground" />
+              <p className="text-muted-foreground mt-2">Loading repository status...</p>
             </div>
           ) : (
             <div className="space-y-6">
@@ -72,16 +73,11 @@ export function RepositoryStatusDialog({
                     </div>
                     <div className="flex justify-between">
                       <span className="font-medium">Status:</span>
-                      <div
-                        className={`flex items-center gap-2 ${
-                          statusData.is_synced ? 'text-green-600' : 'text-yellow-600'
-                        }`}
-                      >
-                        {statusData.is_synced ? (
-                          <CheckCircle className="h-4 w-4" />
-                        ) : (
-                          <AlertCircle className="h-4 w-4" />
-                        )}
+                      <div className="flex items-center gap-2">
+                        <StatusIcon
+                          variant={statusData.is_synced ? 'success' : 'warning'}
+                          className="h-4 w-4"
+                        />
                         {statusData.is_synced
                           ? 'Clean working directory'
                           : 'Modified files present'}
@@ -93,7 +89,7 @@ export function RepositoryStatusDialog({
                         href={statusData.repository_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline flex items-center gap-1"
+                        className="text-primary hover:underline flex items-center gap-1"
                       >
                         <ExternalLink className="h-4 w-4" />
                         View Repository
@@ -117,7 +113,7 @@ export function RepositoryStatusDialog({
                             key={branch}
                             className={`flex items-center gap-2 ${
                               branch === statusData.current_branch
-                                ? 'text-blue-600 font-medium'
+                                ? 'text-primary font-medium'
                                 : ''
                             }`}
                           >
@@ -132,7 +128,7 @@ export function RepositoryStatusDialog({
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-500">No branches available</p>
+                      <p className="text-muted-foreground">No branches available</p>
                     )}
                   </CardContent>
                 </Card>
@@ -154,7 +150,7 @@ export function RepositoryStatusDialog({
                       {statusData.modified_files &&
                         statusData.modified_files.length > 0 && (
                           <div>
-                            <h6 className="font-medium text-yellow-600 mb-2">
+                            <h6 className="font-medium text-warning-foreground mb-2">
                               Modified Files:
                             </h6>
                             <div className="space-y-1">
@@ -163,7 +159,7 @@ export function RepositoryStatusDialog({
                                   key={file}
                                   className="flex items-center gap-2 text-sm"
                                 >
-                                  <Edit className="h-4 w-4 text-yellow-500" />
+                                  <Edit className="h-4 w-4 text-warning-foreground" />
                                   {file}
                                 </div>
                               ))}
@@ -174,7 +170,7 @@ export function RepositoryStatusDialog({
                       {statusData.untracked_files &&
                         statusData.untracked_files.length > 0 && (
                           <div>
-                            <h6 className="font-medium text-blue-600 mb-2">
+                            <h6 className="font-medium text-info-foreground mb-2">
                               Untracked Files:
                             </h6>
                             <div className="space-y-1">
@@ -183,7 +179,7 @@ export function RepositoryStatusDialog({
                                   key={file}
                                   className="flex items-center gap-2 text-sm"
                                 >
-                                  <Plus className="h-4 w-4 text-blue-500" />
+                                  <Plus className="h-4 w-4 text-info-foreground" />
                                   {file}
                                 </div>
                               ))}
@@ -194,7 +190,7 @@ export function RepositoryStatusDialog({
                       {statusData.staged_files &&
                         statusData.staged_files.length > 0 && (
                           <div>
-                            <h6 className="font-medium text-green-600 mb-2">
+                            <h6 className="font-medium text-success-foreground mb-2">
                               Staged Files:
                             </h6>
                             <div className="space-y-1">
@@ -203,7 +199,7 @@ export function RepositoryStatusDialog({
                                   key={file}
                                   className="flex items-center gap-2 text-sm"
                                 >
-                                  <CheckCircle className="h-4 w-4 text-green-500" />
+                                  <CheckCircle className="h-4 w-4 text-success-foreground" />
                                   {file}
                                 </div>
                               ))}
@@ -228,18 +224,18 @@ export function RepositoryStatusDialog({
                       {statusData.commits.slice(0, 10).map(commit => (
                         <div
                           key={commit.hash}
-                          className="border-l-2 border-gray-200 pl-4"
+                          className="border-l-2 border-border pl-4"
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                               <Badge variant="outline" className="font-mono text-xs">
                                 {commit.hash.substring(0, 8)}
                               </Badge>
-                              <span className="text-sm text-gray-600">
+                              <span className="text-sm text-muted-foreground">
                                 {commit.author?.name || 'Unknown'}
                               </span>
                             </div>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-muted-foreground">
                               {new Date(commit.date).toLocaleDateString()}
                             </span>
                           </div>

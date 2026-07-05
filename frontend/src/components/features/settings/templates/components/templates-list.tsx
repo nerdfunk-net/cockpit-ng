@@ -109,8 +109,8 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
 
   return (
     <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
-        <CardTitle className="flex items-center gap-2 text-white text-base">
+      <CardHeader className="panel-header py-3 pl-8 pr-6 -mx-6 -mt-6 mb-6">
+        <CardTitle className="flex items-center gap-2 text-base">
           <FileCode className="h-4 w-4" />
           Templates List
         </CardTitle>
@@ -119,7 +119,7 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
             <Input
               placeholder="Search templates..."
               value={filters.search || ''}
@@ -161,9 +161,9 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
 
         {/* Bulk Actions */}
         {selectedTemplates.size > 0 && (
-          <div className="flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center justify-between bg-info border border-info-border rounded-lg p-4">
             <div className="flex items-center space-x-4">
-              <span className="text-sm font-medium text-blue-900">
+              <span className="text-sm font-medium text-info-foreground">
                 {selectedTemplates.size} template(s) selected
               </span>
               <Button
@@ -194,39 +194,39 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
         <div className="border rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-muted">
                 <tr>
                   <th className="px-4 py-3 text-left">
                     <button onClick={toggleSelectAll}>
                       {selectedTemplates.size === templates.length &&
                       templates.length > 0 ? (
-                        <CheckSquare className="h-4 w-4 text-blue-600" />
+                        <CheckSquare className="h-4 w-4 text-primary" />
                       ) : (
-                        <Square className="h-4 w-4 text-gray-400" />
+                        <Square className="h-4 w-4 text-muted-foreground" />
                       )}
                     </button>
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                     Name
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                     Source
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                     Type
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                     Category
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                     Description
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                     Actions
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-card divide-y divide-border">
                 {isLoading ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-4 text-center">
@@ -236,7 +236,7 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
                   </tr>
                 ) : templates.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-4 text-center text-gray-500">
+                    <td colSpan={7} className="px-6 py-4 text-center text-muted-foreground">
                       No templates found
                     </td>
                   </tr>
@@ -245,13 +245,13 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
                     const SourceIcon = getSourceIcon(template.source)
                     const isSelected = selectedTemplates.has(template.id)
                     return (
-                      <tr key={template.id} className={isSelected ? 'bg-blue-50' : ''}>
+                      <tr key={template.id} className={isSelected ? 'bg-info' : ''}>
                         <td className="px-4 py-4">
                           <button onClick={() => toggleSelection(template.id)}>
                             {isSelected ? (
-                              <CheckSquare className="h-4 w-4 text-blue-600" />
+                              <CheckSquare className="h-4 w-4 text-primary" />
                             ) : (
-                              <Square className="h-4 w-4 text-gray-400" />
+                              <Square className="h-4 w-4 text-muted-foreground" />
                             )}
                           </button>
                         </td>
@@ -314,7 +314,7 @@ export function TemplatesList({ onEdit, onView }: TemplatesListProps) {
                                   variant: 'destructive',
                                 })
                               }}
-                              className="text-red-600"
+                              className="text-destructive"
                             >
                               <Trash2 className="h-4 w-4" />
                             </Button>

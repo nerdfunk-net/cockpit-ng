@@ -29,18 +29,18 @@ export function BackupFilters({
 }: BackupFiltersProps) {
   return (
     <div className="rounded-xl border shadow-sm overflow-hidden">
-      <div className="bg-gradient-to-r from-blue-400/80 to-blue-500/80 text-white py-2 px-4">
+      <div className="panel-header py-2 px-4">
         <div className="flex items-center space-x-2">
           <Filter className="h-4 w-4" />
           <div>
             <h3 className="text-sm font-semibold">Filter & Controls</h3>
-            <p className="text-blue-100 text-xs">
+            <p className="text-panel-header-muted text-xs">
               Filter devices by backup date and manage display options
             </p>
           </div>
         </div>
       </div>
-      <div className="p-4 bg-white">
+      <div className="p-4 panel-content">
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <Label htmlFor="backup-date-filter">Last Backup Date</Label>
@@ -51,7 +51,7 @@ export function BackupFilters({
               onChange={e =>
                 onFiltersChange({ ...filters, lastBackupDate: e.target.value })
               }
-              className="min-w-[150px] border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500"
+              className="min-w-[150px] border-2 bg-card border-border hover:border-muted-foreground focus:border-primary"
             />
           </div>
 
@@ -66,7 +66,7 @@ export function BackupFilters({
                 })
               }
             >
-              <SelectTrigger className="min-w-[150px] border-2 bg-white border-gray-300 hover:border-gray-400 focus:border-blue-500">
+              <SelectTrigger className="min-w-[150px] border-2 bg-card border-border hover:border-muted-foreground focus:border-primary">
                 <SelectValue placeholder="No Date Filter" />
               </SelectTrigger>
               <SelectContent>

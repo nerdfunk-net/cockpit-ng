@@ -66,7 +66,7 @@ export function DeleteSnapshotDialog({
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-red-600" />
+            <AlertTriangle className="h-5 w-5 text-error-foreground" />
             Delete Snapshot
           </DialogTitle>
           <DialogDescription>
@@ -82,7 +82,7 @@ export function DeleteSnapshotDialog({
             </AlertDescription>
           </Alert>
 
-          <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
+          <div className="space-y-3 bg-muted p-4 rounded-lg">
             <div>
               <h4 className="font-medium text-sm mb-1">Remove from DB</h4>
               <p className="text-sm text-muted-foreground">
@@ -112,7 +112,7 @@ export function DeleteSnapshotDialog({
             variant="outline"
             onClick={handleDeleteDbOnly}
             disabled={deleting}
-            className="border-orange-300 text-orange-700 hover:bg-orange-50 hover:text-orange-800 hover:border-orange-400"
+            className="border-warning-border text-warning-foreground hover:bg-warning hover:text-warning-foreground hover:border-warning-border"
           >
             {deleting ? (
               <>

@@ -36,7 +36,7 @@ export function TestResultDialog({
               value={testResult}
               readOnly
               rows={20}
-              className="font-mono text-sm border-2 border-slate-300 bg-gray-50 resize-none"
+              className="font-mono text-sm border-2 border-border bg-muted resize-none"
             />
           </div>
           <div className="flex justify-end">

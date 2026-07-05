@@ -47,11 +47,11 @@ export function RepositoryCard({
   onDelete,
 }: RepositoryCardProps) {
   return (
-    <div className="border rounded-lg p-4 hover:bg-gray-50">
+    <div className="border rounded-lg p-4 hover:bg-muted">
       <div className="flex items-start justify-between">
         <div className="flex-1 space-y-2">
           <div className="flex items-center gap-3">
-            <h3 className="font-medium text-gray-900">{repository.name}</h3>
+            <h3 className="font-medium text-foreground">{repository.name}</h3>
             <Badge className={getCategoryBadgeColor(repository.category)}>
               {repository.category}
             </Badge>
@@ -59,14 +59,14 @@ export function RepositoryCard({
               {repository.is_active ? 'Active' : 'Inactive'}
             </Badge>
           </div>
-          <div className="flex items-center gap-4 text-sm text-gray-600">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <ExternalLink className="h-4 w-4" />
               <a
                 href={repository.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-blue-600 underline"
+                className="hover:text-primary underline"
               >
                 {truncateUrl(repository.url)}
               </a>
@@ -81,7 +81,7 @@ export function RepositoryCard({
             </div>
           </div>
           {repository.description && (
-            <p className="text-sm text-gray-600">{repository.description}</p>
+            <p className="text-sm text-muted-foreground">{repository.description}</p>
           )}
         </div>
         <TooltipProvider>
@@ -112,7 +112,7 @@ export function RepositoryCard({
                   onClick={() => onRemoveAndSync(repository)}
                   variant="outline"
                   size="sm"
-                  className="text-orange-600 hover:text-orange-700"
+                  className="text-warning-foreground hover:text-warning-foreground/80"
                 >
                   <RotateCcw className="h-4 w-4" />
                 </Button>
@@ -141,7 +141,7 @@ export function RepositoryCard({
                   onClick={() => onDebug(repository)}
                   variant="outline"
                   size="sm"
-                  className="text-purple-600 hover:text-purple-700"
+                  className="text-info-foreground hover:text-info-foreground/80"
                 >
                   <Bug className="h-4 w-4" />
                 </Button>
@@ -156,7 +156,7 @@ export function RepositoryCard({
                   onClick={() => onDelete(repository)}
                   variant="outline"
                   size="sm"
-                  className="text-red-600 hover:text-red-700"
+                  className="text-destructive hover:text-destructive/80"
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>

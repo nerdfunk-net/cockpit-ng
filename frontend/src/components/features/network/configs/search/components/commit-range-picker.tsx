@@ -12,7 +12,7 @@ import { useGitCommits } from '@/components/features/shared/git/hooks/use-git-co
 import { Loader2 } from 'lucide-react'
 
 const SELECT_TRIGGER_CLASS =
-  'w-full border-2 border-slate-300 bg-white text-foreground shadow-sm focus-visible:border-blue-500 focus-visible:ring-2 focus-visible:ring-blue-200'
+  'w-full border-2 border-border bg-card text-foreground shadow-sm focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-ring/30'
 
 interface CommitRangePickerProps {
   repoId: number | null

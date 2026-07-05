@@ -51,27 +51,27 @@ export function RepositoryForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Repository Name */}
         <div className="space-y-2">
-          <Label htmlFor="name" className="text-sm font-semibold text-gray-800">
+          <Label htmlFor="name" className="text-sm font-semibold text-foreground">
             Repository Name <span className="text-destructive">*</span>
           </Label>
           <Input
             id="name"
             placeholder="My Config Repository"
             {...register('name')}
-            className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+            className="border-2 border-border bg-card shadow-sm focus:border-primary focus:ring-2 focus:ring-ring/30 transition-all duration-200"
             disabled={isSubmitting}
           />
           {errors.name && (
             <p className="text-xs text-destructive">{errors.name.message}</p>
           )}
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted-foreground">
             Unique name to identify this repository
           </p>
         </div>
 
         {/* Category */}
         <div className="space-y-2">
-          <Label htmlFor="category" className="text-sm font-semibold text-gray-800">
+          <Label htmlFor="category" className="text-sm font-semibold text-foreground">
             Category <span className="text-destructive">*</span>
           </Label>
           <Select
@@ -83,7 +83,7 @@ export function RepositoryForm({
           >
             <SelectTrigger
               id="category"
-              className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+              className="border-2 border-border bg-card shadow-sm focus:border-primary focus:ring-2 focus:ring-ring/30 transition-all duration-200"
             >
               <SelectValue placeholder="Select Category" />
             </SelectTrigger>
@@ -98,14 +98,14 @@ export function RepositoryForm({
           {errors.category && (
             <p className="text-xs text-destructive">{errors.category.message}</p>
           )}
-          <p className="text-xs text-gray-600">Purpose of this repository</p>
+          <p className="text-xs text-muted-foreground">Purpose of this repository</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Repository URL */}
         <div className="space-y-2">
-          <Label htmlFor="url" className="text-sm font-semibold text-gray-800">
+          <Label htmlFor="url" className="text-sm font-semibold text-foreground">
             Repository URL <span className="text-destructive">*</span>
           </Label>
           <Input
@@ -113,34 +113,34 @@ export function RepositoryForm({
             type="url"
             placeholder="https://github.com/username/repo.git"
             {...register('url')}
-            className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+            className="border-2 border-border bg-card shadow-sm focus:border-primary focus:ring-2 focus:ring-ring/30 transition-all duration-200"
             disabled={isSubmitting}
           />
           {errors.url && (
             <p className="text-xs text-destructive">{errors.url.message}</p>
           )}
-          <p className="text-xs text-gray-600">Git repository URL</p>
+          <p className="text-xs text-muted-foreground">Git repository URL</p>
         </div>
 
         {/* Branch */}
         <div className="space-y-2">
-          <Label htmlFor="branch" className="text-sm font-semibold text-gray-800">
+          <Label htmlFor="branch" className="text-sm font-semibold text-foreground">
             Default Branch
           </Label>
           <Input
             id="branch"
             placeholder="main"
             {...register('branch')}
-            className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+            className="border-2 border-border bg-card shadow-sm focus:border-primary focus:ring-2 focus:ring-ring/30 transition-all duration-200"
             disabled={isSubmitting}
           />
-          <p className="text-xs text-gray-600">Default branch to use</p>
+          <p className="text-xs text-muted-foreground">Default branch to use</p>
         </div>
       </div>
 
       {/* Authentication Type */}
       <div className="space-y-2">
-        <Label htmlFor="auth_type" className="text-sm font-semibold text-gray-800">
+        <Label htmlFor="auth_type" className="text-sm font-semibold text-foreground">
           Authentication Type
         </Label>
         <Select
@@ -153,7 +153,7 @@ export function RepositoryForm({
         >
           <SelectTrigger
             id="auth_type"
-            className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+            className="border-2 border-border bg-card shadow-sm focus:border-primary focus:ring-2 focus:ring-ring/30 transition-all duration-200"
           >
             <SelectValue placeholder="Select authentication type" />
           </SelectTrigger>
@@ -165,7 +165,7 @@ export function RepositoryForm({
             ))}
           </SelectContent>
         </Select>
-        <p className="text-xs text-gray-600">
+        <p className="text-xs text-muted-foreground">
           How to authenticate with this repository
         </p>
       </div>
@@ -184,17 +184,17 @@ export function RepositoryForm({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Path */}
         <div className="space-y-2">
-          <Label htmlFor="path" className="text-sm font-semibold text-gray-800">
+          <Label htmlFor="path" className="text-sm font-semibold text-foreground">
             Path
           </Label>
           <Input
             id="path"
             placeholder="configs/"
             {...register('path')}
-            className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+            className="border-2 border-border bg-card shadow-sm focus:border-primary focus:ring-2 focus:ring-ring/30 transition-all duration-200"
             disabled={isSubmitting}
           />
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted-foreground">
             Path within repository (leave empty for root)
           </p>
         </div>
@@ -206,14 +206,14 @@ export function RepositoryForm({
               id="verify-ssl"
               checked={watch('verify_ssl') ?? false}
               onCheckedChange={checked => setValue('verify_ssl', !!checked)}
-              className="border-2 border-gray-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
+              className="border-2 border-input data-[state=checked]:bg-primary data-[state=checked]:border-primary"
               disabled={isSubmitting}
             />
-            <Label htmlFor="verify-ssl" className="text-sm font-semibold text-gray-800">
+            <Label htmlFor="verify-ssl" className="text-sm font-semibold text-foreground">
               Verify SSL certificates
             </Label>
           </div>
-          <p className="text-xs text-gray-600">Disable for self-signed certificates</p>
+          <p className="text-xs text-muted-foreground">Disable for self-signed certificates</p>
         </div>
       </div>
 
@@ -222,7 +222,7 @@ export function RepositoryForm({
         <div className="space-y-2">
           <Label
             htmlFor="git_author_name"
-            className="text-sm font-semibold text-gray-800"
+            className="text-sm font-semibold text-foreground"
           >
             Git Author Name
           </Label>
@@ -231,10 +231,10 @@ export function RepositoryForm({
             type="text"
             placeholder="e.g., Network Team (optional)"
             {...register('git_author_name')}
-            className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+            className="border-2 border-border bg-card shadow-sm focus:border-primary focus:ring-2 focus:ring-ring/30 transition-all duration-200"
             disabled={isSubmitting}
           />
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted-foreground">
             Name used for git commits (defaults to &quot;Cockpit-NG Automation&quot;)
           </p>
         </div>
@@ -243,7 +243,7 @@ export function RepositoryForm({
         <div className="space-y-2">
           <Label
             htmlFor="git_author_email"
-            className="text-sm font-semibold text-gray-800"
+            className="text-sm font-semibold text-foreground"
           >
             Git Author Email
           </Label>
@@ -252,7 +252,7 @@ export function RepositoryForm({
             type="email"
             placeholder="e.g., network@company.com (optional)"
             {...register('git_author_email')}
-            className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200"
+            className="border-2 border-border bg-card shadow-sm focus:border-primary focus:ring-2 focus:ring-ring/30 transition-all duration-200"
             disabled={isSubmitting}
           />
           {errors.git_author_email && (
@@ -260,7 +260,7 @@ export function RepositoryForm({
               {errors.git_author_email.message}
             </p>
           )}
-          <p className="text-xs text-gray-600">
+          <p className="text-xs text-muted-foreground">
             Email used for git commits (defaults to
             &quot;noreply@cockpit-ng.local&quot;)
           </p>
@@ -269,7 +269,7 @@ export function RepositoryForm({
 
       {/* Description */}
       <div className="space-y-2">
-        <Label htmlFor="description" className="text-sm font-semibold text-gray-800">
+        <Label htmlFor="description" className="text-sm font-semibold text-foreground">
           Description
         </Label>
         <Textarea
@@ -277,7 +277,7 @@ export function RepositoryForm({
           placeholder="Optional description for this repository"
           rows={3}
           {...register('description')}
-          className="border-2 border-gray-300 bg-white shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 resize-none"
+          className="border-2 border-border bg-card shadow-sm focus:border-primary focus:ring-2 focus:ring-ring/30 transition-all duration-200 resize-none"
           disabled={isSubmitting}
         />
       </div>
