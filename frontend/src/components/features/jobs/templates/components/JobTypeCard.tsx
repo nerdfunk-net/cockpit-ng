@@ -8,10 +8,25 @@ interface JobTypeCardProps {
   icon: LucideIcon
   isSelected: boolean
   onSelect: (value: string) => void
+  disabled?: boolean
+  disabledReason?: string
 }
 
-export function JobTypeCard({ jobType, icon: Icon, isSelected, onSelect }: JobTypeCardProps) {
+export function JobTypeCard({
+  jobType,
+  icon: Icon,
+  isSelected,
+  onSelect,
+  disabled = false,
+  disabledReason,
+}: JobTypeCardProps) {
+  const handleSelect = () => {
+    if (disabled) return
+    onSelect(jobType.value)
+  }
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (disabled) return
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault()
       onSelect(jobType.value)
@@ -21,12 +36,16 @@ export function JobTypeCard({ jobType, icon: Icon, isSelected, onSelect }: JobTy
   return (
     <Card
       role="button"
-      tabIndex={0}
-      onClick={() => onSelect(jobType.value)}
+      aria-disabled={disabled}
+      tabIndex={disabled ? -1 : 0}
+      onClick={handleSelect}
       onKeyDown={handleKeyDown}
       className={cn(
-        'cursor-pointer py-4 gap-2 transition-colors hover:border-primary hover:bg-accent/50',
-        isSelected && 'border-primary bg-accent'
+        'py-4 gap-2 transition-colors',
+        disabled
+          ? 'opacity-50 cursor-not-allowed'
+          : 'cursor-pointer hover:border-primary hover:bg-accent/50',
+        isSelected && !disabled && 'border-primary bg-accent'
       )}
     >
       <CardHeader className="px-4">
@@ -35,9 +54,12 @@ export function JobTypeCard({ jobType, icon: Icon, isSelected, onSelect }: JobTy
             <Icon className="h-4 w-4 text-muted-foreground" />
             <CardTitle className="text-sm">{jobType.label}</CardTitle>
           </div>
-          {isSelected && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
+          {isSelected && !disabled && <Check className="h-4 w-4 text-primary flex-shrink-0" />}
         </div>
         <CardDescription className="text-xs">{jobType.description}</CardDescription>
+        {disabled && disabledReason && (
+          <p className="text-xs text-warning-foreground italic">{disabledReason}</p>
+        )}
       </CardHeader>
     </Card>
   )
