@@ -65,8 +65,9 @@ export function PortScanDetailsDialog({ open, onOpenChange }: PortScanDetailsDia
       setSelectedNetwork(null)
       return
     }
-    if (networks.length > 0 && !selectedNetwork) {
-      setSelectedNetwork(networks[0].network)
+    const firstNetwork = networks[0]
+    if (!selectedNetwork && firstNetwork) {
+      setSelectedNetwork(firstNetwork.network)
     }
   }, [open, networks, selectedNetwork])
 

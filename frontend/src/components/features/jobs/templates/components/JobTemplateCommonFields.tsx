@@ -1,17 +1,13 @@
+import { useState } from 'react'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { Globe, Lock, ShieldAlert } from 'lucide-react'
 import { hasPermission } from '@/lib/permissions'
+import { JobTypePickerDialog } from './JobTypePickerDialog'
 import type { User } from '@/types/auth'
 
 interface JobType {
@@ -50,6 +46,8 @@ export function JobTemplateCommonFields({
   getJobTypeColor,
 }: JobTemplateCommonFieldsProps) {
   const canCreateGlobalTemplate = hasPermission(user, 'jobs', 'write')
+  const [isPickerOpen, setIsPickerOpen] = useState(false)
+  const selectedJobTypeLabel = jobTypes.find(t => t.value === formJobType)?.label
 
   return (
     <>
@@ -72,27 +70,32 @@ export function JobTemplateCommonFields({
           <Label htmlFor="job-type" className="text-sm font-medium text-foreground">
             Type <span className="text-destructive">*</span>
           </Label>
-          <Select
-            value={formJobType}
-            onValueChange={setFormJobType}
-            disabled={editingTemplate}
+          <Button
+            id="job-type"
+            type="button"
+            variant="outline"
+            className="h-9 w-full justify-start bg-card font-normal"
+            disabled={editingTemplate || jobTypes.length === 0}
+            onClick={() => setIsPickerOpen(true)}
           >
-            <SelectTrigger id="job-type" className="h-9 bg-card">
-              <SelectValue placeholder="Select job type" />
-            </SelectTrigger>
-            <SelectContent>
-              {jobTypes.map(type => (
-                <SelectItem key={type.value} value={type.value}>
-                  <div className="flex items-center gap-2">
-                    <div
-                      className={`h-2 w-2 rounded-full ${getJobTypeColor(type.value)}`}
-                    />
-                    <span>{type.label}</span>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            {selectedJobTypeLabel ? (
+              <span className="flex items-center gap-2">
+                <span
+                  className={`h-2 w-2 rounded-full ${getJobTypeColor(formJobType)}`}
+                />
+                {selectedJobTypeLabel}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">Select job type</span>
+            )}
+          </Button>
+          <JobTypePickerDialog
+            open={isPickerOpen}
+            onOpenChange={setIsPickerOpen}
+            jobTypes={jobTypes}
+            selectedJobType={formJobType}
+            onSelect={setFormJobType}
+          />
         </div>
       </div>
 

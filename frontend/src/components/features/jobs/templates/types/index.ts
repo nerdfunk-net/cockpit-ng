@@ -1,3 +1,5 @@
+import type { LucideIcon } from 'lucide-react'
+
 export interface DeployTemplateEntry {
   template_id: number
   inventory_id: number | null
@@ -113,6 +115,13 @@ export interface JobType {
   value: string
   label: string
   description: string
+}
+
+export interface JobTypeCategory {
+  id: string
+  label: string
+  icon: LucideIcon
+  jobTypes: string[]
 }
 
 export interface GitRepository {
