@@ -514,6 +514,14 @@ class JobRunRepository(BaseRepository[JobRun]):
         statuses: List[str],
     ) -> List[Dict[str, Any]]:
         """Get all job runs for a given type filtered by a list of statuses, ordered by completed_at DESC."""
+        return self.get_all_by_types_and_statuses([job_type], statuses)
+
+    def get_all_by_types_and_statuses(
+        self,
+        job_types: List[str],
+        statuses: List[str],
+    ) -> List[Dict[str, Any]]:
+        """Get all job runs for given types filtered by statuses, ordered by completed_at DESC."""
         from core.database import get_db_session
 
         session = get_db_session()
@@ -521,7 +529,7 @@ class JobRunRepository(BaseRepository[JobRun]):
             items = (
                 session.query(self.model)
                 .filter(
-                    self.model.job_type == job_type,
+                    self.model.job_type.in_(job_types),
                     self.model.status.in_(statuses),
                 )
                 .order_by(desc(self.model.completed_at))

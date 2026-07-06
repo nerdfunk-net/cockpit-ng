@@ -8,6 +8,7 @@ import { FailedJobsWidget } from '../widgets/failed-jobs-widget'
 import { DeviceBackupWidget } from '../widgets/device-backup-widget'
 import { CheckmkSyncWidget } from '../widgets/checkmk-sync-widget'
 import { NetworkScanWidget } from '../widgets/network-scan-widget'
+import { PortScanWidget } from '../widgets/port-scan-widget'
 import { StaleIPAddressesWidget } from '../widgets/stale-ip-addresses-widget'
 
 export const WIDGET_REGISTRY: Record<WidgetId, WidgetDefinition> = {
@@ -82,6 +83,14 @@ export const WIDGET_REGISTRY: Record<WidgetId, WidgetDefinition> = {
     icon: 'Activity',
     defaultSize: { w: 4, h: 4, minW: 3, minH: 3 },
     component: NetworkScanWidget,
+  },
+  'port-scan': {
+    id: 'port-scan',
+    title: 'Port Scan Summary',
+    description: 'Aggregated port scan job results',
+    icon: 'Radar',
+    defaultSize: { w: 4, h: 5, minW: 3, minH: 4 },
+    component: PortScanWidget,
   },
   'stale-ip-addresses': {
     id: 'stale-ip-addresses',

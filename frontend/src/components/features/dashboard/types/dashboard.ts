@@ -10,6 +10,7 @@ export type WidgetId =
   | 'device-backup'
   | 'checkmk-sync'
   | 'network-scan'
+  | 'port-scan'
   | 'stale-ip-addresses'
 
 export interface WidgetDefaultSize {

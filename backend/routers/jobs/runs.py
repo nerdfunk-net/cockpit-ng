@@ -390,6 +390,25 @@ async def get_latest_scan_prefix_result(
         raise_internal_server_error(logger, "Internal error", e)
 
 
+@router.get("/dashboard/port-scan")
+async def get_port_scan_dashboard_summary(
+    current_user: dict = Depends(require_permission("jobs", "read")),
+):
+    """
+    Aggregate port scan job results for the dashboard.
+
+    Summarizes all completed port_scan and nmap_scan_network job runs.
+    """
+    try:
+        from services.jobs.port_scan_dashboard_service import (
+            get_port_scan_dashboard_service,
+        )
+
+        return get_port_scan_dashboard_service().get_port_scan_summary()
+    except Exception as e:
+        raise_internal_server_error(logger, "Internal error", e)
+
+
 @router.get("/{run_id}", response_model=JobRunResponse)
 async def get_job_run(
     run_id: int,
