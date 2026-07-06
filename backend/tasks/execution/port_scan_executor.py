@@ -37,15 +37,14 @@ def execute_port_scan(
     if service_detection is None:
         service_detection = tmpl.get("port_scan_service_detection", False)
     timeout = params.get("port_scan_timeout") or tmpl.get("port_scan_timeout") or 300
+    use_primary_ip_only = params.get("port_scan_use_primary_ip_only")
+    if use_primary_ip_only is None:
+        use_primary_ip_only = tmpl.get("port_scan_use_primary_ip_only", True)
 
     cidrs = params.get("port_scan_cidrs") or tmpl.get("port_scan_cidrs") or []
     inventory_name = params.get("inventory_name") or tmpl.get("inventory_name")
 
-    executed_by = (
-        params.get("executed_by")
-        or tmpl.get("created_by")
-        or "admin"
-    )
+    executed_by = params.get("executed_by") or tmpl.get("created_by") or "admin"
 
     if not agent_id:
         return {
@@ -82,6 +81,7 @@ def execute_port_scan(
             inventory_name=inventory_name,
             agent_id=agent_id,
             executed_by=executed_by,
+            use_primary_ip_only=bool(use_primary_ip_only),
             ports=ports,
             scan_type=scan_type,
             service_detection=bool(service_detection),

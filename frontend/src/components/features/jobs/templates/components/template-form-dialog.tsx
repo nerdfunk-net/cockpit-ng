@@ -221,6 +221,8 @@ export function TemplateFormDialog({
   const [formPortScanPorts, setFormPortScanPorts] = useState('1-1024')
   const [formPortScanServiceDetection, setFormPortScanServiceDetection] =
     useState(false)
+  const [formPortScanUsePrimaryIpOnly, setFormPortScanUsePrimaryIpOnly] =
+    useState(true)
   const [formPortScanTimeout, setFormPortScanTimeout] = useState('300')
 
   // IP-specific Nautobot data (only fetched when job type is ip_addresses)
@@ -394,6 +396,7 @@ export function TemplateFormDialog({
     setFormPortScanType('connect')
     setFormPortScanPorts('1-1024')
     setFormPortScanServiceDetection(false)
+    setFormPortScanUsePrimaryIpOnly(true)
     setFormPortScanTimeout('300')
   }, [])
 
@@ -547,6 +550,9 @@ export function TemplateFormDialog({
       setFormPortScanPorts(editingTemplate.port_scan_ports || '1-1024')
       setFormPortScanServiceDetection(
         editingTemplate.port_scan_service_detection ?? false
+      )
+      setFormPortScanUsePrimaryIpOnly(
+        editingTemplate.port_scan_use_primary_ip_only ?? true
       )
       setFormPortScanTimeout(
         editingTemplate.port_scan_timeout?.toString() || '300'
@@ -901,6 +907,8 @@ export function TemplateFormDialog({
         formJobType === 'port_scan' ? formPortScanPorts.trim() || undefined : undefined,
       port_scan_service_detection:
         formJobType === 'port_scan' ? formPortScanServiceDetection : undefined,
+      port_scan_use_primary_ip_only:
+        formJobType === 'port_scan' ? formPortScanUsePrimaryIpOnly : undefined,
       port_scan_timeout:
         formJobType === 'port_scan' && formPortScanTimeout
           ? parseInt(formPortScanTimeout, 10)
@@ -1235,6 +1243,8 @@ export function TemplateFormDialog({
               setFormPortScanPorts={setFormPortScanPorts}
               formPortScanServiceDetection={formPortScanServiceDetection}
               setFormPortScanServiceDetection={setFormPortScanServiceDetection}
+              formPortScanUsePrimaryIpOnly={formPortScanUsePrimaryIpOnly}
+              setFormPortScanUsePrimaryIpOnly={setFormPortScanUsePrimaryIpOnly}
               formPortScanTimeout={formPortScanTimeout}
               setFormPortScanTimeout={setFormPortScanTimeout}
               nmapAgents={nmapAgents}

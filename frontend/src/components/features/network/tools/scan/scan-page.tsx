@@ -91,6 +91,7 @@ export default function ScanToolPage() {
 
   const [targetSource, setTargetSource] = useState<ScanTargetSource>('cidr')
   const [inventoryName, setInventoryName] = useState('')
+  const [usePrimaryIpOnly, setUsePrimaryIpOnly] = useState(true)
 
   const [cidrInputs, setCidrInputs] = useState<CidrInput[]>([
     { id: 1, value: '', error: '' },
@@ -196,6 +197,8 @@ export default function ScanToolPage() {
           target_source: targetSource,
           cidrs: validCidrs,
           inventory_name: targetSource === 'inventory' ? inventoryName : undefined,
+          use_primary_ip_only:
+            targetSource === 'inventory' ? usePrimaryIpOnly : undefined,
           agent_id: selectedAgentId,
           ports: ports.trim() || undefined,
           scan_type: scanType,
@@ -241,6 +244,7 @@ export default function ScanToolPage() {
     scanType,
     serviceDetection,
     timeout,
+    usePrimaryIpOnly,
     toast,
   ])
 
@@ -289,6 +293,8 @@ export default function ScanToolPage() {
               setTargetSource={setTargetSource}
               inventoryName={inventoryName}
               setInventoryName={setInventoryName}
+              usePrimaryIpOnly={usePrimaryIpOnly}
+              setUsePrimaryIpOnly={setUsePrimaryIpOnly}
               savedInventories={savedInventories}
               loadingInventories={loadingInventories}
             />
@@ -354,6 +360,9 @@ export default function ScanToolPage() {
             {targetSource === 'inventory' && (
               <p className="text-sm text-muted-foreground bg-muted p-3 rounded-md border border-border">
                 Device IP addresses are resolved from the selected inventory via Nautobot.
+                {usePrimaryIpOnly
+                  ? ' Only each device\'s primary IPv4 address is scanned.'
+                  : ' All interface IP addresses are scanned.'}{' '}
                 Alive hosts are discovered via ping before nmap scanning.
               </p>
             )}

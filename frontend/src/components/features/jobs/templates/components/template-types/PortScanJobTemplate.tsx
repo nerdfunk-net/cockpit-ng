@@ -45,6 +45,8 @@ interface PortScanJobTemplateProps {
   setFormPortScanPorts: (value: string) => void
   formPortScanServiceDetection: boolean
   setFormPortScanServiceDetection: (value: boolean) => void
+  formPortScanUsePrimaryIpOnly: boolean
+  setFormPortScanUsePrimaryIpOnly: (value: boolean) => void
   formPortScanTimeout: string
   setFormPortScanTimeout: (value: string) => void
   nmapAgents: NmapAgent[]
@@ -68,6 +70,8 @@ export function PortScanJobTemplate({
   setFormPortScanPorts,
   formPortScanServiceDetection,
   setFormPortScanServiceDetection,
+  formPortScanUsePrimaryIpOnly,
+  setFormPortScanUsePrimaryIpOnly,
   formPortScanTimeout,
   setFormPortScanTimeout,
   nmapAgents,
@@ -109,6 +113,8 @@ export function PortScanJobTemplate({
         setTargetSource={setFormPortScanTargetSource}
         inventoryName={formPortScanInventoryName}
         setInventoryName={setFormPortScanInventoryName}
+        usePrimaryIpOnly={formPortScanUsePrimaryIpOnly}
+        setUsePrimaryIpOnly={setFormPortScanUsePrimaryIpOnly}
         savedInventories={savedInventories}
         loadingInventories={loadingInventories}
       />

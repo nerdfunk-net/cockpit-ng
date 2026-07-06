@@ -250,6 +250,9 @@ class JobTemplate(Base):
     port_scan_service_detection = Column(
         Boolean, nullable=False, default=False
     )  # Enable nmap -sV service detection (port_scan type)
+    port_scan_use_primary_ip_only = Column(
+        Boolean, nullable=False, default=True
+    )  # Use only primary IPv4 when resolving inventory targets (port_scan type)
     port_scan_timeout = Column(
         Integer, nullable=True
     )  # Per-host nmap timeout in seconds (port_scan type)

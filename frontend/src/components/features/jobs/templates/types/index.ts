@@ -100,6 +100,7 @@ export interface JobTemplate {
   port_scan_type?: 'connect' | 'syn' | 'udp'
   port_scan_ports?: string
   port_scan_service_detection?: boolean
+  port_scan_use_primary_ip_only?: boolean
   port_scan_timeout?: number
   is_global: boolean
   user_id?: number

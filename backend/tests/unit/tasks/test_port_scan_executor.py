@@ -73,6 +73,7 @@ def test_execute_port_scan_cidr_success():
         inventory_name=None,
         agent_id="nmap-1",
         executed_by="admin",
+        use_primary_ip_only=True,
         ports="22,80",
         scan_type="connect",
         service_detection=True,
@@ -103,3 +104,28 @@ def test_execute_port_scan_inventory_success():
     assert result["success"] is True
     assert mock_run.call_args.kwargs["target_source"] == "inventory"
     assert mock_run.call_args.kwargs["inventory_name"] == "prod-routers"
+    assert mock_run.call_args.kwargs["use_primary_ip_only"] is True
+
+
+@pytest.mark.unit
+def test_execute_port_scan_inventory_respects_use_primary_ip_only_false():
+    with patch(
+        "tasks.nmap_scan_network_task.run_nmap_port_scan",
+        return_value={"success": True, "total_reachable": 2},
+    ) as mock_run:
+        result = execute_port_scan(
+            schedule_id=2,
+            credential_id=None,
+            job_parameters=None,
+            target_devices=None,
+            task_context=MagicMock(),
+            template={
+                "port_scan_target_source": "inventory",
+                "inventory_name": "prod-routers",
+                "port_scan_agent_id": "nmap-1",
+                "port_scan_use_primary_ip_only": False,
+            },
+        )
+
+    assert result["success"] is True
+    assert mock_run.call_args.kwargs["use_primary_ip_only"] is False

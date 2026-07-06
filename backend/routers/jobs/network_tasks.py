@@ -137,6 +137,7 @@ async def trigger_nmap_scan_network(
         executed_by=current_user.get("username", "unknown"),
         target_source=request.target_source,
         inventory_name=request.inventory_name,
+        use_primary_ip_only=request.use_primary_ip_only,
         ports=request.ports,
         scan_type=request.scan_type,
         service_detection=request.service_detection,

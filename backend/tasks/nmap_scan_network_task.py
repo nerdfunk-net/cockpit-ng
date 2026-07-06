@@ -37,6 +37,19 @@ query DeviceInterfaces($name: [String]) {
 }
 """
 
+_DEVICE_PRIMARY_IP_QUERY = """
+query DevicePrimaryIp($name: [String]) {
+  devices(name: $name) {
+    id
+    name
+    primary_ip4 {
+      id
+      address
+    }
+  }
+}
+"""
+
 
 def _resolve_nmap_agent(agent_id: str) -> Optional[str]:
     """Return agent_id when configured as type=nmap, else None."""
@@ -75,8 +88,23 @@ def _normalize_ip_address(address: str) -> Optional[str]:
         return None
 
 
+def _extract_primary_ip_address(graphql_result: dict) -> Optional[str]:
+    """Extract primary IPv4 address for a device from a GraphQL response."""
+    devices_data = graphql_result.get("data", {}).get("devices", [])
+    for dev in devices_data:
+        primary_ip4 = dev.get("primary_ip4")
+        if isinstance(primary_ip4, dict):
+            address = primary_ip4.get("address")
+            if address:
+                return address
+    return None
+
+
 async def _resolve_inventory_to_ips(
-    inventory_name: str, username: str
+    inventory_name: str,
+    username: str,
+    *,
+    use_primary_ip_only: bool = True,
 ) -> Tuple[List[str], Dict[str, List[str]]]:
     """Resolve a saved inventory to unique host IP addresses."""
     from routers.cockpit_agent import _conditions_to_operations, _extract_ip_addresses
@@ -103,10 +131,17 @@ async def _resolve_inventory_to_ips(
         if not device.name:
             continue
         try:
-            result = await nautobot_svc.graphql_query(
-                _DEVICE_IPS_QUERY, {"name": device.name}
-            )
-            ip_addresses = _extract_ip_addresses(result, device.name)
+            if use_primary_ip_only:
+                result = await nautobot_svc.graphql_query(
+                    _DEVICE_PRIMARY_IP_QUERY, {"name": device.name}
+                )
+                primary_address = _extract_primary_ip_address(result)
+                ip_addresses = [primary_address] if primary_address else []
+            else:
+                result = await nautobot_svc.graphql_query(
+                    _DEVICE_IPS_QUERY, {"name": device.name}
+                )
+                ip_addresses = _extract_ip_addresses(result, device.name)
         except Exception as exc:
             logger.warning("Failed to fetch IPs for device '%s': %s", device.name, exc)
             ip_addresses = []
@@ -126,9 +161,16 @@ async def _resolve_inventory_to_ips(
 
 
 def _resolve_inventory_to_ips_sync(
-    inventory_name: str, username: str
+    inventory_name: str,
+    username: str,
+    *,
+    use_primary_ip_only: bool = True,
 ) -> Tuple[List[str], Dict[str, List[str]]]:
-    return asyncio.run(_resolve_inventory_to_ips(inventory_name, username))
+    return asyncio.run(
+        _resolve_inventory_to_ips(
+            inventory_name, username, use_primary_ip_only=use_primary_ip_only
+        )
+    )
 
 
 def _update_progress(task_context, meta: Dict[str, Any]) -> None:
@@ -143,6 +185,7 @@ def run_nmap_port_scan(
     inventory_name: Optional[str],
     agent_id: str,
     executed_by: str,
+    use_primary_ip_only: bool = True,
     ports: Optional[str] = None,
     scan_type: str = "connect",
     service_detection: bool = False,
@@ -194,7 +237,9 @@ def run_nmap_port_scan(
 
         try:
             all_ips, network_ips = _resolve_inventory_to_ips_sync(
-                inventory_name, executed_by
+                inventory_name,
+                executed_by,
+                use_primary_ip_only=use_primary_ip_only,
             )
             resolved_cidrs = list(network_ips.keys())
         except Exception as exc:
@@ -358,6 +403,7 @@ def nmap_scan_network_task(
     *,
     target_source: str = "cidr",
     inventory_name: Optional[str] = None,
+    use_primary_ip_only: bool = True,
     ports: Optional[str] = None,
     scan_type: str = "connect",
     service_detection: bool = False,
@@ -388,6 +434,7 @@ def nmap_scan_network_task(
             inventory_name=inventory_name,
             agent_id=agent_id,
             executed_by=executed_by,
+            use_primary_ip_only=use_primary_ip_only,
             ports=ports,
             scan_type=scan_type,
             service_detection=service_detection,

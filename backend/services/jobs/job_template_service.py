@@ -100,6 +100,7 @@ class JobTemplateService:
         port_scan_type: Optional[str] = None,
         port_scan_ports: Optional[str] = None,
         port_scan_service_detection: bool = False,
+        port_scan_use_primary_ip_only: bool = True,
         port_scan_timeout: Optional[int] = 300,
         is_global: bool = False,
     ) -> Dict[str, Any]:
@@ -217,6 +218,7 @@ class JobTemplateService:
             port_scan_type=port_scan_type,
             port_scan_ports=port_scan_ports,
             port_scan_service_detection=port_scan_service_detection,
+            port_scan_use_primary_ip_only=port_scan_use_primary_ip_only,
             port_scan_timeout=port_scan_timeout,
             is_global=is_global,
             user_id=user_id if not is_global else None,
@@ -338,6 +340,7 @@ class JobTemplateService:
         port_scan_type: Optional[str] = None,
         port_scan_ports: Optional[str] = None,
         port_scan_service_detection: Optional[bool] = None,
+        port_scan_use_primary_ip_only: Optional[bool] = None,
         port_scan_timeout: Optional[int] = None,
         is_global: Optional[bool] = None,
         user_id: Optional[int] = None,
@@ -516,6 +519,8 @@ class JobTemplateService:
             update_data["port_scan_ports"] = port_scan_ports
         if port_scan_service_detection is not None:
             update_data["port_scan_service_detection"] = port_scan_service_detection
+        if port_scan_use_primary_ip_only is not None:
+            update_data["port_scan_use_primary_ip_only"] = port_scan_use_primary_ip_only
         if port_scan_timeout is not None:
             update_data["port_scan_timeout"] = port_scan_timeout
         if is_global is not None:
@@ -774,6 +779,7 @@ class JobTemplateService:
             "port_scan_type": template.port_scan_type,
             "port_scan_ports": template.port_scan_ports,
             "port_scan_service_detection": template.port_scan_service_detection,
+            "port_scan_use_primary_ip_only": template.port_scan_use_primary_ip_only,
             "port_scan_timeout": template.port_scan_timeout,
             "is_global": template.is_global,
             "user_id": template.user_id,

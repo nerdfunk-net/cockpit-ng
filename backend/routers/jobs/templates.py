@@ -148,6 +148,9 @@ async def create_job_template(
             port_scan_service_detection=template_data.port_scan_service_detection
             if template_data.port_scan_service_detection is not None
             else False,
+            port_scan_use_primary_ip_only=template_data.port_scan_use_primary_ip_only
+            if template_data.port_scan_use_primary_ip_only is not None
+            else True,
             port_scan_timeout=template_data.port_scan_timeout,
             is_global=template_data.is_global,
         )
@@ -370,6 +373,7 @@ async def update_job_template(
             port_scan_type=update_data.port_scan_type,
             port_scan_ports=update_data.port_scan_ports,
             port_scan_service_detection=update_data.port_scan_service_detection,
+            port_scan_use_primary_ip_only=update_data.port_scan_use_primary_ip_only,
             port_scan_timeout=update_data.port_scan_timeout,
             is_global=update_data.is_global,
             user_id=current_user["user_id"],

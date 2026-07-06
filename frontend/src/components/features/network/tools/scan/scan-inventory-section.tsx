@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -25,6 +26,8 @@ interface ScanInventorySectionProps {
   setTargetSource: (value: ScanTargetSource) => void
   inventoryName: string
   setInventoryName: (value: string) => void
+  usePrimaryIpOnly: boolean
+  setUsePrimaryIpOnly: (value: boolean) => void
   savedInventories: ScanInventoryOption[]
   loadingInventories: boolean
 }
@@ -36,6 +39,8 @@ export function ScanInventorySection({
   setTargetSource,
   inventoryName,
   setInventoryName,
+  usePrimaryIpOnly,
+  setUsePrimaryIpOnly,
   savedInventories,
   loadingInventories,
 }: ScanInventorySectionProps) {
@@ -188,6 +193,27 @@ export function ScanInventorySection({
           )}
         </div>
       </div>
+
+      {targetSource === 'inventory' && (
+        <div className="flex items-center space-x-2 pt-1">
+          <Checkbox
+            id="scan-use-primary-ip-only"
+            checked={usePrimaryIpOnly}
+            onCheckedChange={checked => setUsePrimaryIpOnly(checked === true)}
+          />
+          <div>
+            <Label
+              htmlFor="scan-use-primary-ip-only"
+              className="text-sm font-medium leading-none cursor-pointer text-success-foreground"
+            >
+              Use Primary IP only
+            </Label>
+            <p className="text-xs text-success-foreground/80 mt-1">
+              Scan only each device&apos;s primary IPv4 address from Nautobot
+            </p>
+          </div>
+        </div>
+      )}
 
       {targetSource === 'inventory' &&
         filteredInventories.length === 0 &&

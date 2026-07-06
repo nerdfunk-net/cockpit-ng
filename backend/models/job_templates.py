@@ -426,6 +426,10 @@ class JobTemplateBase(BaseModel):
         False,
         description="Enable nmap service detection (-sV) (only applies to port_scan type)",
     )
+    port_scan_use_primary_ip_only: Optional[bool] = Field(
+        True,
+        description="Use only each device's primary IPv4 when scanning from inventory (only applies to port_scan type)",
+    )
     port_scan_timeout: Optional[int] = Field(
         300,
         ge=30,
@@ -536,6 +540,7 @@ class JobTemplateUpdate(BaseModel):
     port_scan_type: Optional[str] = Field(None, max_length=20)
     port_scan_ports: Optional[str] = Field(None, max_length=255)
     port_scan_service_detection: Optional[bool] = None
+    port_scan_use_primary_ip_only: Optional[bool] = None
     port_scan_timeout: Optional[int] = Field(None, ge=30, le=3600)
     is_global: Optional[bool] = None
 

@@ -329,6 +329,7 @@ class NmapScanNetworkRequest(BaseModel):
     target_source: Literal["cidr", "inventory"] = "cidr"
     cidrs: List[str] = Field(default_factory=list)
     inventory_name: Optional[str] = None
+    use_primary_ip_only: bool = True
     agent_id: str
     ports: Optional[str] = None
     scan_type: Literal["syn", "connect", "udp"] = "connect"
