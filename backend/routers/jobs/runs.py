@@ -409,6 +409,25 @@ async def get_port_scan_dashboard_summary(
         raise_internal_server_error(logger, "Internal error", e)
 
 
+@router.get("/dashboard/port-scan/details")
+async def get_port_scan_dashboard_details(
+    current_user: dict = Depends(require_permission("jobs", "read")),
+):
+    """
+    Per-network port scan results for the dashboard details modal.
+
+    Returns the latest scan data for each unique network name.
+    """
+    try:
+        from services.jobs.port_scan_dashboard_service import (
+            get_port_scan_dashboard_service,
+        )
+
+        return get_port_scan_dashboard_service().get_port_scan_details()
+    except Exception as e:
+        raise_internal_server_error(logger, "Internal error", e)
+
+
 @router.get("/{run_id}", response_model=JobRunResponse)
 async def get_job_run(
     run_id: int,

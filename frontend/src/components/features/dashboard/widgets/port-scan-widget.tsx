@@ -1,7 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Radar,
   CheckCircle2,
@@ -10,10 +12,12 @@ import {
   Loader2,
   Network,
   Layers,
+  Eye,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { IconChip } from '@/components/shared/icon-chip'
 import { usePortScanQuery } from '@/hooks/queries/use-port-scan-query'
+import { PortScanDetailsDialog } from '../dialogs/port-scan-details-dialog'
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -23,6 +27,7 @@ function formatNumber(num: number): string {
 
 export function PortScanWidget() {
   const { data, isLoading, isError } = usePortScanQuery()
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   const totalRuns = data?.total_runs ?? 0
   const totalNetworks = data?.total_networks ?? 0
@@ -34,25 +39,39 @@ export function PortScanWidget() {
   const reachabilityPercent = data?.reachability_percent ?? 0
 
   return (
-    <Card className="analytics-card border-0 h-full gap-3 py-4 transition-all duration-300 hover:shadow-analytics-lg">
-      <CardHeader className="px-4 pb-0">
-        <div className="flex items-center gap-3">
-          <IconChip variant="info" className="p-2.5 rounded-xl">
-            <Radar className="h-5 w-5" />
-          </IconChip>
-          <div>
-            <CardTitle className="text-sm font-semibold text-foreground">
-              Port Scan Summary
-            </CardTitle>
-            <p className="text-xs text-muted-foreground">
-              Aggregated across{' '}
-              {totalRuns > 0
-                ? `${totalRuns} completed scan${totalRuns === 1 ? '' : 's'}`
-                : 'all port scans'}
-            </p>
+    <>
+      <Card className="analytics-card border-0 h-full gap-3 py-4 transition-all duration-300 hover:shadow-analytics-lg">
+        <CardHeader className="px-4 pb-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-3 min-w-0">
+              <IconChip variant="info" className="p-2.5 rounded-xl">
+                <Radar className="h-5 w-5" />
+              </IconChip>
+              <div className="min-w-0">
+                <CardTitle className="text-sm font-semibold text-foreground">
+                  Port Scan Summary
+                </CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Aggregated across{' '}
+                  {totalRuns > 0
+                    ? `${totalRuns} completed scan${totalRuns === 1 ? '' : 's'}`
+                    : 'all port scans'}
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+              onClick={() => setDetailsOpen(true)}
+              disabled={!data?.has_data}
+              aria-label="Show port scan details"
+              title="Show details"
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
           </div>
-        </div>
-      </CardHeader>
+        </CardHeader>
       <CardContent className="px-4 pt-0">
         {isLoading ? (
           <div className="flex items-center justify-center py-6">
@@ -147,5 +166,8 @@ export function PortScanWidget() {
         )}
       </CardContent>
     </Card>
+
+      <PortScanDetailsDialog open={detailsOpen} onOpenChange={setDetailsOpen} />
+    </>
   )
 }

@@ -138,6 +138,77 @@ class PortScanDashboardService:
             else None,
         }
 
+    def get_port_scan_details(self) -> Dict[str, Any]:
+        """Return per-network port scan results (latest scan per network name)."""
+        runs = job_run_repository.get_all_by_types_and_statuses(
+            job_types=list(PORT_SCAN_JOB_TYPES),
+            statuses=["completed"],
+        )
+
+        if not runs:
+            return {
+                "has_data": False,
+                "message": "No port scan jobs have been run yet",
+            }
+
+        networks_by_name: Dict[str, Dict[str, Any]] = {}
+
+        for run in runs:
+            result = _parse_result(run.get("result"))
+            if not result or not _is_port_scan_result(result):
+                continue
+
+            completed_at = _parse_completed_at(run.get("completed_at"))
+            completed_iso = completed_at.isoformat() if completed_at else None
+
+            for network in result.get("networks", []):
+                if not isinstance(network, dict):
+                    continue
+
+                name = network.get("network")
+                if not name or name in networks_by_name:
+                    continue
+
+                hosts = [
+                    host
+                    for host in (network.get("hosts") or [])
+                    if isinstance(host, dict)
+                ]
+                open_tcp = sum(len(host.get("tcp_ports") or []) for host in hosts)
+                open_udp = sum(len(host.get("udp_ports") or []) for host in hosts)
+
+                networks_by_name[str(name)] = {
+                    "network": str(name),
+                    "total_ips": int(network.get("total_ips") or 0),
+                    "reachable_count": int(network.get("reachable_count") or 0),
+                    "hosts": hosts,
+                    "open_tcp_ports": open_tcp,
+                    "open_udp_ports": open_udp,
+                    "last_scanned_at": completed_iso,
+                    "job_id": run.get("id"),
+                    "job_name": run.get("job_name"),
+                    "agent_id": result.get("agent_id"),
+                    "scan_type": result.get("scan_type"),
+                    "ports": result.get("ports"),
+                }
+
+        if not networks_by_name:
+            return {
+                "has_data": False,
+                "message": "No valid port scan results found",
+            }
+
+        networks = sorted(
+            networks_by_name.values(),
+            key=lambda item: item["network"].lower(),
+        )
+
+        return {
+            "has_data": True,
+            "networks": networks,
+            "total_networks": len(networks),
+        }
+
 
 _service = PortScanDashboardService()
 

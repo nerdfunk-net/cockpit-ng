@@ -493,6 +493,7 @@ export const queryKeys = {
     checkmkSync: () => [...queryKeys.dashboard.all, 'checkmk-sync'] as const,
     scanPrefix: () => [...queryKeys.dashboard.all, 'scan-prefix'] as const,
     portScan: () => [...queryKeys.dashboard.all, 'port-scan'] as const,
+    portScanDetails: () => [...queryKeys.dashboard.all, 'port-scan-details'] as const,
     ipAddresses: () => [...queryKeys.dashboard.all, 'ip-addresses'] as const,
   },
 }

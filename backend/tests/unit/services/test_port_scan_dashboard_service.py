@@ -100,6 +100,79 @@ class TestPortScanDashboardSummary:
         assert result["latest_completed_at"] is not None
 
     @patch(_REPO_PATH)
+    def test_details_returns_latest_network_per_name(
+        self, mock_repo: MagicMock, svc: PortScanDashboardService
+    ) -> None:
+        mock_repo.get_all_by_types_and_statuses.return_value = [
+            _make_port_scan_run(
+                completed_at=datetime(2026, 7, 6, 14, 0, tzinfo=timezone.utc),
+                networks=[
+                    {
+                        "network": "192.168.1.0/24",
+                        "total_ips": 2,
+                        "reachable_count": 2,
+                        "hosts": [
+                            {
+                                "ip_address": "192.168.1.10",
+                                "hostname": "host-a",
+                                "host_status": "up",
+                                "tcp_ports": [{"address": "*", "port": 22}],
+                                "udp_ports": [],
+                                "success": True,
+                            }
+                        ],
+                    }
+                ],
+            ),
+            _make_port_scan_run(
+                completed_at=datetime(2026, 7, 6, 10, 0, tzinfo=timezone.utc),
+                networks=[
+                    {
+                        "network": "192.168.1.0/24",
+                        "total_ips": 1,
+                        "reachable_count": 1,
+                        "hosts": [
+                            {
+                                "ip_address": "192.168.1.99",
+                                "hostname": "old-host",
+                                "host_status": "up",
+                                "tcp_ports": [],
+                                "udp_ports": [],
+                                "success": True,
+                            }
+                        ],
+                    },
+                    {
+                        "network": "10.0.0.0/8",
+                        "total_ips": 5,
+                        "reachable_count": 3,
+                        "hosts": [],
+                    },
+                ],
+            ),
+        ]
+
+        result = svc.get_port_scan_details()
+
+        assert result["has_data"] is True
+        assert result["total_networks"] == 2
+        assert len(result["networks"]) == 2
+        assert result["networks"][0]["network"] == "10.0.0.0/8"
+        assert result["networks"][1]["network"] == "192.168.1.0/24"
+        assert result["networks"][1]["hosts"][0]["ip_address"] == "192.168.1.10"
+        assert result["networks"][1]["open_tcp_ports"] == 1
+
+    @patch(_REPO_PATH)
+    def test_details_empty_when_no_valid_results(
+        self, mock_repo: MagicMock, svc: PortScanDashboardService
+    ) -> None:
+        mock_repo.get_all_by_types_and_statuses.return_value = []
+
+        result = svc.get_port_scan_details()
+
+        assert result["has_data"] is False
+
+    @patch(_REPO_PATH)
     def test_aggregates_multiple_runs(
         self, mock_repo: MagicMock, svc: PortScanDashboardService
     ) -> None:
