@@ -62,6 +62,7 @@ COPY scripts/cockpit_agent_ansible/config.py .
 COPY scripts/cockpit_agent_ansible/executor.py .
 COPY scripts/cockpit_agent_ansible/heartbeat.py .
 COPY scripts/cockpit_agent_ansible/get_facts.yml .
+COPY scripts/cockpit_agent_ansible/scan_open_ports.yml .
 
 LABEL org.opencontainers.image.title="Cockpit Ansible Agent"
 LABEL org.opencontainers.image.description="Air-gap ready Cockpit agent with Ansible for remote fact gathering"
