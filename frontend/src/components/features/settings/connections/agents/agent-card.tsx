@@ -15,6 +15,7 @@ const TYPE_LABELS: Record<AgentType, string> = {
   ansible: 'Ansible',
   netmiko: 'Netmiko',
   nmap: 'Nmap',
+  get_data: 'Get Data',
 }
 
 interface AgentCardProps {

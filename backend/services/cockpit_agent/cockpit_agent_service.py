@@ -605,6 +605,29 @@ class CockpitAgentService:
             timeout=timeout,
         )
 
+    def send_get_data(
+        self,
+        agent_id: str,
+        sent_by: str,
+        *,
+        timeout: int = 120,
+    ) -> dict:
+        """
+        Trigger the Get Data agent pipeline defined in the agent's config.yaml.
+
+        No parameters are sent — the pipeline is fixed on the agent host.
+        """
+        if not self.check_agent_online(agent_id):
+            return {"status": "error", "error": "Agent is offline or not responding"}
+
+        return self.send_command_and_wait(
+            agent_id=agent_id,
+            command="get_data",
+            params={},
+            sent_by=sent_by,
+            timeout=timeout,
+        )
+
     def send_nmap_scan(
         self,
         agent_id: str,

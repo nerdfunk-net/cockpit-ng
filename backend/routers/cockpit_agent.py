@@ -24,6 +24,7 @@ from models.cockpit_agent import (
     CommandHistoryResponse,
     CommandRequest,
     CommandResponse,
+    GetDataRequest,
     NmapScanRequest,
     NmapScanResponse,
     OpenPortsScanRequest,
@@ -267,6 +268,67 @@ def open_ports_scan(
             error_msg = response.get("error") or "Agent returned an error"
             logger.error(
                 "Ansible agent %s returned error: %s", request.agent_id, error_msg
+            )
+            raise HTTPException(status_code=422, detail=error_msg)
+
+        return response
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise_internal_server_error(logger, "Internal error", e)
+
+
+@router.post(
+    "/get-data",
+    response_model=CommandResponse,
+    dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
+)
+def get_data(
+    request: GetDataRequest,
+    user: dict = Depends(verify_token),
+    db: Session = Depends(get_db),
+):
+    """
+    Run the Get Data agent pipeline (SSH/SFTP steps from the agent's config.yaml).
+
+    The pipeline is configured on the agent host — no remote commands are accepted
+    from this API.
+
+    Sync route — blocking Redis wait runs in Starlette's thread pool.
+    """
+    try:
+        service = CockpitAgentService(db)
+
+        if not service.check_agent_online(request.agent_id):
+            raise HTTPException(
+                status_code=503,
+                detail="Agent is offline or not responding",
+            )
+
+        response = service.send_get_data(
+            agent_id=request.agent_id,
+            sent_by=user.get("sub", "system"),
+            timeout=request.timeout,
+        )
+
+        if response.get("status") == "timeout":
+            logger.warning(
+                "Get Data agent %s timed out: %s",
+                request.agent_id,
+                response.get("error"),
+            )
+            raise HTTPException(
+                status_code=504,
+                detail="Agent did not respond within the timeout",
+            )
+
+        if response.get("status") == "error":
+            error_msg = response.get("error") or "Agent returned an error"
+            logger.error(
+                "Get Data agent %s returned error: %s",
+                request.agent_id,
+                error_msg,
             )
             raise HTTPException(status_code=422, detail=error_msg)
 

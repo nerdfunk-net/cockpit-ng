@@ -26,6 +26,7 @@ const AGENT_TYPE_LABELS: Record<AgentType, string> = {
   ansible: 'Ansible',
   netmiko: 'Netmiko',
   nmap: 'Nmap',
+  get_data: 'Get Data',
 }
 
 interface AgentModalProps {
@@ -226,9 +227,11 @@ export function AgentModal({
                   ? 'Ansible agents run playbooks, optionally sourced from a Git repository.'
                   : formData.type === 'nmap'
                     ? 'Nmap agents run port scans from their network position, optionally sourced from a Git repository.'
-                    : formData.type === 'netmiko'
-                      ? 'Netmiko agents connect directly to network devices via SSH from an isolated network segment.'
-                      : 'Generic agents can optionally use a Git repository for configuration.'}
+                    : formData.type === 'get_data'
+                      ? 'Get Data agents run a fixed SSH/SFTP pipeline from config.yaml on the agent host.'
+                      : formData.type === 'netmiko'
+                        ? 'Netmiko agents connect directly to network devices via SSH from an isolated network segment.'
+                        : 'Generic agents can optionally use a Git repository for configuration.'}
             </p>
           </div>
 

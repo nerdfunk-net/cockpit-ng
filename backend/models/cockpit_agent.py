@@ -100,6 +100,16 @@ class OpenPortsScanRequest(BaseModel):
     timeout: int = Field(default=60, description="Seconds to wait for agent response")
 
 
+class GetDataRequest(BaseModel):
+    """Request to run the Get Data agent pipeline (config-driven on the agent)."""
+
+    agent_id: str = Field(..., description="Get Data agent ID")
+    timeout: int = Field(
+        default=120,
+        description="Seconds to wait for the full pipeline to complete",
+    )
+
+
 class NmapScanRequest(BaseModel):
     """Request to scan open TCP/UDP ports on a target host via an nmap agent."""
 

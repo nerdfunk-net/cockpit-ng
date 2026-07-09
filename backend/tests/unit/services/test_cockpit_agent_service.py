@@ -191,3 +191,34 @@ def test_send_nmap_scan_success(service: CockpitAgentService) -> None:
         sent_by="alice",
         timeout=120,
     )
+
+
+@pytest.mark.unit
+def test_send_get_data_offline_agent(service: CockpitAgentService) -> None:
+    with patch.object(service, "check_agent_online", return_value=False):
+        result = service.send_get_data("get-data-1", "alice")
+
+    assert result["status"] == "error"
+    assert "offline" in result["error"].lower()
+
+
+@pytest.mark.unit
+def test_send_get_data_success(service: CockpitAgentService) -> None:
+    with (
+        patch.object(service, "check_agent_online", return_value=True),
+        patch.object(
+            service,
+            "send_command_and_wait",
+            return_value={"status": "success", "output": {"files": {}}},
+        ) as wait_mock,
+    ):
+        result = service.send_get_data("get-data-1", "alice", timeout=90)
+
+    assert result["status"] == "success"
+    wait_mock.assert_called_once_with(
+        agent_id="get-data-1",
+        command="get_data",
+        params={},
+        sent_by="alice",
+        timeout=90,
+    )
