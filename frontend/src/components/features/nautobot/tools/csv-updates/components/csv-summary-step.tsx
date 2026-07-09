@@ -100,9 +100,13 @@ export function CsvSummaryStep({
   const skipped: number = payload?.summary?.skipped ?? payload?.skipped_updates ?? 0
 
   // Support both the CSV task's top-level successes/failures and the JSON
-  // task's `results.{successes,failures}` nesting.
-  const successes: DeviceEntry[] = payload?.successes ?? payload?.results?.successes ?? []
-  const failures: DeviceEntry[] = payload?.failures ?? payload?.results?.failures ?? []
+  // task's `results.{successes,failures}` nesting. Guard against the API
+  // returning a non-array (e.g. a transient progress payload) since this
+  // crosses a network boundary.
+  const rawSuccesses = payload?.successes ?? payload?.results?.successes
+  const rawFailures = payload?.failures ?? payload?.results?.failures
+  const successes: DeviceEntry[] = Array.isArray(rawSuccesses) ? rawSuccesses : []
+  const failures: DeviceEntry[] = Array.isArray(rawFailures) ? rawFailures : []
 
   const allRows: Array<DeviceEntry & { ok: boolean }> = [
     ...successes.map(d => ({ ...d, ok: true })),

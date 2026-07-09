@@ -346,19 +346,6 @@ def update_devices_task(
         logger.info("  - Failed: %s", len(failures))
         logger.info("  - Skipped: %s", len(skipped))
 
-        # Update final state
-        self.update_state(
-            state="SUCCESS",
-            meta={
-                "current": 100,
-                "total": 100,
-                "status": "Complete",
-                "successes": len(successes),
-                "failures": len(failures),
-                "skipped": len(skipped),
-            },
-        )
-
         logger.info("=" * 80)
         logger.info("UPDATE DEVICES TASK COMPLETED")
         logger.info("=" * 80)
