@@ -203,13 +203,20 @@ class DeviceUpdateService:
 
             # Step 3: Update device properties (if any)
             updated_fields = []
+            # Expected values for post-update verification. Defaults to validated_data;
+            # replaced with the resolved update_payload below when properties are
+            # actually updated, so fields resolved late (e.g. primary_ip4, resolved
+            # from an address string to an IP UUID inside _update_device_properties)
+            # are verified against the UUID actually sent, not the stale pre-resolution
+            # value.
+            expected_updates = validated_data
             if validated_data:
                 logger.info(
                     "Step 3: Updating device %s with %s field(s)",
                     device_name,
                     len(validated_data),
                 )
-                updated_fields = await self._update_device_properties(
+                updated_fields, expected_updates = await self._update_device_properties(
                     device_id=device_id,
                     validated_data=validated_data,
                     interface_config=interface_config,
@@ -267,7 +274,7 @@ class DeviceUpdateService:
             # Step 4: Verify updates (optional)
             logger.info("Step 4: Verifying updates")
             verification_passed, mismatches = await self.common.verify_device_updates(
-                device_id, validated_data, details["after"]
+                device_id, expected_updates, details["after"]
             )
 
             if not verification_passed:
@@ -524,7 +531,7 @@ class DeviceUpdateService:
         ip_namespace: Optional[str] = None,
         device_name: Optional[str] = None,
         current_primary_ip4: Optional[str] = None,
-    ) -> List[str]:
+    ) -> Tuple[List[str], Dict[str, Any]]:
         """
         Update device properties via PATCH request.
 
@@ -541,7 +548,9 @@ class DeviceUpdateService:
             current_primary_ip4: Current primary IP address (for finding interface to update)
 
         Returns:
-            List of updated field names
+            Tuple of (updated field names, resolved update payload actually sent to
+            Nautobot — e.g. primary_ip4 resolved from an address string to its IP
+            UUID — for use as the expected values in post-update verification)
         """
         logger.info("Updating device %s via REST API", device_id)
         logger.debug("Update data: %s", validated_data)
@@ -647,4 +656,4 @@ class DeviceUpdateService:
             )
 
         logger.info("Successfully updated device %s", device_id)
-        return updated_fields
+        return updated_fields, update_payload

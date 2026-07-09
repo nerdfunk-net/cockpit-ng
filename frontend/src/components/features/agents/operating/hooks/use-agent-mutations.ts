@@ -10,6 +10,8 @@ import type {
   PingJobResponse,
   NmapScanInput,
   NmapScanResult,
+  GetDataInput,
+  GetDataResult,
 } from '../types'
 
 export function useAgentMutations() {
@@ -119,5 +121,30 @@ export function useAgentMutations() {
     },
   })
 
-  return { gitPull, dockerRestart, ping, nmapScan }
+  const getData = useMutation({
+    mutationFn: async (input: GetDataInput): Promise<GetDataResult> => {
+      return apiCall<GetDataResult>('cockpit-agent/get-data', {
+        method: 'POST',
+        body: JSON.stringify({
+          agent_id: input.agent_id,
+          timeout: input.timeout ?? 120,
+        }),
+      })
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.cockpitAgents.history(variables.agent_id),
+      })
+      queryClient.invalidateQueries({ queryKey: queryKeys.cockpitAgents.list() })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Get Data Failed',
+        description: error.message,
+        variant: 'destructive',
+      })
+    },
+  })
+
+  return { gitPull, dockerRestart, ping, nmapScan, getData }
 }

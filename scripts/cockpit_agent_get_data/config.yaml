@@ -12,5 +12,5 @@ commands:
     src_file: /tmp/data
     dst_file: /tmp/cockpit/data_1
 result:
-  - key: data1
-    file: /tmp/cockpit/data_1
+  - key: devices
+    file: /tmp/crypto.csv

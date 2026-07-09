@@ -198,7 +198,9 @@ async def test_update_device_adds_verification_warning_on_mismatch() -> None:
     svc.validate_update_data = AsyncMock(
         return_value=({"status": STATUS_ACTIVE_ID}, None)
     )
-    svc._update_device_properties = AsyncMock(return_value=["status"])
+    svc._update_device_properties = AsyncMock(
+        return_value=(["status"], {"status": STATUS_ACTIVE_ID})
+    )
     svc.common.verify_device_updates = AsyncMock(
         return_value=(
             False,
@@ -216,6 +218,29 @@ async def test_update_device_adds_verification_warning_on_mismatch() -> None:
 @pytest.mark.asyncio
 @pytest.mark.unit
 @pytest.mark.nautobot
+async def test_update_device_verifies_resolved_primary_ip_not_raw_address() -> None:
+    """Post-update verification must compare the resolved primary_ip4 UUID actually
+    PATCHed to Nautobot, not the pre-resolution address string — otherwise every
+    primary IP update logs a spurious mismatch warning even though it succeeded."""
+    svc = _service_with_mocked_facades()
+    svc.nautobot.seed_device(DEVICE_ID, {"name": "router-01", "primary_ip4": None})
+    svc.validate_update_data = AsyncMock(
+        return_value=({"primary_ip4": "10.0.0.2/24"}, "Global")
+    )
+    svc.common.update_interface_ip = AsyncMock(return_value=IP_ID)
+
+    result = await svc.update_device(
+        {"name": "router-01"}, {"primary_ip4": "10.0.0.2/24"}
+    )
+
+    assert result["success"] is True
+    expected_updates = svc.common.verify_device_updates.call_args.args[1]
+    assert expected_updates["primary_ip4"] == IP_ID
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+@pytest.mark.nautobot
 async def test_update_device_properties_converts_primary_ip_to_uuid() -> None:
     """Primary IP updates create/resolve an IP and PATCH its UUID onto the device."""
     fake = FakeNautobotService()
@@ -223,7 +248,7 @@ async def test_update_device_properties_converts_primary_ip_to_uuid() -> None:
     svc = DeviceUpdateService(fake)
     svc.common.update_interface_ip = AsyncMock(return_value=IP_ID)
 
-    fields = await svc._update_device_properties(
+    fields, resolved_payload = await svc._update_device_properties(
         device_id=DEVICE_ID,
         validated_data={"primary_ip4": "10.0.0.2/24"},
         device_name="router-01",
@@ -232,5 +257,6 @@ async def test_update_device_properties_converts_primary_ip_to_uuid() -> None:
     )
 
     assert fields == ["primary_ip4"]
+    assert resolved_payload["primary_ip4"] == IP_ID
     assert fake._devices[DEVICE_ID]["primary_ip4"] == IP_ID
     svc.common.update_interface_ip.assert_awaited_once()

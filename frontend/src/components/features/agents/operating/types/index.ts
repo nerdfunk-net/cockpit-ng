@@ -128,3 +128,28 @@ export interface NmapScanResult {
   error: string | null
   execution_time_ms: number
 }
+
+export interface GetDataInput {
+  agent_id: string
+  timeout?: number
+}
+
+export interface GetDataStepResult {
+  type: string
+  host: string
+  status: string
+  [key: string]: unknown
+}
+
+export interface GetDataOutput {
+  steps: GetDataStepResult[]
+  result: Record<string, string>
+}
+
+export interface GetDataResult {
+  command_id: string
+  status: string
+  output: GetDataOutput | null
+  error: string | null
+  execution_time_ms: number
+}
