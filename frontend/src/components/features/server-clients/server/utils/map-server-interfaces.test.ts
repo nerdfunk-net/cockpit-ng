@@ -11,6 +11,7 @@ const DEFAULTS: DefaultsFields = {
   location: 'loc-1',
   platform: 'plat-1',
   interface_status: 'if-status-1',
+  interface_type: 'if-type-1',
   device_status: 'dev-status-1',
   ip_address_status: '',
   ip_prefix_status: '',

@@ -30,6 +30,7 @@ from core.models.snapshots import (
     SnapshotResult,
 )
 from core.models.templates import Template, TemplateVersion
+from core.models.user_field_mappings import UserFieldMapping
 from core.models.users import User, UserProfile
 
 __all__ = [
@@ -97,4 +98,6 @@ __all__ = [
     "Server",
     "ServerFactsHistory",
     "ServerOpenPortsHistory",
+    # User field mappings
+    "UserFieldMapping",
 ]

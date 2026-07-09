@@ -186,6 +186,7 @@ async def test_update_device_processes_interfaces_without_device_field_updates()
         ],
         add_prefixes_automatically=True,
         sync_interfaces=False,
+        default_interface_type=None,
     )
 
 

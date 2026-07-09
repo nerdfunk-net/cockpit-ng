@@ -26,6 +26,7 @@ def test_get_returns_db_values_when_exist():
         location="NYC",
         platform="ios",
         interface_status="active",
+        interface_type="1000base-t",
         device_status="active",
         ip_address_status="active",
         ip_prefix_status="active",
@@ -44,6 +45,7 @@ def test_get_returns_db_values_when_exist():
     assert result["location"] == "NYC"
     assert result["platform"] == "ios"
     assert result["namespace"] == "Global"
+    assert result["interface_type"] == "1000base-t"
 
 
 @pytest.mark.unit
@@ -68,6 +70,18 @@ def test_update_creates_when_no_existing():
 
     assert result is True
     mock_repo.create.assert_called_once()
+
+
+@pytest.mark.unit
+def test_update_passes_interface_type_through():
+    mock_repo = MagicMock()
+    mock_repo.get_defaults.return_value = None
+
+    with patch(_PATCH_DEFAULT_REPO, return_value=mock_repo):
+        result = _make_service().update({"interface_type": "1000base-t"})
+
+    assert result is True
+    assert mock_repo.create.call_args.kwargs["interface_type"] == "1000base-t"
 
 
 @pytest.mark.unit

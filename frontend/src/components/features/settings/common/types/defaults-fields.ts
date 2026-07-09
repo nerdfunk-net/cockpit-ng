@@ -3,6 +3,7 @@ export interface DefaultsFields {
   location: string
   platform: string
   interface_status: string
+  interface_type: string
   device_status: string
   ip_address_status: string
   ip_prefix_status: string

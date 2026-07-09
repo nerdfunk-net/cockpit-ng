@@ -46,6 +46,7 @@ class InterfaceManagerService:
         interfaces: List[Dict[str, Any]],
         add_prefixes_automatically: bool = False,
         sync_interfaces: bool = False,
+        default_interface_type: Optional[str] = None,
     ) -> InterfaceUpdateResult:
         """
         Create or update multiple interfaces for a device.
@@ -60,6 +61,10 @@ class InterfaceManagerService:
             device_id: Device UUID
             interfaces: List of interface dicts (can be InterfaceSpec or plain dicts)
             add_prefixes_automatically: Auto-create missing prefix if IP creation fails (default: False)
+            default_interface_type: Fallback interface type slug used only when creating a
+                brand-new interface and the interface dict didn't supply one (e.g. from the
+                Network/Server Defaults "New Interface Type" setting). Never applied to
+                already-existing interfaces.
 
         Returns:
             InterfaceUpdateResult with operation statistics and warnings
@@ -110,6 +115,7 @@ class InterfaceManagerService:
                     device_id=device_id,
                     interface=interface,
                     warnings=warnings,
+                    default_interface_type=default_interface_type,
                 )
                 logger.info("Interface ID returned: %s", interface_id)
 
@@ -120,6 +126,29 @@ class InterfaceManagerService:
                             updated_interfaces.append(iface_name)
                     elif iface_name not in created_interfaces:
                         created_interfaces.append(iface_name)
+
+                    # Get IP addresses in array format
+                    ip_addresses = interface.get("ip_addresses", [])
+                    if not ip_addresses and interface.get("ip_address"):
+                        # Backwards compatibility: single ip_address
+                        ip_addresses = [
+                            {
+                                "address": interface["ip_address"],
+                                "is_primary": interface.get("is_primary_ipv4", False),
+                            }
+                        ]
+
+                    logger.info("Found %s IP(s) to assign", len(ip_addresses))
+
+                    # Only touch existing IP assignments when the row actually supplies
+                    # an address — a row that doesn't mention an IP for this interface
+                    # shouldn't strip whatever is already assigned to it in Nautobot.
+                    if not ip_addresses:
+                        logger.info(
+                            "No IP address supplied for interface %s, leaving existing assignments untouched",
+                            interface["name"],
+                        )
+                        continue
 
                     # Clean existing IP assignments (once per interface)
                     if interface_id not in cleaned_interfaces:
@@ -141,19 +170,6 @@ class InterfaceManagerService:
                         interface["name"],
                     )
                     logger.info("Interface ID: %s", interface_id)
-
-                    # Get IP addresses in array format
-                    ip_addresses = interface.get("ip_addresses", [])
-                    if not ip_addresses and interface.get("ip_address"):
-                        # Backwards compatibility: single ip_address
-                        ip_addresses = [
-                            {
-                                "address": interface["ip_address"],
-                                "is_primary": interface.get("is_primary_ipv4", False),
-                            }
-                        ]
-
-                    logger.info("Found %s IP(s) to assign", len(ip_addresses))
 
                     # Assign each IP address
                     for idx, ip_data in enumerate(ip_addresses):
@@ -392,43 +408,77 @@ class InterfaceManagerService:
         device_id: str,
         interface: Dict[str, Any],
         warnings: List[str],
+        default_interface_type: Optional[str] = None,
     ) -> tuple[Optional[str], bool]:
         """
         Create or update a single interface.
+
+        A brand-new interface requires a type: the row's own value if provided,
+        otherwise ``default_interface_type`` (e.g. the configured Network/Server
+        Defaults "New Interface Type"). An interface that already exists on the
+        device is only patched with attributes the row actually supplies — its
+        current type (and any other omitted attribute) is left untouched rather
+        than overwritten with a default.
 
         Args:
             device_id: Device UUID
             interface: Interface specification
             warnings: List to append warnings to
+            default_interface_type: Fallback type slug used only when creating a
+                new interface and the row didn't supply one
 
         Returns:
             Tuple of (interface UUID if successful, was_updated flag)
         """
-        # Validate required fields before hitting Nautobot
+        existing_id = await self.common.resolve_interface_by_name(
+            device_id=device_id,
+            interface_name=interface["name"],
+        )
+
         # Nautobot interface type slugs are always lowercase (e.g. "virtual", "1000base-t")
         # Frontend may store the display name (e.g. "Virtual") — normalize to lowercase slug
-        interface_type = (interface.get("type") or "").strip().lower()
-        if not interface_type:
-            warnings.append(
-                f"Interface {interface['name']}: 'type' is required but was not provided — skipping"
-            )
-            logger.warning(
-                "Interface '%s' has no type set, skipping creation", interface["name"]
-            )
-            return None, False
+        provided_type = (interface.get("type") or "").strip().lower()
 
-        # Resolve status to UUID — use "or" fallback so empty string also defaults to "active"
-        interface_status = interface.get("status") or "active"
-        interface_status_id = await self.common.resolve_status_id(
-            interface_status, "dcim.interface"
+        if existing_id:
+            # Existing interfaces keep their current type unless the row explicitly
+            # supplies one — the configured default only applies to newly created
+            # interfaces, never to overwriting an already-configured one.
+            interface_type = provided_type
+        else:
+            interface_type = (
+                provided_type or (default_interface_type or "").strip().lower()
+            )
+            if not interface_type:
+                warnings.append(
+                    f"Interface {interface['name']}: 'type' is required but was not provided — skipping"
+                )
+                logger.warning(
+                    "Interface '%s' has no type set, skipping creation",
+                    interface["name"],
+                )
+                return None, False
+
+        # Status follows the same rule as type: required (defaulting to "active")
+        # when creating, but only overridden on an existing interface if the row
+        # explicitly supplies a value — omitted attributes are left untouched.
+        provided_status = (interface.get("status") or "").strip()
+        interface_status = (
+            provided_status if existing_id else (provided_status or "active")
         )
+        interface_status_id = None
+        if interface_status:
+            interface_status_id = await self.common.resolve_status_id(
+                interface_status, "dcim.interface"
+            )
 
         interface_payload: Dict[str, Any] = {
             "name": interface["name"],
             "device": device_id,
-            "type": interface_type,
-            "status": interface_status_id,
         }
+        if interface_type:
+            interface_payload["type"] = interface_type
+        if interface_status_id:
+            interface_payload["status"] = interface_status_id
 
         optional_fields = [
             "enabled",
@@ -454,10 +504,6 @@ class InterfaceManagerService:
         if tagged_vlans:
             interface_payload["tagged_vlans"] = [{"id": vid} for vid in tagged_vlans]
 
-        existing_id = await self.common.resolve_interface_by_name(
-            device_id=device_id,
-            interface_name=interface["name"],
-        )
         if existing_id:
             patch_payload = {
                 k: v

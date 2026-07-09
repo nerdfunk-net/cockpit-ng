@@ -3,9 +3,17 @@ import type { CSVConfig } from '@/components/features/nautobot/shared/csv/types'
 import {
   DEVICE_NAME_FIELD_KEY,
   INTERFACE_CONFIG_FIELD_KEYS,
+  INTERFACE_NAME_FIELD_KEY,
+  INTERFACE_STATUS_FIELD_KEY,
+  INTERFACE_TYPE_FIELD_KEY,
   PRIMARY_IP_FIELD_KEY,
 } from '../constants'
-import type { LiveUpdateRow, ParsedCsvSource } from '../types'
+import type {
+  DeviceUpdatePayload,
+  LiveUpdateInterfaceEntry,
+  LiveUpdateRow,
+  ParsedCsvSource,
+} from '../types'
 
 interface CombineResult {
   data: ParsedCsvSource | null
@@ -96,29 +104,31 @@ export function buildLiveUpdateRows(
 }
 
 /**
- * Collapses the flat, one-row-per-interface LiveUpdateRow list into one CSV
- * row per device for the `update-devices-from-csv` backend task.
+ * Groups the flat, one-row-per-interface LiveUpdateRow list into one device
+ * update object per device for the `tasks/update-devices` JSON endpoint.
  *
- * The backend only special-cases a literal `primary_ip4` column (not
- * `interface_ip_address`) to set a device's primary IP, and only recognizes
- * literal `interface_name`/`interface_type`/`interface_status` headers to
- * build the interface that IP attaches to — so the row the user picked as
- * "primary" per device supplies those three fields plus a renamed
- * `primary_ip4`, while any other mapped field is taken from the first row
- * in the device's group that has a non-empty value for it.
+ * Every row with a non-empty Interface Name becomes its own entry in that
+ * device's `interfaces` array — not just the row picked as "primary" — so the
+ * backend can create any interface that doesn't already exist (falling back to
+ * the configured default interface type when the row didn't map one) and
+ * patch existing interfaces with only the attributes the row actually
+ * supplies. Plain device-level fields are taken from the first row in the
+ * device's group that has a non-empty value for it.
  */
-export function buildDeviceUpdateCsv(
+export function buildDeviceUpdateJson(
   selectedRows: LiveUpdateRow[],
   primaryIpByDevice: Record<string, string | null>
-): ParsedCsvSource {
+): DeviceUpdatePayload[] {
   const deviceOrder: string[] = []
   const deviceRecords = new Map<string, Record<string, string>>()
+  const deviceInterfaces = new Map<string, LiveUpdateInterfaceEntry[]>()
 
   for (const row of selectedRows) {
     if (!row.deviceName) continue
 
     if (!deviceRecords.has(row.deviceName)) {
-      deviceRecords.set(row.deviceName, { [DEVICE_NAME_FIELD_KEY]: row.deviceName })
+      deviceRecords.set(row.deviceName, {})
+      deviceInterfaces.set(row.deviceName, [])
       deviceOrder.push(row.deviceName)
     }
     const record = deviceRecords.get(row.deviceName)
@@ -130,35 +140,25 @@ export function buildDeviceUpdateCsv(
       if (!value || !record || record[field]) continue
       record[field] = value
     }
+
+    const interfaceName = row.fields[INTERFACE_NAME_FIELD_KEY]?.trim()
+    if (!interfaceName) continue
+
+    const entry: LiveUpdateInterfaceEntry = { name: interfaceName }
+    const type = row.fields[INTERFACE_TYPE_FIELD_KEY]?.trim()
+    if (type) entry.type = type
+    const status = row.fields[INTERFACE_STATUS_FIELD_KEY]?.trim()
+    if (status) entry.status = status
+    const ipAddress = row.fields[PRIMARY_IP_FIELD_KEY]?.trim()
+    if (ipAddress) entry.ip_address = ipAddress
+    if (primaryIpByDevice[row.deviceName] === row.id) entry.is_primary_ipv4 = true
+
+    deviceInterfaces.get(row.deviceName)?.push(entry)
   }
 
-  for (const row of selectedRows) {
-    if (!row.deviceName) continue
-    if (primaryIpByDevice[row.deviceName] !== row.id) continue
-
-    const ipAddress = row.fields[PRIMARY_IP_FIELD_KEY]
-    if (!ipAddress || !ipAddress.trim()) continue
-
-    const record = deviceRecords.get(row.deviceName)
-    if (!record) continue
-
-    record.primary_ip4 = ipAddress.trim()
-    for (const field of INTERFACE_CONFIG_FIELD_KEYS) {
-      const value = row.fields[field]
-      if (value) record[field] = value
-    }
-  }
-
-  const headerSet = new Set<string>([DEVICE_NAME_FIELD_KEY])
-  for (const record of deviceRecords.values()) {
-    for (const key of Object.keys(record)) headerSet.add(key)
-  }
-  const headers = Array.from(headerSet)
-
-  const rows = deviceOrder.map(deviceName => {
-    const record = deviceRecords.get(deviceName) ?? {}
-    return headers.map(header => record[header] ?? '')
-  })
-
-  return { headers, rows }
+  return deviceOrder.map(deviceName => ({
+    ...(deviceRecords.get(deviceName) ?? {}),
+    name: deviceName,
+    interfaces: deviceInterfaces.get(deviceName) ?? [],
+  }))
 }

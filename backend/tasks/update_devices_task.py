@@ -125,6 +125,15 @@ def update_devices_task(
         nautobot_service = service_factory.build_nautobot_service()
         update_service = DeviceUpdateService(nautobot_service)
 
+        # Fallback interface type for newly created interfaces that don't specify
+        # their own (Settings / Common → Network Defaults → "New Interface Type").
+        from services.settings.manager import SettingsManager
+
+        network_defaults = SettingsManager().get_network_defaults()
+        default_interface_type = (
+            network_defaults.get("interface_type") or ""
+        ).strip() or None
+
         # STEP 3: Update devices
         logger.info("-" * 80)
         logger.info("STEP 3: UPDATING %s DEVICES", total_devices)
@@ -244,6 +253,7 @@ def update_devices_task(
                             update_data=update_data,
                             interface_config=interface_config,
                             interfaces=interfaces,
+                            default_interface_type=default_interface_type,
                         )
                     )
 

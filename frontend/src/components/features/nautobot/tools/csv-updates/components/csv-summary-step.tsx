@@ -25,6 +25,9 @@ import {
 interface DeviceEntry {
   device_id?: string
   device_name?: string
+  // JSON `tasks/update-devices` failures identify the device via this nested
+  // object instead of a flat device_name.
+  device_identifier?: { name?: string }
   updated_fields?: string[]
   warnings?: string[]
   error?: string
@@ -43,11 +46,22 @@ interface TaskResultPayload {
   successes?: DeviceEntry[]
   failures?: DeviceEntry[]
   skipped?: DeviceEntry[]
+  // JSON `tasks/update-devices` nests successes/failures/skipped under `results`
+  // instead of at the top level.
+  results?: {
+    successes?: DeviceEntry[]
+    failures?: DeviceEntry[]
+    skipped?: DeviceEntry[]
+  }
   message?: string
-  // Legacy flat shape support
+  // Legacy/JSON-task flat shape support
   total_processed?: number
   successful?: number
   failed?: number
+  devices_processed?: number
+  successful_updates?: number
+  failed_updates?: number
+  skipped_updates?: number
 }
 
 interface CsvSummaryStepProps {
@@ -75,14 +89,20 @@ export function CsvSummaryStep({
       ? (taskResult as TaskResultPayload)
       : null
 
-  // Support both nested `summary` shape and legacy flat shape
-  const total: number = payload?.summary?.total ?? payload?.total_processed ?? 0
-  const successful: number = payload?.summary?.successful ?? payload?.successful ?? 0
-  const failed: number = payload?.summary?.failed ?? payload?.failed ?? 0
-  const skipped: number = payload?.summary?.skipped ?? 0
+  // Support the CSV task's top-level/summary shape, the JSON task's flat
+  // `*_updates` shape, and legacy flat fields.
+  const total: number =
+    payload?.summary?.total ?? payload?.total_processed ?? payload?.devices_processed ?? 0
+  const successful: number =
+    payload?.summary?.successful ?? payload?.successful ?? payload?.successful_updates ?? 0
+  const failed: number =
+    payload?.summary?.failed ?? payload?.failed ?? payload?.failed_updates ?? 0
+  const skipped: number = payload?.summary?.skipped ?? payload?.skipped_updates ?? 0
 
-  const successes: DeviceEntry[] = payload?.successes ?? []
-  const failures: DeviceEntry[] = payload?.failures ?? []
+  // Support both the CSV task's top-level successes/failures and the JSON
+  // task's `results.{successes,failures}` nesting.
+  const successes: DeviceEntry[] = payload?.successes ?? payload?.results?.successes ?? []
+  const failures: DeviceEntry[] = payload?.failures ?? payload?.results?.failures ?? []
 
   const allRows: Array<DeviceEntry & { ok: boolean }> = [
     ...successes.map(d => ({ ...d, ok: true })),
@@ -172,7 +192,10 @@ export function CsvSummaryStep({
                       )}
                     </TableCell>
                     <TableCell className="text-xs font-mono px-3 py-2">
-                      {row.device_name ?? row.device_id ?? `Row ${i + 1}`}
+                      {row.device_name ??
+                        row.device_identifier?.name ??
+                        row.device_id ??
+                        `Row ${i + 1}`}
                     </TableCell>
                     <TableCell className="text-xs px-3 py-2">
                       {row.updated_fields && row.updated_fields.length > 0 ? (

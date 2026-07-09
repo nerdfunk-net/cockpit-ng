@@ -1,7 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
-import type { NautobotOptionsData, NautobotOption, LocationItem } from '../types'
+import type {
+  NautobotOptionsData,
+  NautobotOption,
+  InterfaceTypeOption,
+  LocationItem,
+} from '../types'
 import { CACHE_TIME, EMPTY_ARRAY } from '../utils/constants'
 import { buildLocationHierarchy } from '../utils/location-utils'
 
@@ -28,6 +33,7 @@ export function useNautobotOptionsQuery(
       const [
         deviceStatusesRes,
         interfaceStatusesRes,
+        interfaceTypesRes,
         ipAddressStatusesRes,
         ipPrefixStatusesRes,
         namespacesRes,
@@ -38,6 +44,7 @@ export function useNautobotOptionsQuery(
       ] = await Promise.all([
         apiCall('nautobot/statuses/device'),
         apiCall('nautobot/statuses/interface'),
+        apiCall('nautobot/interface-types'),
         apiCall('nautobot/statuses/ipaddress'),
         apiCall('nautobot/statuses/prefix'),
         apiCall('nautobot/namespaces'),
@@ -58,6 +65,9 @@ export function useNautobotOptionsQuery(
         interfaceStatuses: Array.isArray(interfaceStatusesRes)
           ? (interfaceStatusesRes as NautobotOption[])
           : (EMPTY_ARRAY as NautobotOption[]),
+        interfaceTypes: Array.isArray(interfaceTypesRes)
+          ? (interfaceTypesRes as InterfaceTypeOption[])
+          : (EMPTY_ARRAY as InterfaceTypeOption[]),
         ipAddressStatuses: Array.isArray(ipAddressStatusesRes)
           ? (ipAddressStatusesRes as NautobotOption[])
           : (EMPTY_ARRAY as NautobotOption[]),

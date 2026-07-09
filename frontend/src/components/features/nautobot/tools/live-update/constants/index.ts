@@ -26,12 +26,15 @@ export const LIVE_UPDATE_FIELDS: { key: string; label: string }[] = [
 
 export const DEVICE_NAME_FIELD_KEY = 'name'
 export const PRIMARY_IP_FIELD_KEY = 'interface_ip_address'
+export const INTERFACE_NAME_FIELD_KEY = 'interface_name'
+export const INTERFACE_TYPE_FIELD_KEY = 'interface_type'
+export const INTERFACE_STATUS_FIELD_KEY = 'interface_status'
 
 /** Interface columns the backend only recognizes by these literal header names. */
 export const INTERFACE_CONFIG_FIELD_KEYS = [
-  'interface_name',
-  'interface_type',
-  'interface_status',
+  INTERFACE_NAME_FIELD_KEY,
+  INTERFACE_TYPE_FIELD_KEY,
+  INTERFACE_STATUS_FIELD_KEY,
 ]
 
 export const WIZARD_STEP_ORDER: LiveUpdateStep[] = [
@@ -56,3 +59,6 @@ export const STEP_LABELS: Record<LiveUpdateStep, string> = {
 }
 
 export const CSV_CONFIG = { delimiter: ',', quoteChar: '"' } as const
+
+/** Identifies this tool's saved field mapping in the per-user field-mappings store. */
+export const LIVE_UPDATE_APP_NAME = 'nautobot-live-update'

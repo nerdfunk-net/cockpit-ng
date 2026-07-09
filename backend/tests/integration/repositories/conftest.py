@@ -19,6 +19,7 @@ from sqlalchemy.orm import sessionmaker
 from core.database import Base
 from core.models.client_data import ClientHostname, ClientIpAddress, ClientMacAddress
 from core.models.servers import Server, ServerFactsHistory, ServerOpenPortsHistory
+from core.models.user_field_mappings import UserFieldMapping
 
 
 def _require_pg_url() -> str:
@@ -225,3 +226,40 @@ def server_open_ports_history_repository_pg(
     from repositories.servers.servers_repository import ServersRepository
 
     return ServersRepository(), ServerOpenPortsHistoryRepository()
+
+
+@pytest.fixture(scope="session")
+def postgres_engine_user_field_mappings(postgres_engine_integration):
+    """Ensures ``user_field_mappings`` table exists (JSONB requires real Postgres)."""
+    Base.metadata.create_all(
+        postgres_engine_integration, tables=[UserFieldMapping.__table__]
+    )
+    return postgres_engine_integration
+
+
+@pytest.fixture
+def user_field_mapping_repository_pg(postgres_engine_user_field_mappings, monkeypatch):
+    """``UserFieldMappingRepository`` using a session factory bound to the test engine."""
+    import core.database as db_mod
+
+    with postgres_engine_user_field_mappings.begin() as conn:
+        conn.execute(
+            text("TRUNCATE TABLE user_field_mappings RESTART IDENTITY CASCADE")
+        )
+
+    make_session = sessionmaker(bind=postgres_engine_user_field_mappings)
+
+    def _test_get_db_session():
+        return make_session()
+
+    monkeypatch.setattr(db_mod, "get_db_session", _test_get_db_session)
+    monkeypatch.setattr("repositories.base.get_db_session", _test_get_db_session)
+    monkeypatch.setattr(
+        "repositories.user_field_mappings.user_field_mappings_repository.get_db_session",
+        _test_get_db_session,
+    )
+    from repositories.user_field_mappings.user_field_mappings_repository import (
+        UserFieldMappingRepository,
+    )
+
+    return UserFieldMappingRepository()

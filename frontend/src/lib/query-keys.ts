@@ -496,4 +496,10 @@ export const queryKeys = {
     portScanDetails: () => [...queryKeys.dashboard.all, 'port-scan-details'] as const,
     ipAddresses: () => [...queryKeys.dashboard.all, 'ip-addresses'] as const,
   },
+
+  // Per-user, per-app saved field mappings (e.g. Nautobot Live Update wizard)
+  fieldMappings: {
+    all: ['fieldMappings'] as const,
+    detail: (appName: string) => [...queryKeys.fieldMappings.all, appName] as const,
+  },
 }

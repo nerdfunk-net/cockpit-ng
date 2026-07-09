@@ -9,6 +9,7 @@ export interface NautobotDefaults {
   location: string
   platform: string
   interface_status: string
+  interface_type: string
   device_status: string
   ip_address_status: string
   ip_prefix_status: string
@@ -24,6 +25,12 @@ export interface NautobotOption {
   name: string
   color?: string
   description?: string
+}
+
+// Interface types come from Nautobot's OPTIONS choices — value/display_name, not id/name.
+export interface InterfaceTypeOption {
+  value: string
+  display_name: string
 }
 
 export interface LocationItem {
@@ -64,6 +71,7 @@ export interface CustomFieldChoice {
 export interface NautobotOptionsData {
   deviceStatuses: NautobotOption[]
   interfaceStatuses: NautobotOption[]
+  interfaceTypes: InterfaceTypeOption[]
   ipAddressStatuses: NautobotOption[]
   ipPrefixStatuses: NautobotOption[]
   namespaces: NautobotOption[]

@@ -125,6 +125,7 @@ from routers.settings import (
 
 # Tools routers package (schema management, RBAC seeding, baseline, certificates)
 from routers.tools import certificates_router, tools_router
+from routers.user_field_mappings import router as user_field_mappings_router
 
 # Import auth dependency
 
@@ -254,6 +255,7 @@ app.include_router(clients_router)
 app.include_router(servers_router)
 app.include_router(logs_router)
 app.include_router(health_router)
+app.include_router(user_field_mappings_router)
 
 
 # Health check and basic endpoints

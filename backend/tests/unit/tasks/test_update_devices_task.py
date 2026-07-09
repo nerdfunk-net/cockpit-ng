@@ -15,6 +15,7 @@ from tasks.update_devices_task import _prepare_device_data, update_devices_task
 
 _PATCH_SF = "tasks.update_devices_task.service_factory"
 _PATCH_SVC = "tasks.update_devices_task.DeviceUpdateService"
+_PATCH_SETTINGS_MGR = "services.settings.manager.SettingsManager"
 
 
 # ── _prepare_device_data ──────────────────────────────────────────────────────
@@ -155,7 +156,13 @@ def _make_update_svc(result=None, error=None) -> MagicMock:
     return svc
 
 
-def _run(devices, dry_run=False, svc=None) -> dict:
+def _make_settings_manager(interface_type: str = "") -> MagicMock:
+    mgr = MagicMock()
+    mgr.get_network_defaults.return_value = {"interface_type": interface_type}
+    return mgr
+
+
+def _run(devices, dry_run=False, svc=None, default_interface_type: str = "") -> dict:
     """Run update_devices_task synchronously with all external deps mocked."""
     if svc is None:
         svc = _make_update_svc()
@@ -164,7 +171,11 @@ def _run(devices, dry_run=False, svc=None) -> dict:
             mock_sf.build_nautobot_service.return_value = MagicMock()
             mock_sf.build_job_run_service.return_value = _make_jrs()
             with patch(_PATCH_SVC, return_value=svc):
-                return update_devices_task.run(devices, dry_run=dry_run)
+                with patch(
+                    _PATCH_SETTINGS_MGR,
+                    return_value=_make_settings_manager(default_interface_type),
+                ):
+                    return update_devices_task.run(devices, dry_run=dry_run)
 
 
 # ── update_devices_task tests ─────────────────────────────────────────────────
@@ -270,6 +281,18 @@ def test_update_devices_task_multiple_devices_all_succeed():
     assert result["devices_processed"] == 2
     assert result["successful_updates"] == 2
     assert result["failed_updates"] == 0
+
+
+@pytest.mark.unit
+@pytest.mark.nautobot
+def test_update_devices_task_passes_network_defaults_interface_type_through():
+    """default_interface_type from Network Defaults is forwarded to update_device."""
+    svc = _make_update_svc()
+    devices = [{"name": "router1", "status": "active"}]
+    _run(devices, svc=svc, default_interface_type="1000base-t")
+
+    svc.update_device.assert_awaited_once()
+    assert svc.update_device.call_args.kwargs["default_interface_type"] == "1000base-t"
 
 
 @pytest.mark.unit

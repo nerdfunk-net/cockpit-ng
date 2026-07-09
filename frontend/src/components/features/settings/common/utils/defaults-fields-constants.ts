@@ -4,6 +4,7 @@ export const EMPTY_DEFAULTS_FIELDS: DefaultsFields = {
   location: '',
   platform: '',
   interface_status: '',
+  interface_type: '',
   device_status: '',
   ip_address_status: '',
   ip_prefix_status: '',

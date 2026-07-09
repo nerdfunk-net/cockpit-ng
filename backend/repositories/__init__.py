@@ -22,6 +22,9 @@ from .jobs.job_template_repository import JobTemplateRepository
 from .servers.servers_repository import ServersRepository
 from .settings.credentials_repository import CredentialsRepository
 from .settings.template_repository import TemplateRepository
+from .user_field_mappings.user_field_mappings_repository import (
+    UserFieldMappingRepository,
+)
 
 __all__ = [
     "BaseRepository",
@@ -39,4 +42,5 @@ __all__ = [
     "LoginCredentialRepository",
     "SNMPMappingRepository",
     "ServersRepository",
+    "UserFieldMappingRepository",
 ]

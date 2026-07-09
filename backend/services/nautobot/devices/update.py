@@ -58,6 +58,7 @@ class DeviceUpdateService:
         matching_strategy: str = "exact",
         rack_location: Optional[str] = None,
         sync_interfaces: bool = False,
+        default_interface_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Update a single device.
@@ -112,6 +113,11 @@ class DeviceUpdateService:
                 ]
 
             create_if_missing: If True, create device if not found (uses DeviceImportService)
+
+            default_interface_type: Fallback interface type slug (e.g. from the Network/Server
+                Defaults "New Interface Type" setting) used only when an entry in `interfaces`
+                creates a brand-new interface and didn't supply its own `type`. Never applied
+                to an interface that already exists on the device.
 
         Returns:
             {
@@ -244,6 +250,7 @@ class DeviceUpdateService:
                         interfaces=interfaces,
                         add_prefixes_automatically=add_prefix,
                         sync_interfaces=sync_interfaces,
+                        default_interface_type=default_interface_type,
                     )
                 )
                 interfaces_created = interface_result.interfaces_created

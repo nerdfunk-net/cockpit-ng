@@ -10,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import { StatusAlert } from '@/components/shared/status-alert'
 import { useAgentMutations } from '@/components/features/agents/operating/hooks/use-agent-mutations'
 import { useGetDataAgents } from '../hooks/use-get-data-agents'
@@ -19,11 +21,15 @@ import type { ParsedCsvSource } from '../types'
 interface DataSourceStepProps {
   onCsvParsed: (source: ParsedCsvSource) => void
   onAgentDataReceived: (result: Record<string, string>) => void
+  useNewMapping: boolean
+  onUseNewMappingChange: (value: boolean) => void
 }
 
 export function DataSourceStep({
   onCsvParsed,
   onAgentDataReceived,
+  useNewMapping,
+  onUseNewMappingChange,
 }: DataSourceStepProps) {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
   const [selectedAgentId, setSelectedAgentId] = useState('')
@@ -103,6 +109,17 @@ export function DataSourceStep({
       </div>
 
       {agentError && <StatusAlert variant="error">{agentError}</StatusAlert>}
+
+      <div className="flex items-center space-x-2">
+        <Checkbox
+          id="use-new-mapping"
+          checked={useNewMapping}
+          onCheckedChange={value => onUseNewMappingChange(value === true)}
+        />
+        <Label htmlFor="use-new-mapping" className="text-sm text-muted-foreground">
+          Use new mapping (ignore any saved mapping and configure it again)
+        </Label>
+      </div>
 
       <CsvUploadDialog
         open={uploadDialogOpen}

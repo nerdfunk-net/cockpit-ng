@@ -490,6 +490,15 @@ def build_profile_service():
     return profile_service
 
 
+def build_user_field_mapping_service():
+    """Create a fresh UserFieldMappingService instance."""
+    from services.user_field_mappings.user_field_mapping_service import (
+        UserFieldMappingService,
+    )
+
+    return UserFieldMappingService()
+
+
 # ---------------------------------------------------------------------------
 # Jobs services
 # ---------------------------------------------------------------------------

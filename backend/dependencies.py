@@ -311,6 +311,11 @@ def get_profile_service():
     return service_factory.build_profile_service()
 
 
+def get_user_field_mapping_service():
+    """Provide a UserFieldMappingService instance."""
+    return service_factory.build_user_field_mapping_service()
+
+
 # ---------------------------------------------------------------------------
 # Jobs
 # ---------------------------------------------------------------------------

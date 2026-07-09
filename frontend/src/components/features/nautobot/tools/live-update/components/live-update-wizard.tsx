@@ -2,12 +2,12 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import { Zap } from 'lucide-react'
-import { useCsvUpdatesMutations } from '@/hooks/queries/use-csv-updates-mutations'
+import { useDeviceUpdatesMutations } from '@/hooks/queries/use-device-updates-mutations'
 import { CsvProcessingStep } from '@/components/features/nautobot/tools/csv-updates/components/csv-processing-step'
 import { CsvSummaryStep } from '@/components/features/nautobot/tools/csv-updates/components/csv-summary-step'
 import { useLiveUpdateWizard } from '../hooks/use-live-update-wizard'
-import { buildDeviceUpdateCsv } from '../utils/live-update-parser'
-import { CSV_CONFIG, INDICATOR_STEPS, STEP_LABELS } from '../constants'
+import { buildDeviceUpdateJson } from '../utils/live-update-parser'
+import { INDICATOR_STEPS, STEP_LABELS } from '../constants'
 import { DataSourceStep } from './data-source-step'
 import { KeySelectionStep } from './key-selection-step'
 import { MappingStep } from './mapping-step'
@@ -16,7 +16,7 @@ import type { LiveUpdateStep } from '../types'
 
 export function LiveUpdateWizard() {
   const wizard = useLiveUpdateWizard()
-  const { processUpdates } = useCsvUpdatesMutations()
+  const { processDeviceUpdates } = useDeviceUpdatesMutations()
 
   const [taskId, setTaskId] = useState<string | null>(null)
   const [jobId, setJobId] = useState<number | null>(null)
@@ -36,26 +36,17 @@ export function LiveUpdateWizard() {
 
   const handleUpdateDevices = useCallback(async () => {
     const selectedRows = wizard.rows.filter(row => wizard.isRowSelected(row.id))
-    const { headers, rows } = buildDeviceUpdateCsv(selectedRows, wizard.primaryIpByDevice)
+    const devices = buildDeviceUpdateJson(selectedRows, wizard.primaryIpByDevice)
 
     try {
-      const response = await processUpdates.mutateAsync({
-        objectType: 'devices',
-        csvData: { headers, rows },
-        csvOptions: CSV_CONFIG,
-        dryRun: false,
-        tagsMode: 'replace',
-        selectedColumns: headers.filter(header => header !== 'name'),
-        primaryKeyColumn: 'name',
-        matchingStrategy: 'exact',
-      })
+      const response = await processDeviceUpdates.mutateAsync({ devices, dryRun: false })
       setTaskId(response.task_id)
       if (response.job_id) setJobId(parseInt(response.job_id, 10))
       wizard.goToStep('processing')
     } catch {
       // Error handled by the mutation's onError toast
     }
-  }, [processUpdates, wizard])
+  }, [processDeviceUpdates, wizard])
 
   const handleProcessingComplete = useCallback(
     (status: string, result: unknown, error: string | undefined) => {
@@ -116,6 +107,8 @@ export function LiveUpdateWizard() {
           <DataSourceStep
             onCsvParsed={wizard.startCsvUpload}
             onAgentDataReceived={wizard.startAgentData}
+            useNewMapping={wizard.useNewMapping}
+            onUseNewMappingChange={wizard.setUseNewMapping}
           />
         )}
 
@@ -138,6 +131,8 @@ export function LiveUpdateWizard() {
             canGoBack={wizard.canGoBack}
             onBack={wizard.goBack}
             onConfirm={wizard.confirmMapping}
+            saveMappingForLater={wizard.saveMappingForLater}
+            onSaveMappingForLaterChange={wizard.setSaveMappingForLater}
           />
         )}
 
@@ -157,7 +152,7 @@ export function LiveUpdateWizard() {
             canGoBack={wizard.canGoBack}
             onBack={wizard.goBack}
             onUpdateDevices={handleUpdateDevices}
-            isSubmitting={processUpdates.isPending}
+            isSubmitting={processDeviceUpdates.isPending}
           />
         )}
 

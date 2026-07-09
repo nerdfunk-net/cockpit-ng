@@ -1,5 +1,7 @@
 import { useCallback, useMemo, useState } from 'react'
-import { CSV_CONFIG, DEVICE_NAME_FIELD_KEY } from '../constants'
+import { useFieldMappingQuery } from '@/hooks/queries/use-field-mapping-query'
+import { useFieldMappingMutations } from '@/hooks/queries/use-field-mapping-mutations'
+import { CSV_CONFIG, DEVICE_NAME_FIELD_KEY, LIVE_UPDATE_APP_NAME } from '../constants'
 import { buildLiveUpdateRows, combineAgentKeys } from '../utils/live-update-parser'
 import type { DataSourceMode, LiveUpdateStep, ParsedCsvSource } from '../types'
 
@@ -12,6 +14,22 @@ function buildInitialMapping(headers: string[]): Record<string, string | null> {
     mapping[header] = null
   }
   return mapping
+}
+
+/** Applies a saved mapping to the current headers; unknown headers stay unmapped. */
+function applyStoredMapping(
+  headers: string[],
+  stored: Record<string, string | null>
+): Record<string, string | null> {
+  const mapping: Record<string, string | null> = {}
+  for (const header of headers) {
+    mapping[header] = stored[header] ?? null
+  }
+  return mapping
+}
+
+function mapsDeviceName(mapping: Record<string, string | null>): boolean {
+  return Object.values(mapping).some(value => value === DEVICE_NAME_FIELD_KEY)
 }
 
 export function useLiveUpdateWizard() {
@@ -28,6 +46,11 @@ export function useLiveUpdateWizard() {
   const [primaryIpByDevice, setPrimaryIpByDevice] = useState<Record<string, string | null>>(
     {}
   )
+  const [useNewMapping, setUseNewMapping] = useState(false)
+  const [saveMappingForLater, setSaveMappingForLater] = useState(false)
+
+  const { data: storedMapping } = useFieldMappingQuery(LIVE_UPDATE_APP_NAME)
+  const { saveFieldMapping } = useFieldMappingMutations()
 
   const step = history[history.length - 1] ?? 'source'
 
@@ -49,37 +72,67 @@ export function useLiveUpdateWizard() {
     setDeviceFilter('')
     setSelectedOverrides({})
     setPrimaryIpByDevice({})
+    setSaveMappingForLater(false)
   }, [])
 
-  const startCsvUpload = useCallback((source: ParsedCsvSource) => {
-    setDataSourceMode('csv')
-    setCsvSource(source)
-    setFieldMapping(buildInitialMapping(source.headers))
-    setHistory(['source', 'mapping'])
-  }, [])
+  /** Applies the resolved source, using a saved mapping to skip to Data when possible. */
+  const applySource = useCallback(
+    (source: ParsedCsvSource) => {
+      setCsvSource(source)
 
-  const startAgentData = useCallback((result: Record<string, string>) => {
-    setDataSourceMode('agent')
-    setAgentKeys(result)
-    const keys = Object.keys(result)
-
-    if (keys.length <= 1) {
-      setSelectedKeys(keys)
-      const combined = combineAgentKeys(result, keys, CSV_CONFIG)
-      if (combined.data) {
-        const parsedSource = combined.data
-        setCsvSource(parsedSource)
-        setFieldMapping(buildInitialMapping(parsedSource.headers))
-        setHistory(['source', 'mapping'])
-      } else {
-        setHistory(['source', 'keys'])
+      if (!useNewMapping && storedMapping) {
+        const applied = applyStoredMapping(source.headers, storedMapping)
+        if (mapsDeviceName(applied)) {
+          setFieldMapping(applied)
+          setSelectedOverrides({})
+          setPrimaryIpByDevice({})
+          goToStep('table')
+          return
+        }
+        // Saved mapping doesn't cover these headers — prefill what matched and ask to finish.
+        setFieldMapping(applied)
+        goToStep('mapping')
+        return
       }
-      return
-    }
 
-    setSelectedKeys(keys)
-    setHistory(['source', 'keys'])
-  }, [])
+      setFieldMapping(buildInitialMapping(source.headers))
+      goToStep('mapping')
+    },
+    [useNewMapping, storedMapping, goToStep]
+  )
+
+  const startCsvUpload = useCallback(
+    (source: ParsedCsvSource) => {
+      setDataSourceMode('csv')
+      setHistory(['source'])
+      applySource(source)
+    },
+    [applySource]
+  )
+
+  const startAgentData = useCallback(
+    (result: Record<string, string>) => {
+      setDataSourceMode('agent')
+      setAgentKeys(result)
+      const keys = Object.keys(result)
+
+      if (keys.length <= 1) {
+        setSelectedKeys(keys)
+        const combined = combineAgentKeys(result, keys, CSV_CONFIG)
+        if (combined.data) {
+          setHistory(['source'])
+          applySource(combined.data)
+        } else {
+          setHistory(['source', 'keys'])
+        }
+        return
+      }
+
+      setSelectedKeys(keys)
+      setHistory(['source', 'keys'])
+    },
+    [applySource]
+  )
 
   const confirmKeySelection = useCallback((): { error?: string } => {
     if (!agentKeys) {
@@ -91,17 +144,18 @@ export function useLiveUpdateWizard() {
       return { error: combined.error ?? 'Failed to combine selected keys.' }
     }
 
-    setCsvSource(combined.data)
-    setFieldMapping(buildInitialMapping(combined.data.headers))
-    goToStep('mapping')
+    applySource(combined.data)
     return {}
-  }, [agentKeys, selectedKeys, goToStep])
+  }, [agentKeys, selectedKeys, applySource])
 
   const confirmMapping = useCallback(() => {
+    if (saveMappingForLater) {
+      saveFieldMapping.mutate({ appName: LIVE_UPDATE_APP_NAME, mapping: fieldMapping })
+    }
     setSelectedOverrides({})
     setPrimaryIpByDevice({})
     goToStep('table')
-  }, [goToStep])
+  }, [saveMappingForLater, saveFieldMapping, fieldMapping, goToStep])
 
   const rows = useMemo(() => {
     if (!csvSource) return []
@@ -148,10 +202,7 @@ export function useLiveUpdateWizard() {
     setPrimaryIpByDevice(prev => ({ ...prev, [deviceName]: rowId }))
   }, [])
 
-  const isMappingComplete = useMemo(
-    () => Object.values(fieldMapping).some(value => value === DEVICE_NAME_FIELD_KEY),
-    [fieldMapping]
-  )
+  const isMappingComplete = useMemo(() => mapsDeviceName(fieldMapping), [fieldMapping])
 
   return useMemo(
     () => ({
@@ -168,6 +219,10 @@ export function useLiveUpdateWizard() {
       primaryIpByDevice,
       isMappingComplete,
       canGoBack: history.length > 1,
+      useNewMapping,
+      setUseNewMapping,
+      saveMappingForLater,
+      setSaveMappingForLater,
       goBack,
       goToStep,
       reset,
@@ -197,6 +252,8 @@ export function useLiveUpdateWizard() {
       primaryIpByDevice,
       isMappingComplete,
       history.length,
+      useNewMapping,
+      saveMappingForLater,
       goBack,
       goToStep,
       reset,

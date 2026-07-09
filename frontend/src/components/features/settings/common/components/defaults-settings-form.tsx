@@ -25,6 +25,7 @@ import { useNautobotOptionsQuery } from '@/components/features/settings/connecti
 import { EMPTY_ARRAY } from '@/components/features/settings/connections/nautobot/utils/constants'
 import type {
   NautobotOption,
+  InterfaceTypeOption,
   LocationItem,
 } from '@/components/features/settings/connections/nautobot/types'
 import type { DefaultsFields } from '../types/defaults-fields'
@@ -83,6 +84,7 @@ export function DefaultsSettingsForm({
   const {
     deviceStatuses = EMPTY_ARRAY as NautobotOption[],
     interfaceStatuses = EMPTY_ARRAY as NautobotOption[],
+    interfaceTypes = EMPTY_ARRAY as InterfaceTypeOption[],
     ipAddressStatuses = EMPTY_ARRAY as NautobotOption[],
     ipPrefixStatuses = EMPTY_ARRAY as NautobotOption[],
     namespaces = EMPTY_ARRAY as NautobotOption[],
@@ -173,6 +175,33 @@ export function DefaultsSettingsForm({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">Default status for new interfaces</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label
+                htmlFor="default-interface-type"
+                className="text-sm font-medium text-foreground"
+              >
+                New Interface Type
+              </Label>
+              <Select
+                value={localDefaults.interface_type ?? ''}
+                onValueChange={value => updateDefault('interface_type', value)}
+              >
+                <SelectTrigger className="w-full border-border focus:border-primary focus:ring-ring/30">
+                  <SelectValue placeholder="Select interface type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {interfaceTypes.map(type => (
+                    <SelectItem key={type.value} value={type.value}>
+                      {type.display_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Default type used when creating a new interface that doesn&apos;t exist yet
+              </p>
             </div>
 
             <div className="space-y-2">
