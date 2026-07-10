@@ -59,3 +59,41 @@ export interface NameTransform {
   /** Only used in replace mode. Empty string = delete the matched portion. */
   replacement: string
 }
+
+export type DataSourceMode = 'upload' | 'agent'
+
+/** Raw CSV text keyed by "flowId::key" — one entry per identifier/result-key combo. */
+export type AgentDataResult = Record<string, string>
+
+/** One row per CSV line for the devices object type (not yet merged by device). */
+export interface DeviceCsvRow {
+  id: string
+  deviceName: string
+  /** Mapped field key -> cell value (includes the device-name field). */
+  fields: Record<string, string>
+  hasIpAddress: boolean
+}
+
+/** One entry in a device's `interfaces` array sent to `tasks/update-devices`. */
+export interface DeviceInterfaceEntry {
+  name: string
+  type?: string
+  status?: string
+  ip_address?: string
+  is_primary_ipv4?: boolean
+}
+
+/** One device update object sent to `tasks/update-devices` (JSON mode). */
+export interface DeviceUpdatePayload {
+  name: string
+  interfaces: DeviceInterfaceEntry[]
+  [key: string]: unknown
+}
+
+/** Unified row shape used by the Filter step, for any object type. */
+export interface FilterRow {
+  id: string
+  displayName: string
+  fields: Record<string, string>
+  hasIpAddress?: boolean
+}

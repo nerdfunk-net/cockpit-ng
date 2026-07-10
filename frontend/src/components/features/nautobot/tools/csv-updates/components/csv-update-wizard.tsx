@@ -1,32 +1,54 @@
 'use client'
 
-import { useState, useCallback, useMemo } from 'react'
-import { ArrowLeft, ArrowRight, Search, Play, FileSpreadsheet } from 'lucide-react'
+import { useCallback, useMemo, useState } from 'react'
+import { ArrowLeft, ArrowRight, Search, Play, Zap, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { useCsvWizard, WIZARD_STEP_ORDER } from '../hooks/use-csv-wizard'
+import { useCsvWizard } from '../hooks/use-csv-wizard'
 import type { WizardStep } from '../hooks/use-csv-wizard'
 import { useCsvUpdatesMutations } from '@/hooks/queries/use-csv-updates-mutations'
-import { CsvUploadStep } from './csv-upload-step'
+import { useDeviceUpdatesMutations } from '@/hooks/queries/use-device-updates-mutations'
+import { buildDeviceUpdatePayloads, applyDeviceDefaults } from '../utils/device-merge'
+import { EMPTY_PARSED_DATA } from '../constants'
+import { CsvSourceStep } from './csv-source-step'
 import { CsvConfigureStep } from './csv-configure-step'
 import { CsvPropertiesStep } from './csv-properties-step'
+import { CsvFilterStep } from './csv-filter-step'
 import { CsvPreviewStep } from './csv-preview-step'
 import { CsvProcessingStep } from './csv-processing-step'
 import { CsvSummaryStep } from './csv-summary-step'
+import type { ParsedCSVData, ValidationResult } from '../types'
 
 const STEP_LABELS: Record<WizardStep, string> = {
-  upload: 'Upload CSV',
+  upload: 'CSV Source',
   configure: 'Configure',
   properties: 'Properties',
+  filter: 'Filter',
   preview: 'Preview & Validate',
   processing: 'Processing',
   summary: 'Results',
 }
 
-const INDICATOR_STEPS: WizardStep[] = ['upload', 'configure', 'properties', 'preview']
+const BASE_INDICATOR_STEPS: WizardStep[] = [
+  'upload',
+  'configure',
+  'properties',
+  'filter',
+  'preview',
+]
+
+const EMPTY_VALIDATION_RESULTS: ValidationResult[] = []
+const VALID_SUMMARY = {
+  errorCount: 0,
+  warningCount: 0,
+  successCount: 0,
+  hasErrors: false,
+  isValid: true,
+}
 
 export function CsvUpdateWizard() {
   const wizard = useCsvWizard()
   const { processUpdates } = useCsvUpdatesMutations()
+  const { processDeviceUpdates } = useDeviceUpdatesMutations()
 
   const [completedStatus, setCompletedStatus] = useState<string>('')
   const [completedResult, setCompletedResult] = useState<unknown>(null)
@@ -34,9 +56,11 @@ export function CsvUpdateWizard() {
 
   const {
     step,
-    goNext,
+    canGoBack,
     goBack,
     goToStep,
+    advanceFromUpload,
+    confirmConfigure,
     reset,
     csvUpload,
     objectType,
@@ -51,12 +75,31 @@ export function CsvUpdateWizard() {
     setMatchingStrategy,
     defaultProperties,
     setDefaultProperties,
+    effectiveDefaultProperties,
     nameTransform,
     setNameTransform,
     rackLocationColumn,
     setRackLocationColumn,
     selectedColumns,
     columnMappingForBackend,
+    useNewMapping,
+    setUseNewMapping,
+    useDefaultProperties,
+    setUseDefaultProperties,
+    primaryIpEnabled,
+    setPrimaryIpEnabled,
+    configureSkippable,
+    selectedDeviceRows,
+    filteredRows,
+    rowFilter,
+    setRowFilter,
+    isRowSelected,
+    toggleRowSelected,
+    toggleSelectAllVisible,
+    selectedCount,
+    primaryIpByDevice,
+    setPrimaryIp,
+    selectedParsedData,
     taskId,
     setTaskId,
     jobId,
@@ -66,6 +109,7 @@ export function CsvUpdateWizard() {
   } = wizard
 
   const { parsedData, validationResults, validationSummary, csvConfig } = csvUpload
+  const isDevices = objectType === 'devices'
 
   /** True when the 'rack' Nautobot field is mapped to any CSV column. */
   const isRackMapped = useMemo(
@@ -81,42 +125,46 @@ export function CsvUpdateWizard() {
   }, [parsedData, primaryKeyColumn])
 
   /**
-   * Enrich parsed CSV data with default properties:
-   * For each default property whose field is NOT already a CSV column,
-   * inject a synthetic column with the constant value into every row.
+   * Enrich the filtered+selected CSV data with default properties (manual or
+   * Network-Defaults-sourced): for each default property whose field is NOT
+   * already a CSV column, inject a synthetic column with the constant value
+   * into every row.
    */
   const enrichedCsvData = useMemo(() => {
-    const validDefaults = defaultProperties.filter(dp => dp.field && dp.value)
-    if (validDefaults.length === 0) return parsedData
+    const validDefaults = effectiveDefaultProperties.filter(dp => dp.field && dp.value)
+    if (validDefaults.length === 0) return selectedParsedData
 
-    const existingHeaders = new Set(parsedData.headers)
+    const existingHeaders = new Set(selectedParsedData.headers)
     const toInject = validDefaults.filter(dp => !existingHeaders.has(dp.field))
-    if (toInject.length === 0) return parsedData
+    if (toInject.length === 0) return selectedParsedData
 
     return {
-      headers: [...parsedData.headers, ...toInject.map(dp => dp.field)],
-      rows: parsedData.rows.map(row => [...row, ...toInject.map(dp => dp.value)]),
-      rowCount: parsedData.rowCount,
+      headers: [...selectedParsedData.headers, ...toInject.map(dp => dp.field)],
+      rows: selectedParsedData.rows.map(row => [
+        ...row,
+        ...toInject.map(dp => dp.value),
+      ]),
+      rowCount: selectedParsedData.rowCount,
     }
-  }, [parsedData, defaultProperties])
+  }, [selectedParsedData, effectiveDefaultProperties])
 
   /** Extend column mapping with injected default columns. */
   const enrichedColumnMapping = useMemo(() => {
     const base = { ...columnMappingForBackend }
-    const existingHeaders = new Set(parsedData.headers)
-    for (const dp of defaultProperties) {
+    const existingHeaders = new Set(selectedParsedData.headers)
+    for (const dp of effectiveDefaultProperties) {
       if (dp.field && dp.value && !existingHeaders.has(dp.field)) {
         base[dp.field] = dp.field
       }
     }
     return base
-  }, [columnMappingForBackend, defaultProperties, parsedData.headers])
+  }, [columnMappingForBackend, effectiveDefaultProperties, selectedParsedData.headers])
 
   /** Extend selected columns with injected default columns. */
   const enrichedSelectedColumns = useMemo(() => {
     const base = [...selectedColumns]
-    const existingHeaders = new Set(parsedData.headers)
-    for (const dp of defaultProperties) {
+    const existingHeaders = new Set(selectedParsedData.headers)
+    for (const dp of effectiveDefaultProperties) {
       if (
         dp.field &&
         dp.value &&
@@ -127,10 +175,44 @@ export function CsvUpdateWizard() {
       }
     }
     return base
-  }, [selectedColumns, defaultProperties, parsedData.headers])
+  }, [selectedColumns, effectiveDefaultProperties, selectedParsedData.headers])
+
+  /** Synthetic preview table for the devices JSON submission path. */
+  const devicePreviewData = useMemo<ParsedCSVData>(() => {
+    if (!isDevices) return EMPTY_PARSED_DATA
+    const payloads = buildDeviceUpdatePayloads(selectedDeviceRows, primaryIpByDevice).map(
+      p => applyDeviceDefaults(p, effectiveDefaultProperties)
+    )
+    const headerSet = new Set<string>(['name'])
+    for (const payload of payloads) {
+      for (const key of Object.keys(payload)) {
+        if (key === 'interfaces') continue
+        headerSet.add(key)
+      }
+    }
+    const headers = Array.from(headerSet)
+    const rows = payloads.map(payload => [
+      ...headers.map(h => String(payload[h] ?? '')),
+      `${payload.interfaces.length} interface(s)`,
+    ])
+    return { headers: [...headers, 'interfaces'], rows, rowCount: rows.length }
+  }, [isDevices, selectedDeviceRows, primaryIpByDevice, effectiveDefaultProperties])
 
   const handleDryRun = useCallback(async () => {
     try {
+      if (isDevices) {
+        const payloads = buildDeviceUpdatePayloads(
+          selectedDeviceRows,
+          primaryIpByDevice
+        ).map(p => applyDeviceDefaults(p, effectiveDefaultProperties))
+        const response = await processDeviceUpdates.mutateAsync({
+          devices: payloads,
+          dryRun: true,
+        })
+        setDryRunTaskId(response.task_id)
+        return
+      }
+
       const response = await processUpdates.mutateAsync({
         objectType,
         csvData: { headers: enrichedCsvData.headers, rows: enrichedCsvData.rows },
@@ -149,6 +231,11 @@ export function CsvUpdateWizard() {
       // Error handled by mutation's onError toast
     }
   }, [
+    isDevices,
+    selectedDeviceRows,
+    primaryIpByDevice,
+    effectiveDefaultProperties,
+    processDeviceUpdates,
     processUpdates,
     objectType,
     enrichedCsvData,
@@ -165,6 +252,21 @@ export function CsvUpdateWizard() {
 
   const handleSubmit = useCallback(async () => {
     try {
+      if (isDevices) {
+        const payloads = buildDeviceUpdatePayloads(
+          selectedDeviceRows,
+          primaryIpByDevice
+        ).map(p => applyDeviceDefaults(p, effectiveDefaultProperties))
+        const response = await processDeviceUpdates.mutateAsync({
+          devices: payloads,
+          dryRun: false,
+        })
+        setTaskId(response.task_id)
+        if (response.job_id) setJobId(parseInt(response.job_id, 10))
+        goToStep('processing')
+        return
+      }
+
       const response = await processUpdates.mutateAsync({
         objectType,
         csvData: { headers: enrichedCsvData.headers, rows: enrichedCsvData.rows },
@@ -185,6 +287,11 @@ export function CsvUpdateWizard() {
       // Error handled by mutation's onError toast
     }
   }, [
+    isDevices,
+    selectedDeviceRows,
+    primaryIpByDevice,
+    effectiveDefaultProperties,
+    processDeviceUpdates,
     processUpdates,
     objectType,
     enrichedCsvData,
@@ -218,8 +325,36 @@ export function CsvUpdateWizard() {
     setCompletedError(undefined)
   }, [reset])
 
-  const currentStepIndex = WIZARD_STEP_ORDER.indexOf(step)
   const isProcessingOrSummary = step === 'processing' || step === 'summary'
+
+  const visibleIndicatorSteps = useMemo(
+    () =>
+      BASE_INDICATOR_STEPS.filter(s => {
+        if (s === 'configure' && configureSkippable) return false
+        if (s === 'properties' && useDefaultProperties) return false
+        return true
+      }),
+    [configureSkippable, useDefaultProperties]
+  )
+
+  const handleNext = useCallback(() => {
+    switch (step) {
+      case 'upload':
+        advanceFromUpload()
+        break
+      case 'configure':
+        confirmConfigure()
+        break
+      case 'properties':
+        goToStep('filter')
+        break
+      case 'filter':
+        goToStep('preview')
+        break
+      default:
+        break
+    }
+  }, [step, advanceFromUpload, confirmConfigure, goToStep])
 
   const isNextEnabled = (() => {
     switch (step) {
@@ -229,6 +364,8 @@ export function CsvUpdateWizard() {
         return primaryKeyColumn.length > 0
       case 'properties':
         return true
+      case 'filter':
+        return selectedCount > 0
       case 'preview':
         return false
       default:
@@ -236,10 +373,25 @@ export function CsvUpdateWizard() {
     }
   })()
 
-  const canGoBack =
-    !isProcessingOrSummary &&
-    currentStepIndex > 0 &&
-    currentStepIndex <= INDICATOR_STEPS.length - 1
+  const submitDisabled = isDevices
+    ? processDeviceUpdates.isPending || selectedDeviceRows.length === 0
+    : processUpdates.isPending ||
+      validationSummary.errorCount > 0 ||
+      selectedParsedData.rowCount === 0
+
+  const dryRunDisabled = isDevices
+    ? processDeviceUpdates.isPending || selectedDeviceRows.length === 0
+    : processUpdates.isPending || validationSummary.errorCount > 0
+
+  const isSubmitPending = isDevices ? processDeviceUpdates.isPending : processUpdates.isPending
+
+  const submitCountLabel = isDevices
+    ? selectedDeviceRows.length > 0
+      ? `(${selectedCount} devices)`
+      : ''
+    : selectedParsedData.rowCount > 0
+      ? `(${selectedParsedData.rowCount} rows)`
+      : ''
 
   return (
     <div className="shadow-lg border-0 p-0 bg-card rounded-lg">
@@ -259,9 +411,9 @@ export function CsvUpdateWizard() {
         {/* Step Indicator */}
         {!isProcessingOrSummary && (
           <div className="flex items-center gap-1">
-            {INDICATOR_STEPS.map((s, i) => {
+            {visibleIndicatorSteps.map((s, i) => {
               const isActive = s === step
-              const isPast = INDICATOR_STEPS.indexOf(step) > i
+              const isPast = visibleIndicatorSteps.indexOf(step) > i
               return (
                 <div key={s} className="flex items-center gap-1 flex-1">
                   <div
@@ -282,7 +434,7 @@ export function CsvUpdateWizard() {
                   >
                     {STEP_LABELS[s]}
                   </span>
-                  {i < INDICATOR_STEPS.length - 1 && (
+                  {i < visibleIndicatorSteps.length - 1 && (
                     <div
                       className={`flex-1 h-px ${isPast ? 'bg-success' : 'bg-border'}`}
                     />
@@ -296,7 +448,7 @@ export function CsvUpdateWizard() {
         {/* Step Content */}
         <div className="min-h-[300px]">
           {step === 'upload' && (
-            <CsvUploadStep
+            <CsvSourceStep
               objectType={objectType}
               onObjectTypeChange={handleObjectTypeChange}
               csvConfig={csvConfig}
@@ -309,6 +461,13 @@ export function CsvUpdateWizard() {
               onFileChange={csvUpload.handleFileChange}
               onParseCSV={csvUpload.handleParseCSV}
               onClear={csvUpload.clearData}
+              onAgentDataParsed={csvUpload.handleAgentDataParsed}
+              useNewMapping={useNewMapping}
+              onUseNewMappingChange={setUseNewMapping}
+              useDefaultProperties={useDefaultProperties}
+              onUseDefaultPropertiesChange={setUseDefaultProperties}
+              primaryIpEnabled={primaryIpEnabled}
+              onPrimaryIpEnabledChange={setPrimaryIpEnabled}
             />
           )}
 
@@ -343,11 +502,28 @@ export function CsvUpdateWizard() {
             />
           )}
 
+          {step === 'filter' && (
+            <CsvFilterStep
+              objectType={objectType}
+              fieldMapping={fieldMapping}
+              primaryKeyColumn={primaryKeyColumn}
+              filteredRows={filteredRows}
+              rowFilter={rowFilter}
+              onRowFilterChange={setRowFilter}
+              isRowSelected={isRowSelected}
+              toggleRowSelected={toggleRowSelected}
+              toggleSelectAllVisible={toggleSelectAllVisible}
+              primaryIpEnabled={primaryIpEnabled}
+              primaryIpByDevice={primaryIpByDevice}
+              onSetPrimaryIp={setPrimaryIp}
+            />
+          )}
+
           {step === 'preview' && (
             <CsvPreviewStep
-              parsedData={parsedData}
-              validationResults={validationResults}
-              validationSummary={validationSummary}
+              parsedData={isDevices ? devicePreviewData : enrichedCsvData}
+              validationResults={isDevices ? EMPTY_VALIDATION_RESULTS : validationResults}
+              validationSummary={isDevices ? VALID_SUMMARY : validationSummary}
               dryRunTaskId={dryRunTaskId}
             />
           )}
@@ -387,29 +563,34 @@ export function CsvUpdateWizard() {
                     variant="outline"
                     size="sm"
                     onClick={handleDryRun}
-                    disabled={
-                      processUpdates.isPending || validationSummary.errorCount > 0
-                    }
+                    disabled={dryRunDisabled}
                   >
                     <Search className="h-4 w-4 mr-1" />
-                    {processUpdates.isPending && !taskId ? 'Running…' : 'Dry Run'}
+                    {isSubmitPending && !taskId ? 'Running…' : 'Dry Run'}
                   </Button>
+                  <Button size="sm" onClick={handleSubmit} disabled={submitDisabled}>
+                    <Play className="h-4 w-4 mr-1" />
+                    Submit {submitCountLabel}
+                  </Button>
+                </>
+              ) : step === 'filter' ? (
+                <>
                   <Button
+                    variant="outline"
                     size="sm"
                     onClick={handleSubmit}
-                    disabled={
-                      processUpdates.isPending ||
-                      validationSummary.errorCount > 0 ||
-                      parsedData.rowCount === 0
-                    }
+                    disabled={submitDisabled}
                   >
-                    <Play className="h-4 w-4 mr-1" />
-                    Submit{' '}
-                    {parsedData.rowCount > 0 ? `(${parsedData.rowCount} rows)` : ''}
+                    <Zap className="h-4 w-4 mr-1" />
+                    Submit Now {submitCountLabel}
+                  </Button>
+                  <Button size="sm" onClick={handleNext} disabled={!isNextEnabled}>
+                    Review First
+                    <ArrowRight className="h-4 w-4 ml-1" />
                   </Button>
                 </>
               ) : (
-                <Button size="sm" onClick={goNext} disabled={!isNextEnabled}>
+                <Button size="sm" onClick={handleNext} disabled={!isNextEnabled}>
                   Next
                   <ArrowRight className="h-4 w-4 ml-1" />
                 </Button>

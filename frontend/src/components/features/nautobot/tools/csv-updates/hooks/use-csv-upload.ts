@@ -29,58 +29,80 @@ export function useCsvUpload(options: UseCsvUploadOptions = DEFAULT_OPTIONS) {
   const [isParsing, setIsParsing] = useState(false)
   const [isValidating, setIsValidating] = useState(false)
 
-  const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      setCsvFile(file)
-      setParsedData(EMPTY_PARSED_DATA)
+  const handleParseCSV = useCallback(
+    async (fileOverride?: File) => {
+      const file = fileOverride ?? csvFile
+      if (!file) return
+
+      setIsParsing(true)
       setValidationResults(EMPTY_VALIDATION_RESULTS)
-    }
-  }, [])
 
-  const handleParseCSV = useCallback(async () => {
-    if (!csvFile) return
+      try {
+        const text = await file.text()
+        const { headers, rows } = parseCSVContent(text, csvConfig)
 
-    setIsParsing(true)
-    setValidationResults(EMPTY_VALIDATION_RESULTS)
+        const data: ParsedCSVData = {
+          headers,
+          rows,
+          rowCount: rows.length,
+        }
 
-    try {
-      const text = await csvFile.text()
-      const { headers, rows } = parseCSVContent(text, csvConfig)
+        setParsedData(data)
 
-      const data: ParsedCSVData = {
-        headers,
-        rows,
-        rowCount: rows.length,
+        // Start validation
+        setIsValidating(true)
+        const results = validateCSVData(objectType, headers, rows)
+        setValidationResults(results)
+        setIsValidating(false)
+
+        onParseComplete?.(data)
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to parse CSV'
+        const errorObj = error instanceof Error ? error : new Error(errorMessage)
+
+        setValidationResults([
+          {
+            type: 'error',
+            message: errorMessage,
+          },
+        ])
+        setIsValidating(false)
+
+        onParseError?.(errorObj)
+      } finally {
+        setIsParsing(false)
       }
+    },
+    [csvFile, csvConfig, objectType, onParseComplete, onParseError]
+  )
 
+  const handleFileChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0]
+      if (file) {
+        setCsvFile(file)
+        setParsedData(EMPTY_PARSED_DATA)
+        setValidationResults(EMPTY_VALIDATION_RESULTS)
+        void handleParseCSV(file)
+      }
+    },
+    [handleParseCSV]
+  )
+
+  /** Adopts already-parsed CSV data (e.g. combined from a Get Data agent) and validates it immediately. */
+  const handleAgentDataParsed = useCallback(
+    (data: ParsedCSVData) => {
+      setCsvFile(null)
       setParsedData(data)
-
-      // Start validation
       setIsValidating(true)
-      const results = validateCSVData(objectType, headers, rows)
+      const results = validateCSVData(objectType, data.headers, data.rows)
       setValidationResults(results)
       setIsValidating(false)
-
       onParseComplete?.(data)
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Failed to parse CSV'
-      const errorObj = error instanceof Error ? error : new Error(errorMessage)
-
-      setValidationResults([
-        {
-          type: 'error',
-          message: errorMessage,
-        },
-      ])
-      setIsValidating(false)
-
-      onParseError?.(errorObj)
-    } finally {
-      setIsParsing(false)
-    }
-  }, [csvFile, csvConfig, objectType, onParseComplete, onParseError])
+    },
+    [objectType, onParseComplete]
+  )
 
   const revalidate = useCallback(
     (newObjectType: ObjectType) => {
@@ -135,6 +157,7 @@ export function useCsvUpload(options: UseCsvUploadOptions = DEFAULT_OPTIONS) {
       // Actions
       handleFileChange,
       handleParseCSV,
+      handleAgentDataParsed,
       revalidate,
       clearData,
       updateConfig,
@@ -149,6 +172,7 @@ export function useCsvUpload(options: UseCsvUploadOptions = DEFAULT_OPTIONS) {
       validationSummary,
       handleFileChange,
       handleParseCSV,
+      handleAgentDataParsed,
       revalidate,
       clearData,
       updateConfig,

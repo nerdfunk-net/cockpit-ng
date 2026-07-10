@@ -290,10 +290,10 @@ def get_data(
     db: Session = Depends(get_db),
 ):
     """
-    Run the Get Data agent pipeline (SSH/SFTP steps from the agent's config.yaml).
+    Run one Get Data agent flow (SSH/SFTP steps from the agent's config.yaml).
 
-    The pipeline is configured on the agent host — no remote commands are accepted
-    from this API.
+    The flow identifier must match a key under ``commands`` in the agent config.
+    Remote commands are not accepted from this API.
 
     Sync route — blocking Redis wait runs in Starlette's thread pool.
     """
@@ -308,6 +308,7 @@ def get_data(
 
         response = service.send_get_data(
             agent_id=request.agent_id,
+            flow_id=request.flow_id,
             sent_by=user.get("sub", "system"),
             timeout=request.timeout,
         )

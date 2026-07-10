@@ -11,7 +11,7 @@ import logging
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 import yaml
 
@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 StepType = Literal["execute", "sftp_get"]
 
-_RESULT_KEY_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]*$")
+_FLOW_ID_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]*$")
 
 
 @dataclass(frozen=True)
@@ -47,21 +47,26 @@ class SftpGetStep:
     password: Optional[str] = None
 
 
-@dataclass(frozen=True)
-class ResultEntry:
-    """Keyed local file whose contents are returned to Cockpit via Redis."""
-
-    key: str
-    file: str
-
-
 PipelineStep = Union[ExecuteStep, SftpGetStep]
 
 
 @dataclass(frozen=True)
-class CommandPipeline:
+class FlowDefinition:
+    """One named flow: action steps plus a local result file to return."""
+
     steps: List[PipelineStep]
-    results: List[ResultEntry]
+    result_file: str
+
+
+@dataclass(frozen=True)
+class AgentCommandConfig:
+    """Named data-collection flows."""
+
+    flows: Dict[str, FlowDefinition]
+
+
+# Backward-compatible alias used by older imports/tests.
+CommandPipeline = AgentCommandConfig
 
 
 def _require_str(mapping: dict, key: str, context: str) -> str:
@@ -71,17 +76,16 @@ def _require_str(mapping: dict, key: str, context: str) -> str:
     return value.strip()
 
 
-def _parse_step(step: dict, index: int) -> PipelineStep:
+def _parse_action_step(step: dict, context: str) -> PipelineStep:
     if not isinstance(step, dict):
-        raise ValueError(f"commands[{index}] must be a mapping")
+        raise ValueError(f"{context} must be a mapping")
 
     step_type = step.get("type")
     if step_type not in ("execute", "sftp_get"):
         raise ValueError(
-            f"commands[{index}]: type must be 'execute' or 'sftp_get', got {step_type!r}"
+            f"{context}: type must be 'execute' or 'sftp_get', got {step_type!r}"
         )
 
-    context = f"commands[{index}]"
     host = _require_str(step, "host", context)
     username = _require_str(step, "username", context)
 
@@ -132,36 +136,79 @@ def _parse_step(step: dict, index: int) -> PipelineStep:
     )
 
 
-def _parse_result_entry(entry: dict, index: int) -> ResultEntry:
-    if not isinstance(entry, dict):
-        raise ValueError(f"result[{index}] must be a mapping")
+def _parse_result_entry(step: object, context: str) -> str:
+    if not isinstance(step, dict):
+        raise ValueError(f"{context} must be a mapping")
 
-    context = f"result[{index}]"
-    key = _require_str(entry, "key", context)
-    if not _RESULT_KEY_RE.match(key):
+    keys = list(step.keys())
+    if keys != ["result"]:
+        raise ValueError(f"{context}: result entry must be a single 'result' key")
+
+    file_path = step.get("result")
+    if not isinstance(file_path, str) or not file_path.strip():
+        raise ValueError(f"{context}: 'result' must be a non-empty file path")
+    return file_path.strip()
+
+
+def _parse_flow(flow_id: str, steps_raw: object) -> FlowDefinition:
+    if not isinstance(steps_raw, list) or not steps_raw:
+        raise ValueError(f"commands.{flow_id} must be a non-empty list")
+
+    action_steps: List[PipelineStep] = []
+    result_file: Optional[str] = None
+
+    for index, step in enumerate(steps_raw):
+        context = f"commands.{flow_id}[{index}]"
+        if isinstance(step, dict) and "result" in step and "type" not in step:
+            if result_file is not None:
+                raise ValueError(f"commands.{flow_id}: only one result entry is allowed")
+            result_file = _parse_result_entry(step, context)
+            continue
+
+        action_steps.append(_parse_action_step(step, context))
+
+    if not action_steps:
+        raise ValueError(f"commands.{flow_id} must contain at least one action step")
+    if not result_file:
+        raise ValueError(f"commands.{flow_id} must end with a result entry")
+
+    # Result entry must be last in the YAML list.
+    last_step = steps_raw[-1]
+    if not (
+        isinstance(last_step, dict)
+        and list(last_step.keys()) == ["result"]
+    ):
         raise ValueError(
-            f"{context}: 'key' must start with a letter and contain only "
-            f"letters, digits, and underscores"
+            f"commands.{flow_id}: result entry must be the last item in the flow"
         )
-    file_path = _require_str(entry, "file", context)
-    return ResultEntry(key=key, file=file_path)
+
+    return FlowDefinition(steps=action_steps, result_file=result_file)
 
 
-def _parse_results(raw: object) -> List[ResultEntry]:
-    if not isinstance(raw, list) or not raw:
-        raise ValueError("result must be a non-empty list")
+def _parse_flows(raw: object) -> Dict[str, FlowDefinition]:
+    if not isinstance(raw, dict) or not raw:
+        raise ValueError("commands must be a non-empty mapping of flow identifiers")
 
-    entries = [_parse_result_entry(entry, index) for index, entry in enumerate(raw)]
-    seen_keys = set()
-    for entry in entries:
-        if entry.key in seen_keys:
-            raise ValueError(f"result: duplicate key {entry.key!r}")
-        seen_keys.add(entry.key)
-    return entries
+    flows: Dict[str, FlowDefinition] = {}
+    for flow_id, steps_raw in raw.items():
+        if not isinstance(flow_id, str) or not flow_id.strip():
+            raise ValueError("commands: flow identifiers must be non-empty strings")
+        flow_id = flow_id.strip()
+        if not _FLOW_ID_RE.match(flow_id):
+            raise ValueError(
+                f"commands: flow identifier {flow_id!r} must start with a letter "
+                f"and contain only letters, digits, hyphens, and underscores"
+            )
+        if flow_id in flows:
+            raise ValueError(f"commands: duplicate flow identifier {flow_id!r}")
+
+        flows[flow_id] = _parse_flow(flow_id, steps_raw)
+
+    return flows
 
 
-def load_command_pipeline(config_path: Path) -> CommandPipeline:
-    """Load and validate the command pipeline from *config_path*."""
+def load_command_pipeline(config_path: Path) -> AgentCommandConfig:
+    """Load and validate the command configuration from *config_path*."""
     if not config_path.is_file():
         raise FileNotFoundError(f"Config file not found: {config_path}")
 
@@ -172,21 +219,11 @@ def load_command_pipeline(config_path: Path) -> CommandPipeline:
         raise ValueError("config.yaml root must be a mapping")
 
     commands = raw.get("commands")
-    if not isinstance(commands, list) or not commands:
-        raise ValueError("config.yaml must contain a non-empty 'commands' list")
-
-    result_raw = raw.get("result")
-    if result_raw is None:
-        raise ValueError("config.yaml must contain a 'result' section")
-
-    steps = [_parse_step(step, index) for index, step in enumerate(commands)]
-    results = _parse_results(result_raw)
-    pipeline = CommandPipeline(steps=steps, results=results)
-    result_keys = ", ".join(entry.key for entry in results)
-    logger.info(
-        "Loaded %d command step(s) and result key(s) [%s] from %s",
-        len(steps),
-        result_keys,
-        config_path,
+    flows = _parse_flows(commands)
+    config = AgentCommandConfig(flows=flows)
+    flow_summary = ", ".join(
+        f"{flow_id} ({len(flow.steps)} action step(s) -> {flow.result_file})"
+        for flow_id, flow in flows.items()
     )
-    return pipeline
+    logger.info("Loaded flow(s) [%s] from %s", flow_summary, config_path)
+    return config

@@ -41,6 +41,10 @@ export const NAUTOBOT_UPDATE_FIELDS: Record<
     { key: 'tenant', label: 'Tenant' },
     { key: 'comments', label: 'Comments' },
     { key: 'tags', label: 'Tags' },
+    { key: 'interface_name', label: 'Interface Name' },
+    { key: 'interface_type', label: 'Interface Type' },
+    { key: 'interface_status', label: 'Interface Status' },
+    { key: 'interface_ip_address', label: 'Interface IP Address' },
   ],
   'ip-prefixes': [
     { key: 'prefix', label: 'Prefix' },
@@ -93,3 +97,30 @@ export function buildAutoFieldMapping(
   }
   return result
 }
+
+/** Devices-only field keys used to merge multiple CSV rows into one device update. */
+export const DEVICE_NAME_FIELD_KEY = 'name'
+export const PRIMARY_IP_FIELD_KEY = 'interface_ip_address'
+export const INTERFACE_NAME_FIELD_KEY = 'interface_name'
+export const INTERFACE_TYPE_FIELD_KEY = 'interface_type'
+export const INTERFACE_STATUS_FIELD_KEY = 'interface_status'
+
+/** Interface columns the backend only recognizes by these literal header names. */
+export const INTERFACE_CONFIG_FIELD_KEYS = [
+  INTERFACE_NAME_FIELD_KEY,
+  INTERFACE_TYPE_FIELD_KEY,
+  INTERFACE_STATUS_FIELD_KEY,
+]
+
+/** Identifies this tool's saved field mapping in the per-user field-mappings store. */
+export const CSV_UPDATE_APP_NAME = 'csv-update'
+
+/** Reserved key used to persist the lookup column alongside the field mapping. */
+export const LOOKUP_COLUMN_MAPPING_KEY = '__lookup_column__'
+
+/** Reserved keys used to persist the step-1 checkboxes alongside the field mapping. */
+export const USE_NEW_MAPPING_KEY = '__use_new_mapping__'
+export const USE_DEFAULT_PROPERTIES_KEY = '__use_default_properties__'
+export const PRIMARY_IP_ENABLED_KEY = '__primary_ip_enabled__'
+
+export const AGENT_CSV_CONFIG = { delimiter: ',', quoteChar: '"' } as const

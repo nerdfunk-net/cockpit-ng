@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, Upload, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -33,16 +33,41 @@ export function DataSourceStep({
 }: DataSourceStepProps) {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false)
   const [selectedAgentId, setSelectedAgentId] = useState('')
+  const [selectedFlowId, setSelectedFlowId] = useState('')
   const [agentError, setAgentError] = useState<string | null>(null)
   const { data: agents, isLoading: isLoadingAgents } = useGetDataAgents()
   const { getData } = useAgentMutations()
 
+  const selectedAgent = agents.find(
+    agent => (agent.agent_id ?? agent.id) === selectedAgentId
+  )
+  const availableFlows = useMemo(
+    () => selectedAgent?.data_flows ?? [],
+    [selectedAgent]
+  )
+
+  useEffect(() => {
+    if (!selectedAgentId) {
+      setSelectedFlowId('')
+      return
+    }
+
+    if (availableFlows.length === 0) {
+      setSelectedFlowId('')
+      return
+    }
+
+    if (!availableFlows.includes(selectedFlowId)) {
+      setSelectedFlowId(availableFlows[0])
+    }
+  }, [selectedAgentId, availableFlows, selectedFlowId])
+
   const handleGetData = useCallback(() => {
-    if (!selectedAgentId) return
+    if (!selectedAgentId || !selectedFlowId) return
 
     setAgentError(null)
     getData.mutate(
-      { agent_id: selectedAgentId },
+      { agent_id: selectedAgentId, flow_id: selectedFlowId },
       {
         onSuccess: data => {
           if (data.status === 'success' && data.output) {
@@ -58,7 +83,7 @@ export function DataSourceStep({
         },
       }
     )
-  }, [selectedAgentId, getData, onAgentDataReceived])
+  }, [selectedAgentId, selectedFlowId, getData, onAgentDataReceived])
 
   return (
     <div className="space-y-4">
@@ -95,9 +120,42 @@ export function DataSourceStep({
           </Select>
         </div>
 
+        <div className="space-y-1">
+          <Select
+            value={selectedFlowId}
+            onValueChange={setSelectedFlowId}
+            disabled={!selectedAgentId || availableFlows.length === 0}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue
+                placeholder={
+                  !selectedAgentId
+                    ? 'Select agent first'
+                    : availableFlows.length === 0
+                      ? 'No flows reported'
+                      : 'Select flow'
+                }
+              />
+            </SelectTrigger>
+            <SelectContent>
+              {availableFlows.length === 0 ? (
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  Agent has not reported any flows yet
+                </div>
+              ) : (
+                availableFlows.map(flowId => (
+                  <SelectItem key={flowId} value={flowId}>
+                    {flowId}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+        </div>
+
         <Button
           onClick={handleGetData}
-          disabled={!selectedAgentId || getData.isPending}
+          disabled={!selectedAgentId || !selectedFlowId || getData.isPending}
         >
           {getData.isPending ? (
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

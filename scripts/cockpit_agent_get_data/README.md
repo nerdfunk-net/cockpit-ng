@@ -49,29 +49,43 @@ sudo -u cockpit-agent /opt/cockpit-agent-get-data/venv/bin/pip install -r /opt/c
 
 ### Step 3: Configure Pipeline (`config.yaml`)
 
-Edit `/opt/cockpit-agent-get-data/config.yaml` before starting the agent:
+Edit `/opt/cockpit-agent-get-data/config.yaml` before starting the agent. The `commands` section is a mapping of **flow identifiers** to ordered step lists. Each identifier becomes a separate command the backend can trigger.
 
 ```yaml
 ---
 commands:
-  - type: execute
-    host: netcup
-    username: mp
-    ssh_key: true
-    command: ls -l > /tmp/data
-  - type: sftp_get
-    host: netcup
-    username: mp
-    ssh_key: true
-    src_file: /tmp/data
-    dst_file: /tmp/cockpit/data_1
-result:
-  - key: data1
-    file: /tmp/cockpit/data_1
+  data-1:
+    - type: execute
+      host: netcup
+      username: mp
+      ssh_key: true
+      command: ls -l > /tmp/data
+    - type: sftp_get
+      host: netcup
+      username: mp
+      ssh_key: true
+      src_file: /tmp/data
+      dst_file: /tmp/cockpit/data_1
+    - result: /tmp/crypto.csv
+  data-2:
+    - type: execute
+      host: netcup
+      username: mp
+      ssh_key: true
+      command: ls -l > /tmp/
+    - type: sftp_get
+      host: netcup
+      username: mp
+      ssh_key: true
+      src_file: /tmp/data
+      dst_file: /tmp/cockpit/data_2
+    - result: /tmp/crypto.csv
 ```
 
 | Field | Required | Description |
 |-------|----------|-------------|
+| `commands` | yes | Mapping of flow identifiers to step lists |
+| flow identifier | yes | Key such as `data-1` (letters, digits, hyphen, underscore) |
 | `type` | yes | `execute` or `sftp_get` |
 | `host` | yes | Target hostname, IP, or SSH config alias (`~/.ssh/config`) |
 | `username` | yes | SSH username |
@@ -82,9 +96,7 @@ result:
 | `command` | execute only | Remote shell command (run on the remote host) |
 | `src_file` | sftp_get only | Remote file path to download |
 | `dst_file` | sftp_get only | Local path on the agent host where the file is saved |
-| `result` | yes | Non-empty list of keyed result files (see below) |
-| `result[].key` | yes | JSON key sent back to Cockpit (letters, digits, underscore) |
-| `result[].file` | yes | Local file whose contents are mapped to that key |
+| `result` | yes | Last item in each flow — local file path returned to Cockpit |
 
 ### Step 4: Configure Environment (`.env`)
 
@@ -115,7 +127,7 @@ sudo systemctl status cockpit-agent-get-data
 
 ## Supported Redis Commands
 
-Only two commands are accepted from the backend:
+The agent accepts `echo` plus one command per configured flow identifier. On startup it registers supported flow identifiers in Redis under `data_flows` (comma-separated).
 
 ### `echo` — Health Check
 
@@ -127,14 +139,14 @@ Only two commands are accepted from the backend:
 }
 ```
 
-### `get_data` — Run Pipeline
+### Flow identifiers — Run a named pipeline
 
-Triggers the full `config.yaml` pipeline. **Params are ignored** — the pipeline is not overridable via Redis.
+Use the flow key from `config.yaml` as the `command` value (e.g. `data-1`). **Params are ignored** — only the configured steps run.
 
 ```json
 {
   "command_id": "uuid-here",
-  "command": "get_data",
+  "command": "data-1",
   "params": {}
 }
 ```
@@ -146,6 +158,7 @@ Triggers the full `config.yaml` pipeline. **Params are ignored** — the pipelin
   "command_id": "uuid-here",
   "status": "success",
   "output": {
+    "flow_id": "data-1",
     "steps": [
       {
         "type": "execute",
@@ -165,7 +178,7 @@ Triggers the full `config.yaml` pipeline. **Params are ignored** — the pipelin
       }
     ],
     "result": {
-      "data1": "total 8\n-rw-r--r-- 1 mp mp 123 Apr  9 12:00 file.txt\n"
+      "data-1": "..."
     }
   },
   "error": null,
@@ -174,7 +187,7 @@ Triggers the full `config.yaml` pipeline. **Params are ignored** — the pipelin
 }
 ```
 
-From Cockpit, use `POST /api/cockpit-agent/get-data` or the generic command API with `command: "get_data"`.
+From Cockpit, use `POST /api/cockpit-agent/get-data` with `flow_id`, or the generic command API with `command` set to the flow identifier.
 
 ## Local Testing (without Redis)
 
@@ -184,19 +197,19 @@ Use `run_local.py` to run the same pipeline as the agent without Cockpit or Redi
 cd scripts/cockpit_agent_get_data
 
 # Human-readable summary + result file content
-python run_local.py
+python run_local.py --flow data-1
 
 # Debug logging (SSH/SFTP commands)
-python run_local.py -v
+python run_local.py --flow data-1 -v
 
 # Alternate config file
-python run_local.py --config /path/to/config.yaml
+python run_local.py --flow data-2 --config /path/to/config.yaml
 
 # Only print the result file body (e.g. for piping)
-python run_local.py --content-only
+python run_local.py --flow data-1 --content-only
 
 # Full JSON output (same shape as the Redis response)
-python run_local.py --json
+python run_local.py --flow data-1 --json
 ```
 
 Exit code is `0` on success, `1` on pipeline or config errors. No `COCKPIT_SHARED_SECRET` or Redis connection is required.

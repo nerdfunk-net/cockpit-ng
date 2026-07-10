@@ -17,6 +17,7 @@ class AgentStatusResponse(BaseModel):
     version: str
     hostname: str  # Agent ID (for display/compatibility)
     capabilities: str
+    data_flows: str = ""
     started_at: int
     commands_executed: int
 
@@ -101,9 +102,13 @@ class OpenPortsScanRequest(BaseModel):
 
 
 class GetDataRequest(BaseModel):
-    """Request to run the Get Data agent pipeline (config-driven on the agent)."""
+    """Request to run a Get Data agent flow (config-driven on the agent)."""
 
     agent_id: str = Field(..., description="Get Data agent ID")
+    flow_id: str = Field(
+        ...,
+        description="Pipeline flow identifier from the agent config (e.g. data-1)",
+    )
     timeout: int = Field(
         default=120,
         description="Seconds to wait for the full pipeline to complete",

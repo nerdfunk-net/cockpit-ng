@@ -1,16 +1,28 @@
 ---
 commands:
-  - type: execute
-    host: netcup
-    username: mp
-    ssh_key: true
-    command: ls -l > /tmp/data
-  - type: sftp_get
-    host: netcup
-    username: mp
-    ssh_key: true
-    src_file: /tmp/data
-    dst_file: /tmp/cockpit/data_1
-result:
-  - key: devices
-    file: /tmp/crypto.csv
+  data-1:
+    - type: execute
+      host: netcup
+      username: mp
+      ssh_key: true
+      command: ls -l > /tmp/data
+    - type: sftp_get
+      host: netcup
+      username: mp
+      ssh_key: true
+      src_file: /tmp/data
+      dst_file: /tmp/cockpit/data_1
+    - result: /tmp/crypto.csv
+  data-2:
+    - type: execute
+      host: netcup
+      username: mp
+      ssh_key: true
+      command: ls -l > /tmp/
+    - type: sftp_get
+      host: netcup
+      username: mp
+      ssh_key: true
+      src_file: /tmp/data
+      dst_file: /tmp/cockpit/data_2
+    - result: /tmp/crypto.csv

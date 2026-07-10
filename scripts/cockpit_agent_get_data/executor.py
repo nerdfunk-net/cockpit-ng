@@ -1,8 +1,8 @@
 """
 Command executor for Cockpit Get Data Agent.
 
-Runs a fixed pipeline from config.yaml via SSH (execute) and SFTP (sftp_get).
-Only the ``echo`` health-check and ``get_data`` trigger commands are accepted
+Runs named flows from config.yaml via SSH (execute) and SFTP (sftp_get).
+Only the ``echo`` health-check and configured flow identifiers are accepted
 from Redis — remote commands always come from the local config file.
 """
 
@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 from command_config import (
-    CommandPipeline,
+    AgentCommandConfig,
     ExecuteStep,
     PipelineStep,
     SftpGetStep,
@@ -36,12 +36,27 @@ class CommandExecutor:
     def __init__(self, config_path: Optional[Path] = None):
         self.handlers: Dict[str, Callable] = {}
         pipeline_path = Path(config_path) if config_path else config.config_path
-        self.pipeline: CommandPipeline = load_command_pipeline(pipeline_path)
+        self.config: AgentCommandConfig = load_command_pipeline(pipeline_path)
         self._register_builtin_commands()
+
+    @property
+    def data_flow_ids(self) -> List[str]:
+        return list(self.config.flows.keys())
 
     def _register_builtin_commands(self) -> None:
         self.register("echo", self._execute_echo)
-        self.register("get_data", self._execute_get_data)
+        for flow_id in self.config.flows:
+            self.register(flow_id, self._make_flow_handler(flow_id))
+
+    def _make_flow_handler(self, flow_id: str) -> Callable:
+        async def handler(
+            params: dict, publish_progress: Optional[Callable] = None
+        ) -> dict:
+            return await self._execute_flow(
+                flow_id, params, publish_progress=publish_progress
+            )
+
+        return handler
 
     def register(self, command_name: str, handler: Callable) -> None:
         self.handlers[command_name] = handler
@@ -84,28 +99,32 @@ class CommandExecutor:
         logger.info("Echo command: %s", message)
         return {"status": "success", "output": message, "error": None}
 
-    async def _execute_get_data(
-        self, params: dict, publish_progress: Optional[Callable] = None
+    async def _execute_flow(
+        self,
+        flow_id: str,
+        params: dict,
+        publish_progress: Optional[Callable] = None,
     ) -> dict:
         """
-        Run the configured pipeline step by step.
-
-        Params from the backend are ignored — only config.yaml defines what runs.
+        Run one configured flow step by step, then read its result file.
         """
         if params:
             logger.warning(
-                "Ignoring unexpected params for get_data — pipeline is config-driven"
+                "Ignoring unexpected params for flow %s — pipeline is config-driven",
+                flow_id,
             )
 
+        flow = self.config.flows[flow_id]
         step_results: List[dict] = []
 
-        for index, step in enumerate(self.pipeline.steps):
+        for index, step in enumerate(flow.steps):
             if publish_progress:
                 publish_progress(
                     {
                         "phase": step.type,
+                        "flow_id": flow_id,
                         "step": index + 1,
-                        "total_steps": len(self.pipeline.steps),
+                        "total_steps": len(flow.steps),
                     }
                 )
 
@@ -119,45 +138,43 @@ class CommandExecutor:
                 return {
                     "status": "error",
                     "error": result.get("error") or f"Step {index + 1} failed",
-                    "output": {"steps": step_results},
+                    "output": {"flow_id": flow_id, "steps": step_results},
                 }
 
-        result_payload, read_error = self._read_result_files()
+        result_payload, read_error = self._read_result_file(flow_id, flow.result_file)
         if read_error:
             return {
                 "status": "error",
                 "error": read_error,
-                "output": {"steps": step_results},
+                "output": {"flow_id": flow_id, "steps": step_results},
             }
 
         return {
             "status": "success",
             "output": {
+                "flow_id": flow_id,
                 "steps": step_results,
                 "result": result_payload,
             },
             "error": None,
         }
 
-    def _read_result_files(self) -> tuple[Optional[dict[str, str]], Optional[str]]:
-        """Read local files declared in config.yaml ``result`` and key by name."""
-        payload: dict[str, str] = {}
+    def _read_result_file(
+        self, flow_id: str, result_file: str
+    ) -> tuple[Optional[dict[str, str]], Optional[str]]:
+        """Read one flow's result file and key it by the flow identifier."""
+        result_path = Path(result_file)
+        try:
+            content = result_path.read_text(encoding="utf-8", errors="replace")
+        except FileNotFoundError:
+            return None, f"Result file not found for flow {flow_id!r}: {result_path}"
+        except OSError as exc:
+            return None, (
+                f"Failed to read result file for flow {flow_id!r} "
+                f"({result_path}): {exc}"
+            )
 
-        for entry in self.pipeline.results:
-            result_path = Path(entry.file)
-            try:
-                content = result_path.read_text(encoding="utf-8", errors="replace")
-            except FileNotFoundError:
-                return None, f"Result file not found for key {entry.key!r}: {result_path}"
-            except OSError as exc:
-                return None, (
-                    f"Failed to read result file for key {entry.key!r} "
-                    f"({result_path}): {exc}"
-                )
-
-            payload[entry.key] = content
-
-        return payload, None
+        return {flow_id: content}, None
 
     async def _run_execute_step(self, step: ExecuteStep) -> dict:
         logger.info(

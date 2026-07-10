@@ -6,10 +6,10 @@ Uses the same executor as the agent (config.yaml → SSH/SFTP steps → result f
 Useful for testing SSH connectivity and debugging the pipeline before deploying.
 
 Examples:
-  ./run_local.py
-  ./run_local.py --config /path/to/config.yaml
-  ./run_local.py -v
-  ./run_local.py --content-only
+  ./run_local.py --flow data-1
+  ./run_local.py --flow data-2 --config /path/to/config.yaml
+  ./run_local.py --flow data-1 -v
+  ./run_local.py --flow data-1 --content-only
 """
 
 from __future__ import annotations
@@ -33,6 +33,11 @@ def _parse_args() -> argparse.Namespace:
         type=Path,
         default=SCRIPT_DIR / "config.yaml",
         help="Path to config.yaml (default: ./config.yaml in this directory)",
+    )
+    parser.add_argument(
+        "--flow",
+        required=True,
+        help="Flow identifier from config.yaml commands section (e.g. data-1)",
     )
     parser.add_argument(
         "-v",
@@ -89,7 +94,9 @@ def _print_result(result: dict, *, content_only: bool, as_json: bool) -> int:
 
     # Human-readable summary
     steps = output.get("steps") or []
+    flow_id = output.get("flow_id", "?")
     print(f"Status: {status}")
+    print(f"Flow: {flow_id}")
     print(f"Execution time: {result.get('execution_time_ms', 0)} ms")
     print(f"Steps: {len(steps)}")
     for index, step in enumerate(steps, start=1):
@@ -112,11 +119,11 @@ def _print_result(result: dict, *, content_only: bool, as_json: bool) -> int:
     return 0
 
 
-async def _run_pipeline(config_path: Path) -> dict:
+async def _run_pipeline(config_path: Path, flow_id: str) -> dict:
     from executor import CommandExecutor
 
     executor = CommandExecutor(config_path=config_path)
-    return await executor.execute("get_data", {})
+    return await executor.execute(flow_id, {})
 
 
 def main() -> None:
@@ -133,22 +140,30 @@ def main() -> None:
         stream=sys.stdout,
     )
 
-    # Validate YAML before running SSH steps
     from command_config import load_command_pipeline
 
     try:
         pipeline = load_command_pipeline(config_path)
+        if args.flow not in pipeline.flows:
+            available = ", ".join(pipeline.flows.keys()) or "(none)"
+            print(
+                f"Unknown flow {args.flow!r}. Available flows: {available}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+        flow = pipeline.flows[args.flow]
         logging.info(
-            "Loaded %d step(s), result keys: %s",
-            len(pipeline.steps),
-            ", ".join(entry.key for entry in pipeline.results),
+            "Loaded flow %s with %d action step(s), result file: %s",
+            args.flow,
+            len(flow.steps),
+            flow.result_file,
         )
     except Exception as exc:
         print(f"Invalid config: {exc}", file=sys.stderr)
         sys.exit(1)
 
     try:
-        result = asyncio.run(_run_pipeline(config_path))
+        result = asyncio.run(_run_pipeline(config_path, args.flow))
     except KeyboardInterrupt:
         print("Interrupted", file=sys.stderr)
         sys.exit(130)

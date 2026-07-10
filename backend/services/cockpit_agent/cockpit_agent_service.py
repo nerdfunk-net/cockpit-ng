@@ -326,6 +326,7 @@ class CockpitAgentService:
                     "agent_id", status_data.get("hostname", agent_id)
                 ),
                 "capabilities": status_data.get("capabilities", ""),
+                "data_flows": status_data.get("data_flows", ""),
                 "started_at": int(status_data.get("started_at", 0)),
                 "commands_executed": int(status_data.get("commands_executed", 0)),
             }
@@ -608,21 +609,39 @@ class CockpitAgentService:
     def send_get_data(
         self,
         agent_id: str,
+        flow_id: str,
         sent_by: str,
         *,
         timeout: int = 120,
     ) -> dict:
         """
-        Trigger the Get Data agent pipeline defined in the agent's config.yaml.
+        Trigger one named Get Data flow defined in the agent's config.yaml.
 
-        No parameters are sent — the pipeline is fixed on the agent host.
+        The flow identifier must match a key under ``commands`` in the agent
+        config. No other parameters are sent — steps are fixed on the agent host.
         """
         if not self.check_agent_online(agent_id):
             return {"status": "error", "error": "Agent is offline or not responding"}
 
+        status = self.get_agent_status(agent_id)
+        if status:
+            flows = [
+                item.strip()
+                for item in status.get("data_flows", "").split(",")
+                if item.strip()
+            ]
+            if flows and flow_id not in flows:
+                return {
+                    "status": "error",
+                    "error": (
+                        f"Unknown flow {flow_id!r} for agent {agent_id}. "
+                        f"Available flows: {', '.join(flows)}"
+                    ),
+                }
+
         return self.send_command_and_wait(
             agent_id=agent_id,
-            command="get_data",
+            command=flow_id,
             params={},
             sent_by=sent_by,
             timeout=timeout,

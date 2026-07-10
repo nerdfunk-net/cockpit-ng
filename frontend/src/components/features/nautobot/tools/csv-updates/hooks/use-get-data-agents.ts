@@ -5,12 +5,12 @@ import { queryKeys } from '@/lib/query-keys'
 import type { Agent } from '@/components/features/settings/connections/agents/types'
 import type { AgentListResponse } from '@/components/features/agents/operating/types'
 
-const EMPTY_AGENTS: Agent[] = []
-
 export interface GetDataAgentOption extends Agent {
   status?: string
   data_flows: string[]
 }
+
+const EMPTY_AGENTS: GetDataAgentOption[] = []
 
 interface AgentsSettingsResponse {
   success: boolean

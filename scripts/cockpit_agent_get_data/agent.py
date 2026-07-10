@@ -2,8 +2,9 @@
 """
 Cockpit Get Data Agent — runs a fixed SSH/SFTP pipeline from config.yaml.
 
-Listens for commands via Redis Pub/Sub. Only ``echo`` and ``get_data`` are
-accepted; remote work is defined exclusively in config.yaml at startup.
+Listens for commands via Redis Pub/Sub. Only ``echo`` and configured flow
+identifiers are accepted; remote work is defined exclusively in config.yaml at
+startup.
 """
 
 import asyncio
@@ -105,6 +106,7 @@ class CockpitAgent:
                 "version": config.agent_version,
                 "agent_id": config.agent_id,
                 "capabilities": ",".join(self.executor.handlers.keys()),
+                "data_flows": ",".join(self.executor.data_flow_ids),
                 "started_at": now,
                 "commands_executed": 0,
             }
@@ -123,7 +125,10 @@ class CockpitAgent:
 
         try:
             capabilities = ",".join(self.executor.handlers.keys())
-            self.heartbeat_thread = HeartbeatThread(self.redis_client, capabilities)
+            data_flows = ",".join(self.executor.data_flow_ids)
+            self.heartbeat_thread = HeartbeatThread(
+                self.redis_client, capabilities, data_flows
+            )
             self.heartbeat_thread.start()
             logger.info("Heartbeat thread started")
         except Exception as e:

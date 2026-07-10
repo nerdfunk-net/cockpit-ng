@@ -5,6 +5,7 @@ export interface CockpitAgent {
   version: string
   hostname: string
   capabilities: string // comma-separated
+  data_flows?: string // comma-separated flow identifiers (Get Data agents)
   started_at: number // unix timestamp
   commands_executed: number
 }
@@ -131,6 +132,7 @@ export interface NmapScanResult {
 
 export interface GetDataInput {
   agent_id: string
+  flow_id: string
   timeout?: number
 }
 
@@ -142,6 +144,7 @@ export interface GetDataStepResult {
 }
 
 export interface GetDataOutput {
+  flow_id?: string
   steps: GetDataStepResult[]
   result: Record<string, string>
 }

@@ -127,6 +127,7 @@ export function useAgentMutations() {
         method: 'POST',
         body: JSON.stringify({
           agent_id: input.agent_id,
+          flow_id: input.flow_id,
           timeout: input.timeout ?? 120,
         }),
       })
