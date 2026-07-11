@@ -1,9 +1,15 @@
+{% set network_os_map = {
+  'cisco_ios': 'cisco.ios.ios',
+  'cisco_nxos': 'cisco.nxos.nxos'
+} %}
 all:
   hosts:
 {% for device in devices %}
+{% set driver = device_details[device.name].platform.network_driver %}
     {{ device.name }}:
       ansible_host: {{ device_details[device.name].primary_ip4.host }}
-      ansible_network_os: {{ device_details[device.name].platform.network_driver }}
+      ansible_network_os: {{ network_os_map.get(driver, driver) }}
+      ansible_connection=ansible.netcommon.network_cli
       device_role: {{ device_details[device.name].role.name }}
       location: {{ device_details[device.name].location.name }}
       serial: {{ device_details[device.name].serial }}
