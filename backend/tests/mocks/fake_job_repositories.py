@@ -151,6 +151,20 @@ class _FakeJobTemplate:
         self.facts_agent_id: Optional[str] = kwargs.get("facts_agent_id")
         self.open_ports_prefixes: Optional[str] = kwargs.get("open_ports_prefixes")
         self.open_ports_agent_id: Optional[str] = kwargs.get("open_ports_agent_id")
+        self.port_scan_target_source: Optional[str] = kwargs.get(
+            "port_scan_target_source"
+        )
+        self.port_scan_cidrs: Optional[str] = kwargs.get("port_scan_cidrs")
+        self.port_scan_agent_id: Optional[str] = kwargs.get("port_scan_agent_id")
+        self.port_scan_type: Optional[str] = kwargs.get("port_scan_type")
+        self.port_scan_ports: Optional[str] = kwargs.get("port_scan_ports")
+        self.port_scan_service_detection: bool = kwargs.get(
+            "port_scan_service_detection", False
+        )
+        self.port_scan_use_primary_ip_only: bool = kwargs.get(
+            "port_scan_use_primary_ip_only", True
+        )
+        self.port_scan_timeout: Optional[int] = kwargs.get("port_scan_timeout")
         self.is_global: bool = kwargs.get("is_global", False)
         self.user_id: Optional[int] = kwargs.get("user_id")
         self.created_by: Optional[str] = kwargs.get("created_by")

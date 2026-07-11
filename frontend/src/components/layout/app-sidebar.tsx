@@ -95,7 +95,6 @@ const navigationSections: NavSection[] = [
             href: '/nautobot/tools/csv-updates',
             icon: FileSpreadsheet,
           },
-          { label: 'Live Update', href: '/nautobot/tools/live-update', icon: Zap },
           { label: 'Stacks', href: '/nautobot/tools/stacks', icon: Layers },
         ],
       },

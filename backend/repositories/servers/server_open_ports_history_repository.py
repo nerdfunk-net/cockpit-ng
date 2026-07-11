@@ -8,6 +8,7 @@ from repositories.base import BaseRepository
 _LIST_COLUMNS = (
     ServerOpenPortsHistory.id,
     ServerOpenPortsHistory.server_id,
+    ServerOpenPortsHistory.content_hash,
     ServerOpenPortsHistory.recorded_at,
 )
 
