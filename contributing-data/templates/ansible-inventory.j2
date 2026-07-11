@@ -1,0 +1,27 @@
+all:
+  hosts:
+{% for device in devices %}
+    {{ device.name }}:
+      ansible_host: {{ device_details[device.name].primary_ip4.host }}
+      ansible_network_os: {{ device_details[device.name].platform.network_driver }}
+      device_role: {{ device_details[device.name].role.name }}
+      location: {{ device_details[device.name].location.name }}
+      serial: {{ device_details[device.name].serial }}
+      site: {{ device_details[device.name]._custom_field_data.checkmk_site }}
+      net: {{ device_details[device.name]._custom_field_data.net }}
+{% endfor %}
+  children:
+{% for role, group in device_details.values() | groupby('role.name') %}
+    {{ role | lower | replace(' ', '_') }}:
+      hosts:
+{% for dev in group %}
+        {{ dev.name }}: {}
+{% endfor %}
+{% endfor %}
+{% for loc, group in device_details.values() | groupby('location.name') %}
+    {{ loc | lower | replace(' ', '_') }}:
+      hosts:
+{% for dev in group %}
+        {{ dev.name }}: {}
+{% endfor %}
+{% endfor %}
