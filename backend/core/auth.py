@@ -12,8 +12,14 @@ from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from passlib.hash import pbkdf2_sha256
 
-# Security setup
-security = HTTPBearer()
+# Security setup.
+# auto_error=False: FastAPI's stock HTTPBearer rejects missing/malformed
+# credentials with 403, but per RFC 7235 an unauthenticated request must
+# receive 401 with a WWW-Authenticate challenge (403 is reserved for
+# authenticated-but-forbidden). verify_token raises the 401 itself, which
+# also lets the frontend treat every unauthenticated response uniformly
+# (logout + redirect to login).
+security = HTTPBearer(auto_error=False)
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
@@ -43,7 +49,9 @@ def get_password_hash(password: str) -> str:
     return pbkdf2_sha256.hash(password)
 
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
+def verify_token(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+) -> dict:
     """Verify JWT token and return user info."""
     from config import settings
 
@@ -52,6 +60,14 @@ def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) 
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if credentials is None:
+        # Missing Authorization header or non-Bearer scheme
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     try:
         payload = jwt.decode(

@@ -12,7 +12,7 @@ Probe endpoints: GET and POST /api/settings/network/defaults
   so the probes are stable even with an otherwise-empty test database.
 
 Scenarios covered:
-  * Missing Authorization header                → 403
+  * Missing Authorization header                → 401
   * Malformed / expired bearer token            → 401
   * Valid token, permission not assigned        → 403
   * Reader role can call read endpoint          → 200
@@ -183,15 +183,16 @@ def _bearer(user: User) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Token-level enforcement (401 / 403 before any permission check)
+# Token-level enforcement (401 before any permission check)
 # ---------------------------------------------------------------------------
 
 
 @pytest.mark.postgres
 class TestTokenEnforcement:
-    def test_missing_authorization_header_returns_403(self, app_client):
+    def test_missing_authorization_header_returns_401(self, app_client):
         resp = app_client.get(_READ_URL)
-        assert resp.status_code == 403
+        assert resp.status_code == 401
+        assert resp.headers.get("WWW-Authenticate") == "Bearer"
 
     def test_malformed_bearer_token_returns_401(self, app_client):
         resp = app_client.get(
