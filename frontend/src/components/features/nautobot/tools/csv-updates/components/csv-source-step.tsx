@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
@@ -57,6 +56,14 @@ const OBJECT_TYPE_OPTIONS: ObjectType[] = [
   'ip-addresses',
   'locations',
 ]
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+      {children}
+    </h3>
+  )
+}
 
 export function CsvSourceStep({
   objectType,
@@ -163,15 +170,15 @@ export function CsvSourceStep({
   }, [selectedAgentId, selectedFlowIds, getData, onAgentDataParsed])
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Object Type */}
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label className="text-sm font-medium">Object Type</Label>
         <Select
           value={objectType}
           onValueChange={v => onObjectTypeChange(v as ObjectType)}
         >
-          <SelectTrigger className="w-56">
+          <SelectTrigger className="w-56 h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -184,89 +191,66 @@ export function CsvSourceStep({
         </Select>
       </div>
 
-      {/* File Upload */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">CSV File</Label>
-        {csvFile ? (
-          <div className="flex items-center gap-3 p-3 border rounded-md bg-info border-info-border">
-            <FileSpreadsheet className="h-5 w-5 text-info-foreground flex-shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-info-foreground truncate">
-                {csvFile.name}
-              </p>
-              <p className="text-xs text-info-foreground">
-                {(csvFile.size / 1024).toFixed(1)} KB
-              </p>
-            </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        {/* Group A: Get data from Agent */}
+        <div className="border rounded-md p-3 space-y-2.5">
+          <SectionTitle>Get data from Agent</SectionTitle>
+
+          <div className="flex flex-wrap items-start gap-2">
+            <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
+              <SelectTrigger className="w-full sm:w-52 h-8 text-sm">
+                <SelectValue
+                  placeholder={
+                    isLoadingAgents ? 'Loading agents…' : 'Select a Get Data agent'
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {agents.length === 0 ? (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    No Get Data agents configured
+                  </div>
+                ) : (
+                  agents.map(agent => (
+                    <SelectItem key={agent.id} value={agent.agent_id ?? agent.id}>
+                      {agent.name}
+                    </SelectItem>
+                  ))
+                )}
+              </SelectContent>
+            </Select>
+
             <Button
-              variant="ghost"
               size="sm"
-              onClick={onClear}
-              className="h-7 w-7 p-0 text-info-foreground hover:opacity-80"
+              className="h-8"
+              onClick={handleGetData}
+              disabled={
+                !selectedAgentId || selectedFlowIds.length === 0 || isFetchingAgentData
+              }
             >
-              <X className="h-4 w-4" />
+              {isFetchingAgentData ? (
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+              ) : (
+                <Zap className="h-3.5 w-3.5 mr-1.5" />
+              )}
+              {isFetchingAgentData ? 'Getting Data…' : 'Get Data'}
             </Button>
           </div>
-        ) : (
-          <div
-            className="border-2 border-dashed border-border rounded-md p-8 text-center cursor-pointer hover:border-info-border hover:bg-info transition-colors"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-            <p className="text-sm text-muted-foreground">Click to select a CSV file</p>
-            <p className="text-xs text-muted-foreground mt-1">Accepts .csv files</p>
-          </div>
-        )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,text/csv"
-          className="hidden"
-          onChange={onFileChange}
-        />
-      </div>
 
-      {/* Get Data agent source */}
-      <div className="space-y-2">
-        <Label className="text-sm font-medium">Or Get Data From an Agent</Label>
-        <div className="flex flex-wrap items-start gap-3">
-          <Select value={selectedAgentId} onValueChange={setSelectedAgentId}>
-            <SelectTrigger className="w-64">
-              <SelectValue
-                placeholder={
-                  isLoadingAgents ? 'Loading agents…' : 'Select a Get Data agent'
-                }
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {agents.length === 0 ? (
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                  No Get Data agents configured
-                </div>
-              ) : (
-                agents.map(agent => (
-                  <SelectItem key={agent.id} value={agent.agent_id ?? agent.id}>
-                    {agent.name}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-
-          <div className="w-64 border rounded-md p-2 space-y-1 max-h-40 overflow-y-auto">
+          <div className="border rounded-md p-2 space-y-0.5 max-h-28 overflow-y-auto">
             {!selectedAgentId ? (
-              <p className="text-xs text-muted-foreground px-1 py-1">
+              <p className="text-xs text-muted-foreground px-1 py-0.5">
                 Select an agent first
               </p>
             ) : availableFlows.length === 0 ? (
-              <p className="text-xs text-muted-foreground px-1 py-1">
+              <p className="text-xs text-muted-foreground px-1 py-0.5">
                 Agent has not reported any identifiers yet
               </p>
             ) : (
               availableFlows.map(flowId => (
                 <label
                   key={flowId}
-                  className="flex items-center gap-2 px-1 py-1 text-sm cursor-pointer"
+                  className="flex items-center gap-2 px-1 py-0.5 text-sm cursor-pointer"
                 >
                   <Checkbox
                     checked={selectedFlowIds.includes(flowId)}
@@ -278,55 +262,133 @@ export function CsvSourceStep({
             )}
           </div>
 
-          <Button
-            onClick={handleGetData}
-            disabled={
-              !selectedAgentId || selectedFlowIds.length === 0 || isFetchingAgentData
-            }
-          >
-            {isFetchingAgentData ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          {agentError && <StatusAlert variant="error">{agentError}</StatusAlert>}
+        </div>
+
+        {/* Group B: Use upload */}
+        <div className="border rounded-md p-3 space-y-2.5">
+          <SectionTitle>Use upload</SectionTitle>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {csvFile ? (
+              <div className="flex items-center gap-2 flex-1 min-w-0 px-2.5 py-1.5 border rounded-md bg-info border-info-border">
+                <FileSpreadsheet className="h-4 w-4 text-info-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-info-foreground truncate">
+                    {csvFile.name}
+                  </p>
+                  <p className="text-xs text-info-foreground">
+                    {(csvFile.size / 1024).toFixed(1)} KB
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClear}
+                  className="h-6 w-6 p-0 text-info-foreground hover:opacity-80"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              </div>
             ) : (
-              <Zap className="h-4 w-4 mr-2" />
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload className="h-3.5 w-3.5 mr-1.5" />
+                Select CSV file
+              </Button>
             )}
-            {isFetchingAgentData ? 'Getting Data…' : 'Get Data'}
-          </Button>
-        </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv,text/csv"
+              className="hidden"
+              onChange={onFileChange}
+            />
+          </div>
 
-        {agentError && <StatusAlert variant="error">{agentError}</StatusAlert>}
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-muted-foreground">Delimiter</Label>
+              <Input
+                className="h-8 text-sm w-16"
+                value={csvConfig.delimiter}
+                onChange={e => onConfigChange({ delimiter: e.target.value })}
+                placeholder=","
+                maxLength={5}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-muted-foreground">Quote</Label>
+              <Input
+                className="h-8 text-sm w-16"
+                value={csvConfig.quoteChar}
+                onChange={e => onConfigChange({ quoteChar: e.target.value })}
+                placeholder='"'
+                maxLength={1}
+              />
+            </div>
+            {csvFile && (
+              <Button size="sm" onClick={onParseCSV} disabled={isParsing} className="h-8">
+                {isParsing ? 'Parsing…' : 'Parse CSV'}
+              </Button>
+            )}
+          </div>
+
+          {csvFile && parsedData.rowCount === 0 && !isParsing && (
+            <p className="text-xs text-muted-foreground">
+              Click <strong>Parse CSV</strong> to analyze the file.
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* CSV Config + Parse */}
-      <div className="flex items-end gap-4">
-        <div className="space-y-1">
-          <Label className="text-xs font-medium text-muted-foreground">Delimiter</Label>
-          <Input
-            className="h-8 text-sm w-20"
-            value={csvConfig.delimiter}
-            onChange={e => onConfigChange({ delimiter: e.target.value })}
-            placeholder=","
-            maxLength={5}
-          />
+      {/* Parse Results */}
+      {parsedData.rowCount > 0 && (
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="secondary">{parsedData.headers.length} columns</Badge>
+            <Badge variant="secondary">{parsedData.rowCount} rows</Badge>
+            {validationSummary.errorCount > 0 && (
+              <Badge variant="destructive">{validationSummary.errorCount} errors</Badge>
+            )}
+            {validationSummary.warningCount > 0 && (
+              <StatusBadge variant="warning">
+                {validationSummary.warningCount} warnings
+              </StatusBadge>
+            )}
+            {validationSummary.isValid && (
+              <StatusBadge variant="success">Valid</StatusBadge>
+            )}
+          </div>
+
+          {validationResults.length > 0 && (
+            <div className="border rounded-md max-h-32 overflow-y-auto">
+              {validationResults.map(result => (
+                <div
+                  key={`${result.type}-${result.rowNumber ?? ''}-${result.message}`}
+                  className={`px-3 py-1 text-xs border-b last:border-0 ${
+                    result.type === 'error'
+                      ? 'bg-error text-error-foreground'
+                      : result.type === 'warning'
+                        ? 'bg-warning text-warning-foreground'
+                        : 'bg-success text-success-foreground'
+                  }`}
+                >
+                  {result.rowNumber ? `Row ${result.rowNumber}: ` : ''}
+                  {result.message}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        <div className="space-y-1">
-          <Label className="text-xs font-medium text-muted-foreground">Quote Character</Label>
-          <Input
-            className="h-8 text-sm w-20"
-            value={csvConfig.quoteChar}
-            onChange={e => onConfigChange({ quoteChar: e.target.value })}
-            placeholder='"'
-            maxLength={1}
-          />
-        </div>
-        {csvFile && (
-          <Button onClick={onParseCSV} disabled={isParsing} className="h-8">
-            {isParsing ? 'Parsing...' : 'Parse CSV'}
-          </Button>
-        )}
-      </div>
+      )}
 
       {/* Options */}
-      <div className="space-y-2 border rounded-md p-4">
+      <div className="space-y-2 border-t pt-3">
         <div className="flex items-center space-x-2">
           <Checkbox
             id="use-new-mapping"
@@ -362,56 +424,6 @@ export function CsvSourceStep({
           </div>
         )}
       </div>
-
-      {/* Parse Results */}
-      {parsedData.rowCount > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="secondary">{parsedData.headers.length} columns</Badge>
-            <Badge variant="secondary">{parsedData.rowCount} rows</Badge>
-            {validationSummary.errorCount > 0 && (
-              <Badge variant="destructive">{validationSummary.errorCount} errors</Badge>
-            )}
-            {validationSummary.warningCount > 0 && (
-              <StatusBadge variant="warning">
-                {validationSummary.warningCount} warnings
-              </StatusBadge>
-            )}
-            {validationSummary.isValid && (
-              <StatusBadge variant="success">Valid</StatusBadge>
-            )}
-          </div>
-
-          {validationResults.length > 0 && (
-            <div className="border rounded-md max-h-40 overflow-y-auto">
-              {validationResults.map(result => (
-                <div
-                  key={`${result.type}-${result.rowNumber ?? ''}-${result.message}`}
-                  className={`px-3 py-1.5 text-xs border-b last:border-0 ${
-                    result.type === 'error'
-                      ? 'bg-error text-error-foreground'
-                      : result.type === 'warning'
-                        ? 'bg-warning text-warning-foreground'
-                        : 'bg-success text-success-foreground'
-                  }`}
-                >
-                  {result.rowNumber ? `Row ${result.rowNumber}: ` : ''}
-                  {result.message}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Hint when file selected but not parsed */}
-      {csvFile && parsedData.rowCount === 0 && !isParsing && (
-        <Alert>
-          <AlertDescription className="text-sm">
-            Click <strong>Parse CSV</strong> to analyze the file and check for errors.
-          </AlertDescription>
-        </Alert>
-      )}
     </div>
   )
 }
