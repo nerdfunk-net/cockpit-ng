@@ -104,9 +104,9 @@ def _iter_http_exception_blocks(text: str) -> list[tuple[int, str]]:
     return hits
 
 
-def _routers_dir() -> Path:
-    here = Path(__file__).resolve()
-    return here.parent.parent / "routers"
+def _scanned_dirs() -> list[Path]:
+    backend = Path(__file__).resolve().parent.parent
+    return [backend / "routers", backend / "services"]
 
 
 def _scan_file(path: Path) -> list[tuple[int, str]]:
@@ -127,22 +127,25 @@ def _scan_file(path: Path) -> list[tuple[int, str]]:
 
 
 def main() -> int:
-    routers = _routers_dir()
-    if not routers.is_dir():
-        print(f"routers directory not found at {routers}", file=sys.stderr)
+    dirs = [d for d in _scanned_dirs() if d.is_dir()]
+    if not dirs:
+        print("no routers/ or services/ directory found", file=sys.stderr)
         return 2
 
-    backend_dir = routers.parent
+    backend_dir = dirs[0].parent
     all_failures: list[tuple[Path, int, str]] = []
-    for py in sorted(routers.rglob("*.py")):
-        rel = py.relative_to(backend_dir).as_posix()
-        if rel in ALLOW_LIST:
-            continue
-        for line_no, snippet in _scan_file(py):
-            all_failures.append((py, line_no, snippet))
+    for base in dirs:
+        for py in sorted(base.rglob("*.py")):
+            rel = py.relative_to(backend_dir).as_posix()
+            if rel in ALLOW_LIST:
+                continue
+            for line_no, snippet in _scan_file(py):
+                all_failures.append((py, line_no, snippet))
 
     if not all_failures:
-        print("[OK] no leaky 5xx HTTPException detail strings under backend/routers/")
+        print(
+            "[OK] no leaky 5xx HTTPException detail strings under routers/ + services/"
+        )
         return 0
 
     print("[FAIL] leaky 5xx HTTPException detail in:")

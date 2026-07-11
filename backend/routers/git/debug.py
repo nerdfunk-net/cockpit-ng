@@ -66,22 +66,29 @@ async def debug_read_test(
                 },
             }
         except PermissionError as e:
+            logger.warning(
+                "Permission denied reading debug file for repo %s: %s",
+                repo_id,
+                e,
+                exc_info=True,
+            )
             return {
                 "success": False,
                 "message": "Permission denied reading file",
                 "details": {
-                    "error": str(e),
                     "file_path": str(test_file_path),
                     "error_type": "PermissionError",
                     "suggestion": "Check file system permissions for the repository directory",
                 },
             }
         except Exception as e:
+            logger.warning(
+                "Debug read failed for repo %s: %s", repo_id, e, exc_info=True
+            )
             return {
                 "success": False,
-                "message": f"Error reading file: {str(e)}",
+                "message": "Error reading file",
                 "details": {
-                    "error": str(e),
                     "error_type": type(e).__name__,
                     "file_path": str(test_file_path),
                 },
@@ -90,12 +97,13 @@ async def debug_read_test(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Debug read test failed for repo %s: %s", repo_id, e)
+        logger.error(
+            "Debug read test failed for repo %s: %s", repo_id, e, exc_info=True
+        )
         return {
             "success": False,
-            "message": f"Debug test failed: {str(e)}",
+            "message": "Debug test failed",
             "details": {
-                "error": str(e),
                 "error_type": type(e).__name__,
                 "stage": "repository_access",
             },
@@ -164,11 +172,16 @@ async def debug_write_test(
                 }
 
         except PermissionError as e:
+            logger.warning(
+                "Permission denied writing debug file for repo %s: %s",
+                repo_id,
+                e,
+                exc_info=True,
+            )
             return {
                 "success": False,
                 "message": "Permission denied writing file",
                 "details": {
-                    "error": str(e),
                     "file_path": str(test_file_path),
                     "error_type": "PermissionError",
                     "suggestion": "Check file system permissions for the repository directory",
@@ -176,22 +189,29 @@ async def debug_write_test(
                 },
             }
         except OSError as e:
+            logger.warning(
+                "OS error writing debug file for repo %s: %s",
+                repo_id,
+                e,
+                exc_info=True,
+            )
             return {
                 "success": False,
-                "message": f"OS error writing file: {str(e)}",
+                "message": "OS error writing file",
                 "details": {
-                    "error": str(e),
                     "error_type": "OSError",
                     "file_path": str(test_file_path),
                     "suggestion": "Check disk space and file system health",
                 },
             }
         except Exception as e:
+            logger.warning(
+                "Debug write failed for repo %s: %s", repo_id, e, exc_info=True
+            )
             return {
                 "success": False,
-                "message": f"Error writing file: {str(e)}",
+                "message": "Error writing file",
                 "details": {
-                    "error": str(e),
                     "error_type": type(e).__name__,
                     "file_path": str(test_file_path),
                 },
@@ -200,12 +220,13 @@ async def debug_write_test(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Debug write test failed for repo %s: %s", repo_id, e)
+        logger.error(
+            "Debug write test failed for repo %s: %s", repo_id, e, exc_info=True
+        )
         return {
             "success": False,
-            "message": f"Debug test failed: {str(e)}",
+            "message": "Debug test failed",
             "details": {
-                "error": str(e),
                 "error_type": type(e).__name__,
                 "stage": "repository_access",
             },
@@ -272,22 +293,29 @@ async def debug_delete_test(
                 }
 
         except PermissionError as e:
+            logger.warning(
+                "Permission denied deleting debug file for repo %s: %s",
+                repo_id,
+                e,
+                exc_info=True,
+            )
             return {
                 "success": False,
                 "message": "Permission denied deleting file",
                 "details": {
-                    "error": str(e),
                     "file_path": str(test_file_path),
                     "error_type": "PermissionError",
                     "suggestion": "Check file system permissions for the file",
                 },
             }
         except Exception as e:
+            logger.warning(
+                "Debug delete failed for repo %s: %s", repo_id, e, exc_info=True
+            )
             return {
                 "success": False,
-                "message": f"Error deleting file: {str(e)}",
+                "message": "Error deleting file",
                 "details": {
-                    "error": str(e),
                     "error_type": type(e).__name__,
                     "file_path": str(test_file_path),
                 },
@@ -296,12 +324,13 @@ async def debug_delete_test(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Debug delete test failed for repo %s: %s", repo_id, e)
+        logger.error(
+            "Debug delete test failed for repo %s: %s", repo_id, e, exc_info=True
+        )
         return {
             "success": False,
-            "message": f"Debug test failed: {str(e)}",
+            "message": "Debug test failed",
             "details": {
-                "error": str(e),
                 "error_type": type(e).__name__,
                 "stage": "repository_access",
             },
@@ -373,11 +402,16 @@ async def debug_push_test(
             try:
                 repo.index.add([".cockpit_debug_test.txt"])
             except Exception as add_error:
+                logger.warning(
+                    "Debug push staging failed for repo %s: %s",
+                    repo_id,
+                    add_error,
+                    exc_info=True,
+                )
                 return {
                     "success": False,
-                    "message": f"Failed to stage file: {str(add_error)}",
+                    "message": "Failed to stage file",
                     "details": {
-                        "error": str(add_error),
                         "error_type": type(add_error).__name__,
                         "stage": "git_add",
                     },
@@ -391,22 +425,26 @@ async def debug_push_test(
                     commit = repo.index.commit(commit_message)
                 commit_sha = commit.hexsha[:8]
             except Exception as commit_error:
+                logger.warning(
+                    "Debug push commit failed for repo %s: %s",
+                    repo_id,
+                    commit_error,
+                    exc_info=True,
+                )
                 # If nothing to commit (file already exists with same content), that's ok
                 if "nothing to commit" in str(commit_error).lower():
                     return {
                         "success": False,
                         "message": "No changes to push (test file unchanged)",
                         "details": {
-                            "error": str(commit_error),
                             "error_type": "NoChanges",
                             "suggestion": "The test file already exists with the same content. Use Write test first or modify the file manually.",
                         },
                     }
                 return {
                     "success": False,
-                    "message": f"Failed to commit changes: {str(commit_error)}",
+                    "message": "Failed to commit changes",
                     "details": {
-                        "error": str(commit_error),
                         "error_type": type(commit_error).__name__,
                         "stage": "git_commit",
                     },
@@ -452,9 +490,8 @@ async def debug_push_test(
                                 if push_result.flags & push_result.ERROR:
                                     return {
                                         "success": False,
-                                        "message": f"Push failed: {push_result.summary}",
+                                        "message": "Push failed",
                                         "details": {
-                                            "error": push_result.summary,
                                             "error_type": "PushError",
                                             "commit_sha": commit_sha,
                                             "suggestion": "Check repository permissions and credentials",
@@ -480,7 +517,6 @@ async def debug_push_test(
                                     "success": False,
                                     "message": "Push completed but no feedback received",
                                     "details": {
-                                        "error": "No push info returned",
                                         "error_type": "UnknownPushResult",
                                         "commit_sha": commit_sha,
                                     },
@@ -494,6 +530,12 @@ async def debug_push_test(
                                 except Exception:
                                     pass
 
+                            logger.warning(
+                                "Debug push failed for repo %s: %s",
+                                repo_id,
+                                push_error,
+                                exc_info=True,
+                            )
                             error_message = str(push_error)
 
                             # Provide helpful error messages for common issues
@@ -511,9 +553,8 @@ async def debug_push_test(
 
                             return {
                                 "success": False,
-                                "message": f"Failed to push: {error_message}",
+                                "message": "Failed to push",
                                 "details": {
-                                    "error": error_message,
                                     "error_type": type(push_error).__name__,
                                     "stage": "git_push",
                                     "commit_sha": commit_sha,
@@ -522,33 +563,48 @@ async def debug_push_test(
                             }
 
             except Exception as remote_error:
+                logger.warning(
+                    "Debug push remote configuration failed for repo %s: %s",
+                    repo_id,
+                    remote_error,
+                    exc_info=True,
+                )
                 return {
                     "success": False,
-                    "message": f"Failed to configure remote: {str(remote_error)}",
+                    "message": "Failed to configure remote",
                     "details": {
-                        "error": str(remote_error),
                         "error_type": type(remote_error).__name__,
                         "stage": "configure_remote",
                     },
                 }
 
         except PermissionError as e:
+            logger.warning(
+                "Permission denied during debug push for repo %s: %s",
+                repo_id,
+                e,
+                exc_info=True,
+            )
             return {
                 "success": False,
                 "message": "Permission denied for file operations",
                 "details": {
-                    "error": str(e),
                     "file_path": str(test_file_path),
                     "error_type": "PermissionError",
                     "suggestion": "Check file system permissions for the repository directory",
                 },
             }
         except Exception as e:
+            logger.warning(
+                "Unexpected error during debug push for repo %s: %s",
+                repo_id,
+                e,
+                exc_info=True,
+            )
             return {
                 "success": False,
-                "message": f"Unexpected error during push test: {str(e)}",
+                "message": "Unexpected error during push test",
                 "details": {
-                    "error": str(e),
                     "error_type": type(e).__name__,
                     "file_path": str(test_file_path),
                 },
@@ -557,12 +613,13 @@ async def debug_push_test(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Debug push test failed for repo %s: %s", repo_id, e)
+        logger.error(
+            "Debug push test failed for repo %s: %s", repo_id, e, exc_info=True
+        )
         return {
             "success": False,
-            "message": f"Debug test failed: {str(e)}",
+            "message": "Debug test failed",
             "details": {
-                "error": str(e),
                 "error_type": type(e).__name__,
                 "stage": "repository_access",
             },
@@ -619,8 +676,13 @@ async def debug_diagnostics(
                     "path": str(repo_path),
                 }
             except Exception as e:
+                logger.warning(
+                    "Debug diagnostics file system check failed for repo %s: %s",
+                    repo_id,
+                    e,
+                    exc_info=True,
+                )
                 diagnostics["file_system"] = {
-                    "error": str(e),
                     "error_type": type(e).__name__,
                 }
 
@@ -636,15 +698,25 @@ async def debug_diagnostics(
                     "has_origin": "origin" in [r.name for r in repo.remotes],
                 }
             except Exception as e:
+                logger.warning(
+                    "Debug diagnostics git status check failed for repo %s: %s",
+                    repo_id,
+                    e,
+                    exc_info=True,
+                )
                 diagnostics["git_status"] = {
-                    "error": str(e),
                     "error_type": type(e).__name__,
                 }
 
         except Exception as e:
+            logger.warning(
+                "Debug diagnostics repository access failed for repo %s: %s",
+                repo_id,
+                e,
+                exc_info=True,
+            )
             diagnostics["access_test"] = {
                 "accessible": False,
-                "error": str(e),
                 "error_type": type(e).__name__,
             }
 
@@ -661,7 +733,13 @@ async def debug_diagnostics(
                     "ssl_version": ssl.OPENSSL_VERSION,
                 }
         except Exception as e:
-            diagnostics["ssl_info"] = {"error": str(e), "error_type": type(e).__name__}
+            logger.warning(
+                "Debug diagnostics SSL info check failed for repo %s: %s",
+                repo_id,
+                e,
+                exc_info=True,
+            )
+            diagnostics["ssl_info"] = {"error_type": type(e).__name__}
 
         # Credential information (without exposing secrets) using authentication service
         try:
@@ -726,13 +804,18 @@ async def debug_diagnostics(
             }
 
         except Exception as e:
+            logger.warning(
+                "Debug diagnostics credentials check failed for repo %s: %s",
+                repo_id,
+                e,
+                exc_info=True,
+            )
             diagnostics["credentials"] = {
-                "error": str(e),
                 "error_type": type(e).__name__,
             }
             diagnostics["push_capability"] = {
                 "status": "error",
-                "message": f"Failed to assess push capability: {str(e)}",
+                "message": "Failed to assess push capability",
                 "can_push": False,
             }
 
@@ -741,5 +824,11 @@ async def debug_diagnostics(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Debug diagnostics failed for repo %s: %s", repo_id, e)
-        return {"success": False, "error": str(e), "error_type": type(e).__name__}
+        logger.error(
+            "Debug diagnostics failed for repo %s: %s", repo_id, e, exc_info=True
+        )
+        return {
+            "success": False,
+            "message": "Debug diagnostics failed",
+            "error_type": type(e).__name__,
+        }

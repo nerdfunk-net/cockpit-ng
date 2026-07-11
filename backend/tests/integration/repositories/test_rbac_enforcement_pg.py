@@ -69,7 +69,13 @@ def rbac_engine(postgres_engine_integration):
 
 @pytest.fixture(autouse=True)
 def _clean_rbac_tables(rbac_engine):
-    """Wipe RBAC data before every test so state never leaks between cases."""
+    """Wipe RBAC data before every test so state never leaks between cases.
+
+    Also clears the ``rbac-perm`` permission cache: table IDs restart at 1
+    each test (RESTART IDENTITY), and RBACService.has_permission() caches
+    results keyed by user_id — without this, a cached result computed for
+    user_id=1 in one test would leak into the next test that reuses id=1.
+    """
     with rbac_engine.begin() as conn:
         conn.execute(
             text(
@@ -77,6 +83,9 @@ def _clean_rbac_tables(rbac_engine):
                 "permissions, roles, users RESTART IDENTITY CASCADE"
             )
         )
+    import service_factory
+
+    service_factory.build_cache_service().clear_namespace("rbac-perm")
     yield
 
 

@@ -18,6 +18,46 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
+# Legacy single-role field is derived from RBAC roles by priority.
+_ROLE_PRIORITY = ("admin", "operator", "network_engineer", "viewer")
+
+
+def _primary_role(role_names: list[str]) -> str | None:
+    for role in _ROLE_PRIORITY:
+        if role in role_names:
+            return role
+    return role_names[0] if role_names else None
+
+
+def _build_login_response(user: dict, user_with_roles: dict) -> LoginResponse:
+    """Assemble the JWT + response payload shared by login and refresh."""
+    from config import settings
+
+    role_names = [r["name"] for r in user_with_roles.get("roles", [])]
+    access_token = create_access_token(
+        data={
+            "sub": user["username"],
+            "user_id": user["id"],
+            "permissions": user["permissions"],
+        },
+        expires_delta=timedelta(minutes=settings.access_token_expire_minutes),
+    )
+    return LoginResponse(
+        access_token=access_token,
+        token_type="bearer",
+        expires_in=settings.access_token_expire_minutes * 60,
+        user={
+            "id": user_with_roles["id"],
+            "username": user_with_roles["username"],
+            "realname": user_with_roles["realname"],
+            "email": user_with_roles.get("email"),
+            "role": _primary_role(role_names),
+            "roles": role_names,
+            "permissions": user_with_roles.get("permissions", []),
+            "debug": user_with_roles.get("debug", False),
+        },
+    )
+
 
 @router.post("/login", response_model=LoginResponse)
 @limiter.limit("10/minute")
@@ -30,7 +70,6 @@ async def login(
     Authenticate user against new user database.
     """
     import service_factory
-    from config import settings
     from services.auth.user_management import authenticate_user
 
     rbac = service_factory.build_rbac_service()
@@ -54,48 +93,8 @@ async def login(
                 user_with_roles["roles"] = []
                 user_with_roles["permissions"] = []
 
-            # Extract role names for the response
+            # Extract role names for the audit log
             role_names = [r["name"] for r in user_with_roles.get("roles", [])]
-
-            # Set primary role (for legacy compatibility)
-            # Priority: admin > operator > network_engineer > viewer > first role
-            primary_role = None
-            if "admin" in role_names:
-                primary_role = "admin"
-            elif "operator" in role_names:
-                primary_role = "operator"
-            elif "network_engineer" in role_names:
-                primary_role = "network_engineer"
-            elif "viewer" in role_names:
-                primary_role = "viewer"
-            elif role_names:
-                primary_role = role_names[0]
-
-            access_token_expires = timedelta(
-                minutes=settings.access_token_expire_minutes
-            )
-            access_token = create_access_token(
-                data={
-                    "sub": user["username"],
-                    "user_id": user["id"],
-                    "permissions": user["permissions"],  # Legacy bitwise for token
-                },
-                expires_delta=access_token_expires,
-            )
-
-            # Build response user object
-            response_user = {
-                "id": user_with_roles["id"],
-                "username": user_with_roles["username"],
-                "realname": user_with_roles["realname"],
-                "email": user_with_roles.get("email"),
-                "role": primary_role,  # Legacy field for compatibility
-                "roles": role_names,  # New RBAC roles array
-                "permissions": user_with_roles.get(
-                    "permissions", []
-                ),  # New RBAC permissions
-                "debug": user_with_roles.get("debug", False),
-            }
 
             login_recording.record_successful_login(
                 user["id"],
@@ -104,12 +103,7 @@ async def login(
                 authentication_method="password",
             )
 
-            return LoginResponse(
-                access_token=access_token,
-                token_type="bearer",
-                expires_in=settings.access_token_expire_minutes * 60,
-                user=response_user,
-            )
+            return _build_login_response(user, user_with_roles)
     except Exception as e:
         # Log the error but don't expose it to the user
         logger.error("Authentication error for user %s: %s", user_data.username, e)
@@ -202,50 +196,7 @@ async def refresh_token(request: Request):
             user_with_roles["roles"] = []
             user_with_roles["permissions"] = []
 
-        # Extract role names for the response
-        role_names = [r["name"] for r in user_with_roles.get("roles", [])]
-
-        # Set primary role (for legacy compatibility)
-        # Priority: admin > operator > network_engineer > viewer > first role
-        primary_role = None
-        if "admin" in role_names:
-            primary_role = "admin"
-        elif "operator" in role_names:
-            primary_role = "operator"
-        elif "network_engineer" in role_names:
-            primary_role = "network_engineer"
-        elif "viewer" in role_names:
-            primary_role = "viewer"
-        elif role_names:
-            primary_role = role_names[0]
-
-        access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
-        access_token = create_access_token(
-            data={
-                "sub": user["username"],
-                "user_id": user["id"],
-                "permissions": user["permissions"],
-            },
-            expires_delta=access_token_expires,
-        )
-
-        return LoginResponse(
-            access_token=access_token,
-            token_type="bearer",
-            expires_in=settings.access_token_expire_minutes * 60,
-            user={
-                "id": user_with_roles["id"],
-                "username": user_with_roles["username"],
-                "realname": user_with_roles["realname"],
-                "email": user_with_roles.get("email"),
-                "role": primary_role,  # Legacy field for compatibility
-                "roles": role_names,  # CRITICAL FIX: Include roles array for sidebar
-                "permissions": user_with_roles.get(
-                    "permissions", []
-                ),  # New RBAC permissions
-                "debug": user_with_roles.get("debug", False),
-            },
-        )
+        return _build_login_response(user, user_with_roles)
     except HTTPException:
         raise
     except Exception as exc:

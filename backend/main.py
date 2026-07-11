@@ -13,13 +13,14 @@ import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 
-from fastapi import FastAPI, Request
+from fastapi import Depends, FastAPI, Request
 from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import Response
 from fastapi.staticfiles import StaticFiles
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
+from core.auth import require_permission
 from core.limiter import limiter
 from core.safe_http_errors import raise_internal_server_error
 
@@ -174,14 +175,35 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 
+# Content-Security-Policy for the JSON API + self-hosted Swagger UI assets.
+# The API returns JSON; the only HTML it serves is /docs and /redoc, which load
+# assets from /api/static/swagger-ui (same origin). Tighten further if the API
+# never needs to render HTML in your deployment.
+_CSP = (
+    "default-src 'self'; "
+    "script-src 'self'; "
+    "style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data:; "
+    "connect-src 'self'; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self'"
+)
+
+
 @app.middleware("http")
 async def security_headers(request: Request, call_next) -> Response:
     """Add security headers to all responses."""
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
-    response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = _CSP
+    # HSTS is only meaningful over HTTPS; harmless over plain HTTP (ignored by
+    # browsers) but only send it when the request arrived as https.
+    if request.url.scheme == "https":
+        response.headers["Strict-Transport-Security"] = (
+            "max-age=31536000; includeSubDomains"
+        )
     return response
 
 
@@ -303,7 +325,10 @@ async def health_check():
     }
 
 
-@app.post("/api/nautobot/graphql")
+@app.post(
+    "/api/nautobot/graphql",
+    dependencies=[Depends(require_permission("nautobot", "read"))],
+)
 async def nautobot_graphql_endpoint(
     query_data: dict,
     request: Request,
@@ -311,7 +336,9 @@ async def nautobot_graphql_endpoint(
     """
     Execute GraphQL query against Nautobot - compatibility endpoint.
 
-    This endpoint maintains backward compatibility with existing frontend code.
+    Requires the ``nautobot:read`` permission. This endpoint forwards queries
+    to Nautobot using the backend service token, so it MUST stay authenticated
+    to avoid RBAC bypass.
     """
     from fastapi import HTTPException, status
 

@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from fastapi import HTTPException, status
 
+from core.safe_http_errors import raise_internal_server_error
 from models.nautobot import OffboardDeviceRequest
 from services.nautobot.common.exceptions import NautobotAPIError
 from services.nautobot.devices.common import DeviceCommonService
@@ -376,18 +377,13 @@ class OffboardingService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=str(exc),
                 ) from exc
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=str(exc),
-            ) from exc
-        except Exception as exc:
-            logger.error(
-                "Error fetching device details for %s: %s", device_id, str(exc)
+            raise_internal_server_error(
+                logger, f"Error fetching device details for {device_id}", exc
             )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to fetch device details: {str(exc)}",
-            ) from exc
+        except Exception as exc:
+            raise_internal_server_error(
+                logger, f"Error fetching device details for {device_id}", exc
+            )
 
     def _build_summary(self, results: OffboardingResult) -> None:
         """Build summary message based on results."""

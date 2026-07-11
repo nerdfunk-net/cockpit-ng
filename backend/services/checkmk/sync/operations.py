@@ -11,6 +11,7 @@ import logging
 
 from fastapi import HTTPException, status
 
+from core.safe_http_errors import raise_internal_server_error
 from models.nb2cmk import (
     DefaultSiteResponse,
     DeviceOperationResult,
@@ -202,10 +203,8 @@ class DeviceSyncOperations:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error("Error adding device %s to CheckMK: %s", device_id, e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to add device {device_id} to CheckMK: {e}",
+            raise_internal_server_error(
+                logger, f"Error adding device {device_id} to CheckMK", e
             )
 
     async def update_device_in_checkmk(self, device_id: str) -> DeviceUpdateResult:
@@ -264,10 +263,8 @@ class DeviceSyncOperations:
                         detail=f"Host '{hostname}' not found in CheckMK site '{device_site}' - cannot update non-existent host",
                     )
                 else:
-                    logger.error("CheckMK API error getting host %s: %s", hostname, e)
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"CheckMK API error: {e}",
+                    raise_internal_server_error(
+                        logger, f"CheckMK API error getting host {hostname}", e
                     )
 
             # Normalize folder paths for comparison
@@ -323,12 +320,8 @@ class DeviceSyncOperations:
                             detail=f"Cannot move host '{hostname}' - CheckMK changes may need to be activated first. Please activate pending changes in CheckMK and try again.",
                         )
                     else:
-                        logger.error(
-                            "CheckMK API error moving host %s: %s", hostname, e
-                        )
-                        raise HTTPException(
-                            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                            detail=f"CheckMK API error moving host: {e}",
+                        raise_internal_server_error(
+                            logger, f"CheckMK API error moving host {hostname}", e
                         )
 
             # Update host attributes
@@ -382,10 +375,8 @@ class DeviceSyncOperations:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error("Error updating device %s in CheckMK: %s", device_id, e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to update device {device_id} in CheckMK: {e}",
+            raise_internal_server_error(
+                logger, f"Error updating device {device_id} in CheckMK", e
             )
 
     def get_default_site(self) -> DefaultSiteResponse:

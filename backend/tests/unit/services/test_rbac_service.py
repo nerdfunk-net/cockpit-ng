@@ -14,6 +14,7 @@ from services.auth.exceptions import (
 from services.auth.rbac_service import RBACService
 from services.auth.user_service import PERMISSIONS_USER, UserService
 from tests.mocks.fake_auth_repositories import FakeRBACRepository, FakeUserRepository
+from tests.mocks.fake_cache_service import FakeCacheService
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -42,6 +43,8 @@ def rbac_svc(rbac_repo: FakeRBACRepository, user_svc: UserService) -> RBACServic
     svc = RBACService.__new__(RBACService)
     svc._rbac_repo = rbac_repo
     svc._user_service = user_svc
+    # Fresh per test so cached permission results never leak across tests.
+    svc._cache = FakeCacheService()
     return svc
 
 
@@ -540,3 +543,26 @@ class TestDeleteUserWithRBAC:
         count, errors = rbac_svc.bulk_delete_users_with_rbac([alice_id])
         assert count == 1
         assert errors == []
+
+    def test_delete_raises_and_keeps_user_when_credential_cleanup_fails(
+        self, rbac_svc: RBACService, alice_id: int, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import services.settings.credentials_service as credentials_service_module
+
+        def _boom(self, username: str) -> int:
+            raise RuntimeError("credential store unavailable")
+
+        monkeypatch.setattr(
+            credentials_service_module.CredentialsService,
+            "delete_credentials_by_owner",
+            _boom,
+        )
+        monkeypatch.setattr(
+            "services.auth.profile_service.delete_user_profile", lambda username: True
+        )
+
+        with pytest.raises(RBACConstraintError):
+            rbac_svc.delete_user_with_rbac(alice_id)
+
+        # Partial failure must not hard-delete the user record.
+        assert rbac_svc.get_user_with_rbac(alice_id, include_inactive=True) is not None

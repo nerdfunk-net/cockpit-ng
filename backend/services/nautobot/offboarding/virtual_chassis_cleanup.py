@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any, Dict
 
 from fastapi import HTTPException, status
 
+from core.safe_http_errors import raise_internal_server_error
 from models.nautobot import (
     DeviceVirtualChassisStatus,
     VirtualChassisInfo,
@@ -61,10 +62,9 @@ class VirtualChassisCleanupManager:
         try:
             result = await self._nb.graphql_query(query)
         except NautobotAPIError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"GraphQL query failed: {exc}",
-            ) from exc
+            raise_internal_server_error(
+                logger, f"GraphQL query failed for device {device_id}", exc
+            )
 
         devices: list[Dict[str, Any]] = result.get("data", {}).get("devices", [])
         if not devices:
@@ -124,10 +124,9 @@ class VirtualChassisCleanupManager:
             )
             logger.info("Deleted virtual chassis %s", vc_id)
         except NautobotAPIError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to delete virtual chassis {vc_id}: {exc}",
-            ) from exc
+            raise_internal_server_error(
+                logger, f"Failed to delete virtual chassis {vc_id}", exc
+            )
 
     async def update_master(self, vc_id: str, new_master_id: str) -> None:
         """Reassign the master of a virtual chassis via REST PATCH.
@@ -153,7 +152,6 @@ class VirtualChassisCleanupManager:
             )
             logger.info("Updated virtual chassis %s master to %s", vc_id, new_master_id)
         except NautobotAPIError as exc:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to update virtual chassis master: {exc}",
-            ) from exc
+            raise_internal_server_error(
+                logger, f"Failed to update virtual chassis master for {vc_id}", exc
+            )

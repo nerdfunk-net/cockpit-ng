@@ -12,6 +12,7 @@ from typing import Any, Dict
 
 from fastapi import HTTPException, status
 
+from core.safe_http_errors import raise_internal_server_error
 from models.nb2cmk import DeviceList
 
 logger = logging.getLogger(__name__)
@@ -121,10 +122,8 @@ class DeviceQueryService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error("Error getting devices for CheckMK sync: %s", e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to get devices for CheckMK sync: {e}",
+            raise_internal_server_error(
+                logger, "Error getting devices for CheckMK sync", e
             )
 
     async def get_device_normalized(self, device_id: str) -> Dict[str, Any]:
@@ -272,10 +271,8 @@ class DeviceQueryService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(
-                "Error getting normalized device config for %s: %s", device_id, e
-            )
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to get normalized device config: {e}",
+            raise_internal_server_error(
+                logger,
+                f"Error getting normalized device config for {device_id}",
+                e,
             )

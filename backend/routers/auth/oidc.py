@@ -33,6 +33,31 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/auth/oidc", tags=["oidc-authentication"])
 
+# OIDC state lives in Redis for one auth round-trip. 10 minutes is generous
+# for a human completing the provider login and returning.
+_OIDC_STATE_TTL_SECONDS = 600
+_OIDC_STATE_PREFIX = "oidc-state"
+
+
+def _store_oidc_state(state: str) -> None:
+    """Persist an issued OIDC state token for later single-use verification."""
+    import service_factory
+
+    cache = service_factory.build_cache_service()
+    cache.set(f"{_OIDC_STATE_PREFIX}:{state}", "1", _OIDC_STATE_TTL_SECONDS)
+
+
+def _consume_oidc_state(state: str) -> bool:
+    """Return True exactly once for a valid, unexpired state, then delete it."""
+    import service_factory
+
+    cache = service_factory.build_cache_service()
+    key = f"{_OIDC_STATE_PREFIX}:{state}"
+    if cache.get(key) is None:
+        return False
+    cache.delete(key)  # single-use: prevent replay
+    return True
+
 
 @router.get("/enabled")
 async def check_oidc_enabled():
@@ -102,6 +127,10 @@ async def oidc_login(
         # Include provider_id in state for callback validation
         state_with_provider = f"{provider_id}:{state}"
 
+        # Persist the issued state so the callback can verify it (CSRF defense).
+        # TTL matches a realistic auth round-trip window.
+        _store_oidc_state(state_with_provider)
+
         # Generate authorization URL
         auth_url = oidc_service.generate_authorization_url(
             provider_id, config, state_with_provider, redirect_uri
@@ -148,6 +177,9 @@ async def oidc_test_login(
 
         # Include provider_id in state for callback validation
         state_with_provider = f"{provider_id}:{state}"
+
+        # Persist the issued state so the callback can verify it (CSRF defense).
+        _store_oidc_state(state_with_provider)
 
         logger.info("[OIDC Test] Initiating test login for provider '%s'", provider_id)
         logger.info("[OIDC Test] Test parameters: %s", test_params.model_dump())
@@ -209,16 +241,27 @@ async def oidc_callback(
         )
 
     try:
-        # Validate state parameter includes correct provider_id
-        if callback_data.state:
-            state_parts = callback_data.state.split(":", 1)
-            if len(state_parts) == 2:
-                state_provider_id, _ = state_parts
-                if state_provider_id != provider_id:
-                    raise HTTPException(
-                        status_code=status.HTTP_400_BAD_REQUEST,
-                        detail="State parameter provider mismatch",
-                    )
+        # Validate state: must be present, match this provider, AND match a
+        # state we actually issued (single-use, unexpired). This is the CSRF
+        # defense — without the server-side check the state is unverifiable.
+        if not callback_data.state:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Missing state parameter",
+            )
+
+        state_parts = callback_data.state.split(":", 1)
+        if len(state_parts) != 2 or state_parts[0] != provider_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="State parameter provider mismatch",
+            )
+
+        if not _consume_oidc_state(callback_data.state):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired state parameter",
+            )
 
         # Exchange authorization code for tokens
         tokens = await oidc_service.exchange_code_for_tokens(

@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 
 from fastapi import HTTPException, status
 
+from core.safe_http_errors import raise_internal_server_error
 from models.nb2cmk import DeviceComparison, DeviceListWithStatus
 
 logger = logging.getLogger(__name__)
@@ -148,11 +149,7 @@ class DeviceComparisonService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error("Error getting devices diff: %s", e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to get devices diff: {e}",
-            )
+            raise_internal_server_error(logger, "Error getting devices diff", e)
 
     async def compare_device_config(self, device_id: str) -> DeviceComparison:
         """Compare normalized Nautobot device config with CheckMK host config.
@@ -183,11 +180,10 @@ class DeviceComparisonService:
                 logger.info("[SECTION] NORMALIZATION COMPLETE")
                 logger.info("--" * 40)
             except Exception as norm_error:
-                error_msg = f"Failed to normalize device config for device {device_id}: {str(norm_error)}"
-                logger.error("[COMPARE ERROR] %s", error_msg, exc_info=True)
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=error_msg,
+                raise_internal_server_error(
+                    logger,
+                    f"Failed to normalize device config for device {device_id}",
+                    norm_error,
                 )
 
             # Get hostname from internal dict
@@ -250,21 +246,20 @@ class DeviceComparisonService:
                             normalized_config=normalized_config,
                             checkmk_config=None,
                         )
-                    error_msg = f"CheckMK API error for host {hostname}: {str(e)}"
-                    logger.error("[COMPARE ERROR] %s", error_msg)
-                    raise HTTPException(
+                    raise_internal_server_error(
+                        logger,
+                        f"CheckMK API error for host {hostname}",
+                        e,
                         status_code=status.HTTP_502_BAD_GATEWAY,
-                        detail=error_msg,
                     )
 
             except HTTPException:
                 raise
             except Exception as e:
-                error_msg = f"Unexpected error getting CheckMK host data for {hostname}: {str(e)}"
-                logger.error("[COMPARE ERROR] %s", error_msg, exc_info=True)
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=error_msg,
+                raise_internal_server_error(
+                    logger,
+                    f"Unexpected error getting CheckMK host data for {hostname}",
+                    e,
                 )
 
             # Extract attributes from CheckMK data
@@ -323,11 +318,10 @@ class DeviceComparisonService:
                 logger.info("[SECTION] COMPARISON RESULT")
                 logger.info("#" * 80)
             except Exception as e:
-                error_msg = f"Error processing configurations for comparison of {hostname}: {str(e)}"
-                logger.error("[COMPARE ERROR] %s", error_msg, exc_info=True)
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=error_msg,
+                raise_internal_server_error(
+                    logger,
+                    f"Error processing configurations for comparison of {hostname}",
+                    e,
                 )
 
             # Determine result
@@ -355,10 +349,8 @@ class DeviceComparisonService:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error("Error comparing device configs for %s: %s", device_id, e)
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=f"Failed to compare device configs: {e}",
+            raise_internal_server_error(
+                logger, f"Error comparing device configs for {device_id}", e
             )
 
     def _compare_configurations(

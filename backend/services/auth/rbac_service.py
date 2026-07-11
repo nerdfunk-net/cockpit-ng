@@ -23,6 +23,9 @@ class RBACService:
     def __init__(self, user_service: UserService) -> None:
         self._rbac_repo = RBACRepository()
         self._user_service = user_service
+        # Lazily built; injectable so tests can substitute a fake cache
+        # instead of hitting a real Redis instance.
+        self._cache = None
 
     # -------------------------------------------------------------------------
     # Permissions
@@ -120,9 +123,11 @@ class RBACService:
 
     def assign_role_to_user(self, user_id: int, role_id: int) -> None:
         self._rbac_repo.assign_role_to_user(user_id, role_id)
+        self._invalidate_permission_cache(user_id)
 
     def remove_role_from_user(self, user_id: int, role_id: int) -> None:
         self._rbac_repo.remove_role_from_user(user_id, role_id)
+        self._invalidate_permission_cache(user_id)
 
     def get_user_roles(self, user_id: int) -> List[Dict[str, Any]]:
         return [self._role_to_dict(r) for r in self._rbac_repo.get_user_roles(user_id)]
@@ -138,9 +143,11 @@ class RBACService:
         self, user_id: int, permission_id: int, granted: bool = True
     ) -> None:
         self._rbac_repo.assign_permission_to_user(user_id, permission_id, granted)
+        self._invalidate_permission_cache(user_id)
 
     def remove_permission_from_user(self, user_id: int, permission_id: int) -> None:
         self._rbac_repo.remove_permission_from_user(user_id, permission_id)
+        self._invalidate_permission_cache(user_id)
 
     def get_user_permission_overrides(self, user_id: int) -> List[Dict[str, Any]]:
         overrides = self._rbac_repo.get_user_permission_overrides_with_status(user_id)
@@ -157,6 +164,19 @@ class RBACService:
     # -------------------------------------------------------------------------
 
     def has_permission(self, user_id: int, resource: str, action: str) -> bool:
+        cache = self._permission_cache()
+        cache_key = f"rbac-perm:{user_id}:{resource}:{action}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return bool(cached)
+
+        result = self._compute_permission(user_id, resource, action)
+        # TTL shorter than the access-token lifetime so a permission change
+        # takes effect within one cache window. Adjust to taste.
+        cache.set(cache_key, 1 if result else 0, ttl_seconds=60)
+        return result
+
+    def _compute_permission(self, user_id: int, resource: str, action: str) -> bool:
         perm = self._rbac_repo.get_permission(resource, action)
         if not perm:
             return False
@@ -169,6 +189,19 @@ class RBACService:
             ):
                 return True
         return False
+
+    def _invalidate_permission_cache(self, user_id: int) -> None:
+        """Drop cached permission results for a user after a grant/revoke."""
+        self._permission_cache().clear_namespace(f"rbac-perm:{user_id}")
+
+    def _permission_cache(self):
+        cache = getattr(self, "_cache", None)
+        if cache is None:
+            import service_factory
+
+            cache = service_factory.build_cache_service()
+            self._cache = cache
+        return cache
 
     def get_user_permissions(self, user_id: int) -> List[Dict[str, Any]]:
         pmap: Dict[Tuple[str, str], Dict[str, Any]] = {}
@@ -279,6 +312,7 @@ class RBACService:
             self.remove_role_from_user(user_id, role["id"])
         for override in self.get_user_permission_overrides(user_id):
             self.remove_permission_from_user(user_id, override["id"])
+        cleanup_errors: list[str] = []
         if username:
             try:
                 from services.settings.credentials_service import CredentialsService
@@ -292,12 +326,21 @@ class RBACService:
                 logger.warning(
                     "Failed to delete credentials for user %s: %s", username, e
                 )
+                cleanup_errors.append("credentials")
             try:
                 from services.auth.profile_service import delete_user_profile
 
                 delete_user_profile(username)
             except Exception as e:
                 logger.warning("Failed to delete profile for user %s: %s", username, e)
+                cleanup_errors.append("profile")
+
+        if cleanup_errors:
+            # Surface partial failure instead of silently reporting success.
+            raise RBACConstraintError(
+                f"User {user_id} deletion incomplete; failed to remove: "
+                f"{', '.join(cleanup_errors)}"
+            )
         return self._user_service.hard_delete_user(user_id)
 
     def bulk_delete_users_with_rbac(self, user_ids: List[int]) -> Tuple[int, List[str]]:
