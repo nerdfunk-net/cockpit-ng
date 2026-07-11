@@ -121,6 +121,11 @@ export function useDeviceFilter() {
         { value: 'exact', label: 'Exact' },
       ])
       setCurrentOperator('within_include')
+    } else if (fieldName === 'primary_prefix') {
+      setOperatorOptionsOverride([
+        { value: 'within_include', label: 'Within Include' },
+      ])
+      setCurrentOperator('within_include')
     } else if (isCustomField || fieldName === 'name') {
       setOperatorOptionsOverride([
         { value: 'equals', label: 'Equals' },
@@ -153,7 +158,8 @@ export function useDeviceFilter() {
       } else if (
         fieldName &&
         fieldName !== 'has_primary' &&
-        fieldName !== 'ip_prefix'
+        fieldName !== 'ip_prefix' &&
+        fieldName !== 'primary_prefix'
       ) {
         // Trigger field values query
         setFieldNameToLoad(fieldName)

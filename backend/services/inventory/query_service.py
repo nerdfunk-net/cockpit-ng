@@ -12,9 +12,11 @@ Cache strategy (Option A — cache-first):
   only pay the Redis round-trip once.
 
   Exceptions that still go directly to Nautobot GraphQL:
-    • location  — Nautobot resolves child-location hierarchy server-side
-    • ip_prefix — requires server-side CIDR containment logic
-    • custom_field — fields are dynamic and not stored in the cache
+    • location       — Nautobot resolves child-location hierarchy server-side
+    • ip_prefix      — requires server-side CIDR containment logic
+    • primary_prefix — requires server-side CIDR containment logic, restricted
+                        to each device's primary_ip4
+    • custom_field   — fields are dynamic and not stored in the cache
 """
 
 from __future__ import annotations
@@ -446,6 +448,95 @@ class InventoryQueryService:
         devices = list(seen_ids.values())
         logger.info(
             "ip_prefix query '%s' namespace=%s (operator=%s) returned %s unique devices",
+            cidr,
+            namespace,
+            operator,
+            len(devices),
+        )
+        return devices
+
+    async def _query_devices_by_primary_prefix(
+        self, prefix_filter: str, operator: str = "within_include"
+    ) -> List[DeviceInfo]:
+        """Query devices whose *primary* IPv4 address falls within a prefix.
+
+        Intentionally kept as a live Nautobot call: CIDR containment filtering
+        requires server-side evaluation.
+
+        Unlike ip_prefix (which matches devices with ANY interface address in
+        the prefix), this only matches devices where the in-prefix address is
+        their primary_ip4 — done by querying ip_addresses(...) and only
+        counting devices that appear under each address's primary_ip4_for.
+
+        Note: unlike prefixes(...), Nautobot's ip_addresses(...) GraphQL field
+        does not accept within_include/within arguments — only prefix (which
+        already behaves like within_include, matching all addresses contained
+        in the CIDR including network/broadcast). The operator parameter is
+        kept for interface parity with _query_devices_by_ip_prefix and future
+        extensibility, but only "within_include" is currently supported.
+        """
+        import service_factory
+
+        nautobot_service = service_factory.build_nautobot_service()
+
+        if not prefix_filter or prefix_filter.strip() == "":
+            logger.warning("Empty prefix_filter provided, returning empty result")
+            return []
+
+        parts = prefix_filter.strip().split(None, 1)
+        cidr = parts[0]
+        namespace = parts[1].strip() if len(parts) > 1 else None
+
+        namespace_arg = f', namespace: "{namespace}"' if namespace else ""
+        prefix_arg = f'prefix: "{cidr}"{namespace_arg}'
+
+        logger.info(
+            "primary_prefix query: cidr='%s', namespace=%s, operator=%s",
+            cidr,
+            namespace,
+            operator,
+        )
+
+        query = f"""
+        query devices_by_primary_prefix {{
+            ip_addresses({prefix_arg}) {{
+                address
+                primary_ip4_for {{
+                    id
+                    name
+                    serial
+                    primary_ip4 {{ address }}
+                    status {{ name }}
+                    device_type {{ model manufacturer {{ name }} }}
+                    role {{ name }}
+                    location {{ name }}
+                    tags {{ name }}
+                    platform {{ name }}
+                }}
+            }}
+        }}
+        """
+
+        result = await nautobot_service.graphql_query(query, {})
+
+        if "errors" in result:
+            logger.error("GraphQL errors in primary_prefix query: %s", result["errors"])
+            return []
+
+        ip_addresses_data = result.get("data", {}).get("ip_addresses", [])
+        seen_ids: Dict[str, DeviceInfo] = {}
+
+        for ip_addr in ip_addresses_data:
+            for device_data in ip_addr.get("primary_ip4_for", []):
+                device_id = device_data.get("id")
+                if device_id and device_id not in seen_ids:
+                    parsed = self._parse_device_data([device_data])
+                    if parsed:
+                        seen_ids[device_id] = parsed[0]
+
+        devices = list(seen_ids.values())
+        logger.info(
+            "primary_prefix query '%s' namespace=%s (operator=%s) returned %s unique devices",
             cidr,
             namespace,
             operator,

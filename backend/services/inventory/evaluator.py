@@ -187,6 +187,17 @@ class InventoryEvaluator:
                 devices_dict = {device.id: device for device in devices_data}
                 return device_ids, 1, devices_dict
 
+            # Handle primary_prefix — operator is the GraphQL filter type (within_include/within)
+            if condition.field == "primary_prefix":
+                devices_data = (
+                    await self.query_service._query_devices_by_primary_prefix(
+                        condition.value, condition.operator
+                    )
+                )
+                device_ids = {device.id for device in devices_data}
+                devices_dict = {device.id: device for device in devices_data}
+                return device_ids, 1, devices_dict
+
             # Check if this is a custom field (starts with cf_)
             if condition.field.startswith("cf_"):
                 # Keep the full field name with cf_ prefix for GraphQL query

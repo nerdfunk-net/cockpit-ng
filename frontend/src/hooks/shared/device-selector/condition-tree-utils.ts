@@ -23,6 +23,9 @@ function formatOperator(operator: string): string {
     less_than: '<',
     is_empty: 'is empty',
     is_not_empty: 'is not empty',
+    within_include: 'within (include)',
+    within: 'within',
+    exact: 'exact',
   }
   return operatorMap[operator] || operator
 }
