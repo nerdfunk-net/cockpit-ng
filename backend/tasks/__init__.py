@@ -81,6 +81,9 @@ from .import_or_update_from_csv_task import import_or_update_from_csv_task
 # Import IP addresses task
 from .ip_addresses_task import ip_addresses_task
 
+# Import nmap scan network task
+from .nmap_scan_network_task import nmap_scan_network_task
+
 # Import onboard device task
 from .onboard_device_task import onboard_device_task
 
@@ -97,9 +100,6 @@ from .periodic_tasks import (
 
 # Import ping network task
 from .ping_network_task import ping_network_task
-
-# Import nmap scan network task
-from .nmap_scan_network_task import nmap_scan_network_task
 
 # Import scan prefixes task
 from .scan_prefixes_task import scan_prefixes_task

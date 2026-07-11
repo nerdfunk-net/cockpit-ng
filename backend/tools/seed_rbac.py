@@ -65,7 +65,11 @@ DEFAULT_PERMISSIONS = [
     ("network.templates", "delete", "Delete templates"),
     ("network.netmiko", "execute", "Execute Netmiko commands"),
     ("network.ping", "execute", "Execute network ping operations"),
-    ("network.scan", "execute", "Execute network port scan operations (nmap, prefix scan)"),
+    (
+        "network.scan",
+        "execute",
+        "Execute network port scan operations (nmap, prefix scan)",
+    ),
     ("network.clients", "read", "View collected client data (ARP/MAC/hostname)"),
     # Server & Clients permissions
     ("servers", "read", "View managed servers and their Ansible facts"),
