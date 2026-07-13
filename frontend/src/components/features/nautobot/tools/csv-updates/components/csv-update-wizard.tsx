@@ -91,6 +91,10 @@ export function CsvUpdateWizard() {
     configureSkippable,
     selectedDeviceRows,
     filteredRows,
+    paginatedRows,
+    filterPagination,
+    handleFilterPageChange,
+    handleFilterPageSizeChange,
     rowFilter,
     setRowFilter,
     isRowSelected,
@@ -508,6 +512,10 @@ export function CsvUpdateWizard() {
               fieldMapping={fieldMapping}
               primaryKeyColumn={primaryKeyColumn}
               filteredRows={filteredRows}
+              paginatedRows={paginatedRows}
+              pagination={filterPagination}
+              onPageChange={handleFilterPageChange}
+              onPageSizeChange={handleFilterPageSizeChange}
               rowFilter={rowFilter}
               onRowFilterChange={setRowFilter}
               isRowSelected={isRowSelected}

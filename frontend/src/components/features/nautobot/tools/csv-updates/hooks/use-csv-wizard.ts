@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { useCsvUpload } from './use-csv-upload'
+import { useFilterPagination } from './use-filter-pagination'
 import { useFieldMappingQuery } from '@/hooks/queries/use-field-mapping-query'
 import { useFieldMappingMutations } from '@/hooks/queries/use-field-mapping-mutations'
 import { useNetworkDefaultsQuery } from '@/components/features/settings/common/hooks/use-network-defaults-query'
@@ -14,7 +15,7 @@ import {
   PRIMARY_IP_ENABLED_KEY,
 } from '../constants'
 import { buildDeviceRows } from '../utils/device-merge'
-import { buildFilterRows } from '../utils/filter-rows'
+import { buildFilterRows, sortFilterRowsByDisplayName } from '../utils/filter-rows'
 import type {
   ObjectType,
   ParsedCSVData,
@@ -324,15 +325,19 @@ export function useCsvWizard() {
 
   const filterRows = useMemo<FilterRow[]>(() => {
     if (objectType === 'devices') {
-      return deviceRows.map(r => ({
-        id: r.id,
-        displayName: r.deviceName,
-        fields: r.fields,
-        hasIpAddress: r.hasIpAddress,
-      }))
+      return sortFilterRowsByDisplayName(
+        deviceRows.map(r => ({
+          id: r.id,
+          displayName: r.deviceName,
+          fields: r.fields,
+          hasIpAddress: r.hasIpAddress,
+        }))
+      )
     }
     if (csvUpload.parsedData.rowCount === 0) return EMPTY_FILTER_ROWS
-    return buildFilterRows(csvUpload.parsedData, fieldMapping, primaryKeyColumn)
+    return sortFilterRowsByDisplayName(
+      buildFilterRows(csvUpload.parsedData, fieldMapping, primaryKeyColumn)
+    )
   }, [objectType, deviceRows, csvUpload.parsedData, fieldMapping, primaryKeyColumn])
 
   const filteredRows = useMemo(() => {
@@ -341,8 +346,29 @@ export function useCsvWizard() {
     return filterRows.filter(r => r.displayName.toLowerCase().includes(f))
   }, [filterRows, rowFilter])
 
+  const {
+    pagination: filterPagination,
+    currentPageItems,
+    handlePageChange: handleFilterPageChange,
+    handlePageSizeChange: handleFilterPageSizeChange,
+    resetPage: resetFilterPage,
+  } = useFilterPagination(filteredRows.length)
+
+  const paginatedRows = useMemo(
+    () => currentPageItems(filteredRows),
+    [currentPageItems, filteredRows]
+  )
+
+  const handleRowFilterChange = useCallback(
+    (value: string) => {
+      setRowFilter(value)
+      resetFilterPage()
+    },
+    [resetFilterPage]
+  )
+
   const isRowSelected = useCallback(
-    (rowId: string) => selectedOverrides[rowId] ?? true,
+    (rowId: string) => selectedOverrides[rowId] ?? false,
     [selectedOverrides]
   )
 
@@ -353,16 +379,17 @@ export function useCsvWizard() {
     [isRowSelected]
   )
 
+  /** Selects/deselects only the rows on the current page (i.e. what's actually on screen). */
   const toggleSelectAllVisible = useCallback(() => {
-    const allSelected = filteredRows.every(r => isRowSelected(r.id))
+    const allSelected = paginatedRows.every(r => isRowSelected(r.id))
     setSelectedOverrides(prev => {
       const next = { ...prev }
-      for (const r of filteredRows) {
+      for (const r of paginatedRows) {
         next[r.id] = !allSelected
       }
       return next
     })
-  }, [filteredRows, isRowSelected])
+  }, [paginatedRows, isRowSelected])
 
   const setPrimaryIp = useCallback((deviceName: string, rowId: string) => {
     setPrimaryIpByDevice(prev => ({ ...prev, [deviceName]: rowId }))
@@ -464,8 +491,12 @@ export function useCsvWizard() {
       selectedDeviceRows,
       filterRows,
       filteredRows,
+      paginatedRows,
+      filterPagination,
+      handleFilterPageChange,
+      handleFilterPageSizeChange,
       rowFilter,
-      setRowFilter,
+      setRowFilter: handleRowFilterChange,
       isRowSelected,
       toggleRowSelected,
       toggleSelectAllVisible,
@@ -513,7 +544,12 @@ export function useCsvWizard() {
       selectedDeviceRows,
       filterRows,
       filteredRows,
+      paginatedRows,
+      filterPagination,
+      handleFilterPageChange,
+      handleFilterPageSizeChange,
       rowFilter,
+      handleRowFilterChange,
       isRowSelected,
       toggleRowSelected,
       toggleSelectAllVisible,

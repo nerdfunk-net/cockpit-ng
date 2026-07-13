@@ -33,3 +33,17 @@ export function buildFilterRows(
     }
   })
 }
+
+/**
+ * Sorts filter rows by display name (natural/numeric-aware, case-insensitive)
+ * so devices/rows group predictably in the Filter step regardless of the
+ * CSV's original row order — CSV exports are often unsorted or interleaved.
+ */
+export function sortFilterRowsByDisplayName(rows: FilterRow[]): FilterRow[] {
+  return [...rows].sort((a, b) =>
+    a.displayName.localeCompare(b.displayName, undefined, {
+      numeric: true,
+      sensitivity: 'base',
+    })
+  )
+}

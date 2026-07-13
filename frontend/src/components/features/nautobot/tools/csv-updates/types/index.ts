@@ -97,3 +97,11 @@ export interface FilterRow {
   fields: Record<string, string>
   hasIpAddress?: boolean
 }
+
+/** Pagination state for the Filter step's row table (0-indexed page). */
+export interface PaginationState {
+  currentPage: number
+  pageSize: number
+  totalItems: number
+  totalPages: number
+}

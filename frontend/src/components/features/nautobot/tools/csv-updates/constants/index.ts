@@ -5,6 +5,11 @@ export const DEFAULT_CSV_CONFIG: CSVConfig = {
   quoteChar: '"',
 }
 
+/** Page sizes offered on the Filter step's row table. */
+export const FILTER_PAGE_SIZE_OPTIONS = [50, 100, 200, 500]
+
+export const DEFAULT_FILTER_PAGE_SIZE = 50
+
 export const EMPTY_PARSED_DATA: ParsedCSVData = {
   headers: [],
   rows: [],
@@ -122,5 +127,3 @@ export const LOOKUP_COLUMN_MAPPING_KEY = '__lookup_column__'
 export const USE_NEW_MAPPING_KEY = '__use_new_mapping__'
 export const USE_DEFAULT_PROPERTIES_KEY = '__use_default_properties__'
 export const PRIMARY_IP_ENABLED_KEY = '__primary_ip_enabled__'
-
-export const AGENT_CSV_CONFIG = { delimiter: ',', quoteChar: '"' } as const

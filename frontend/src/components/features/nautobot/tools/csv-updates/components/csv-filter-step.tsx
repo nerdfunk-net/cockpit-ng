@@ -13,13 +13,18 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { DEVICE_NAME_FIELD_KEY, NAUTOBOT_UPDATE_FIELDS } from '../constants'
-import type { FilterRow, ObjectType } from '../types'
+import { CsvFilterPagination } from './csv-filter-pagination'
+import type { FilterRow, ObjectType, PaginationState } from '../types'
 
 interface CsvFilterStepProps {
   objectType: ObjectType
   fieldMapping: Record<string, string | null>
   primaryKeyColumn: string
   filteredRows: FilterRow[]
+  paginatedRows: FilterRow[]
+  pagination: PaginationState
+  onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
   rowFilter: string
   onRowFilterChange: (value: string) => void
   isRowSelected: (rowId: string) => boolean
@@ -35,6 +40,10 @@ export function CsvFilterStep({
   fieldMapping,
   primaryKeyColumn,
   filteredRows,
+  paginatedRows,
+  pagination,
+  onPageChange,
+  onPageSizeChange,
   rowFilter,
   onRowFilterChange,
   isRowSelected,
@@ -62,8 +71,8 @@ export function CsvFilterStep({
   }, [objectType, fieldMapping, identifierFieldKey])
 
   const allVisibleSelected = useMemo(
-    () => filteredRows.length > 0 && filteredRows.every(row => isRowSelected(row.id)),
-    [filteredRows, isRowSelected]
+    () => paginatedRows.length > 0 && paginatedRows.every(row => isRowSelected(row.id)),
+    [paginatedRows, isRowSelected]
   )
 
   return (
@@ -72,7 +81,7 @@ export function CsvFilterStep({
         <Checkbox
           checked={allVisibleSelected}
           onCheckedChange={toggleSelectAllVisible}
-          aria-label="Select all visible rows"
+          aria-label="Select all rows on this page"
         />
         <div className="relative w-72">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -106,7 +115,7 @@ export function CsvFilterStep({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRows.map(row => (
+              {paginatedRows.map(row => (
                 <TableRow key={row.id}>
                   <TableCell>
                     <Checkbox
@@ -138,6 +147,11 @@ export function CsvFilterStep({
               ))}
             </TableBody>
           </Table>
+          <CsvFilterPagination
+            pagination={pagination}
+            onPageChange={onPageChange}
+            onPageSizeChange={onPageSizeChange}
+          />
         </div>
       )}
     </div>

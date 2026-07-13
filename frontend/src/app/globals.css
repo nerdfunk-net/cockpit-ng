@@ -80,7 +80,7 @@
   --accent-foreground: #ffffff; /* White on accent */
   --destructive: #e53e3e; /* Red for errors */
   --border: #e2e8f0; /* Light gray borders */
-  --input: #ffffff; /* White input backgrounds */
+  --input: #cbd5e1; /* Slate-300 — visibly darker than card/background so input borders are distinguishable */
   --ring: #3182ce; /* Blue focus rings */
   /* Chart Colors - Analytics Blue Palette */
   --chart-1: #2563eb; /* Primary blue */
@@ -135,7 +135,7 @@
   --accent-foreground: #ffffff; /* White on accent */
   --destructive: #ef4444; /* Red for errors */
   --border: #334155; /* Dark borders */
-  --input: #1e293b; /* Dark input backgrounds */
+  --input: #64748b; /* Slate-500 — visibly lighter than card/background so input borders are distinguishable */
   --ring: #3b82f6; /* Blue focus rings */
   --chart-1: #3b82f6; /* Bright blue */
   --chart-2: #06b6d4; /* Cyan */

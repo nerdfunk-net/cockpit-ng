@@ -18,7 +18,7 @@ import { StatusBadge } from '@/components/shared/status-badge'
 import { StatusAlert } from '@/components/shared/status-alert'
 import { useAgentMutations } from '@/components/features/agents/operating/hooks/use-agent-mutations'
 import { useGetDataAgents } from '../hooks/use-get-data-agents'
-import { OBJECT_TYPE_LABELS, AGENT_CSV_CONFIG } from '../constants'
+import { OBJECT_TYPE_LABELS } from '../constants'
 import { combineAgentKeys } from '../utils/agent-data'
 import type { ObjectType, CSVConfig, ParsedCSVData, ValidationResult } from '../types'
 
@@ -153,7 +153,7 @@ export function CsvSourceStep({
         return
       }
 
-      const combined = combineAgentKeys(merged, AGENT_CSV_CONFIG)
+      const combined = combineAgentKeys(merged, csvConfig)
       if (!combined.data) {
         setAgentError(combined.error ?? 'Failed to combine identifier data.')
         return
@@ -167,28 +167,61 @@ export function CsvSourceStep({
     } finally {
       setIsFetchingAgentData(false)
     }
-  }, [selectedAgentId, selectedFlowIds, getData, onAgentDataParsed])
+  }, [selectedAgentId, selectedFlowIds, getData, onAgentDataParsed, csvConfig])
 
   return (
     <div className="space-y-4">
-      {/* Object Type */}
-      <div className="space-y-1.5">
-        <Label className="text-sm font-medium">Object Type</Label>
-        <Select
-          value={objectType}
-          onValueChange={v => onObjectTypeChange(v as ObjectType)}
-        >
-          <SelectTrigger className="w-56 h-8">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {OBJECT_TYPE_OPTIONS.map(type => (
-              <SelectItem key={type} value={type}>
-                {OBJECT_TYPE_LABELS[type]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {/* Object Type + CSV Format — general settings that apply regardless of data source */}
+      <div className="border rounded-md p-3">
+        <div className="flex flex-wrap gap-6 divide-x divide-border">
+          <div className="space-y-1.5">
+            <SectionTitle>Object Type</SectionTitle>
+            <Select
+              value={objectType}
+              onValueChange={v => onObjectTypeChange(v as ObjectType)}
+            >
+              <SelectTrigger className="w-56 h-8">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {OBJECT_TYPE_OPTIONS.map(type => (
+                  <SelectItem key={type} value={type}>
+                    {OBJECT_TYPE_LABELS[type]}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* CSV Format — applies to both the uploaded file and Get Data agent text */}
+          <div className="space-y-1.5 pl-6">
+            <SectionTitle>CSV Format</SectionTitle>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  Delimiter
+                </Label>
+                <Input
+                  className="h-8 text-sm w-16"
+                  value={csvConfig.delimiter}
+                  onChange={e => onConfigChange({ delimiter: e.target.value })}
+                  placeholder=","
+                  maxLength={5}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-muted-foreground">Quote</Label>
+                <Input
+                  className="h-8 text-sm w-16"
+                  value={csvConfig.quoteChar}
+                  onChange={e => onConfigChange({ quoteChar: e.target.value })}
+                  placeholder='"'
+                  maxLength={1}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
@@ -310,33 +343,11 @@ export function CsvSourceStep({
             />
           </div>
 
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-muted-foreground">Delimiter</Label>
-              <Input
-                className="h-8 text-sm w-16"
-                value={csvConfig.delimiter}
-                onChange={e => onConfigChange({ delimiter: e.target.value })}
-                placeholder=","
-                maxLength={5}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs font-medium text-muted-foreground">Quote</Label>
-              <Input
-                className="h-8 text-sm w-16"
-                value={csvConfig.quoteChar}
-                onChange={e => onConfigChange({ quoteChar: e.target.value })}
-                placeholder='"'
-                maxLength={1}
-              />
-            </div>
-            {csvFile && (
-              <Button size="sm" onClick={onParseCSV} disabled={isParsing} className="h-8">
-                {isParsing ? 'Parsing…' : 'Parse CSV'}
-              </Button>
-            )}
-          </div>
+          {csvFile && (
+            <Button size="sm" onClick={onParseCSV} disabled={isParsing} className="h-8">
+              {isParsing ? 'Parsing…' : 'Parse CSV'}
+            </Button>
+          )}
 
           {csvFile && parsedData.rowCount === 0 && !isParsing && (
             <p className="text-xs text-muted-foreground">
