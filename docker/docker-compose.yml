@@ -25,7 +25,7 @@ services:
   # --tls-key-file /tls/redis.key --tls-ca-cert-file /tls/ca.crt, then mount your certs
   # volume (e.g. ./tls:/tls:ro) and update the healthcheck to use --tls --cacert /tls/ca.crt.
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: cockpit-redis
     command: redis-server --appendonly yes --requirepass ${COCKPIT_REDIS_PASSWORD:-changeme}
     environment:

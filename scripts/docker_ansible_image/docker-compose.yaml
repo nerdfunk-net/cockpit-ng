@@ -52,7 +52,7 @@ services:
   redis:
     profiles:
       - dev
-    image: redis:alpine
+    image: redis:8-alpine
     container_name: cockpit-agent-redis
     command: redis-server --requirepass ${REDIS_PASSWORD:-changeme}
     restart: unless-stopped
