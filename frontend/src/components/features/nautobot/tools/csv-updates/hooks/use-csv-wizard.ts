@@ -190,28 +190,53 @@ export function useCsvWizard() {
     [persistCheckbox]
   )
 
-  const onParseComplete = useCallback(
-    (data: ParsedCSVData) => {
+  /**
+   * Computes and applies the field mapping (+ primary key + skippability) for a given
+   * set of CSV headers, based on the current "Use new mapping" checkbox and saved
+   * mapping. Shared by the initial parse and by the effect below that re-applies the
+   * saved mapping if the checkbox is toggled after the CSV was already parsed.
+   */
+  const applyMappingForHeaders = useCallback(
+    (headers: string[]) => {
       if (!useNewMapping && storedMapping) {
         const storedLookupColumn = storedMapping[LOOKUP_COLUMN_MAPPING_KEY]
         const isValid =
-          typeof storedLookupColumn === 'string' && data.headers.includes(storedLookupColumn)
-        setFieldMapping(applyStoredMapping(data.headers, storedMapping))
+          typeof storedLookupColumn === 'string' && headers.includes(storedLookupColumn)
+        setFieldMapping(applyStoredMapping(headers, storedMapping))
         setPrimaryKeyColumn(
-          isValid ? (storedLookupColumn as string) : detectPrimaryKey(data.headers, objectType)
+          isValid ? (storedLookupColumn as string) : detectPrimaryKey(headers, objectType)
         )
         setConfigureSkippable(isValid)
         return
       }
 
-      setFieldMapping(buildAutoFieldMapping(data.headers, objectType))
-      setPrimaryKeyColumn(detectPrimaryKey(data.headers, objectType))
+      setFieldMapping(buildAutoFieldMapping(headers, objectType))
+      setPrimaryKeyColumn(detectPrimaryKey(headers, objectType))
       setConfigureSkippable(false)
     },
     [useNewMapping, storedMapping, objectType]
   )
 
+  const onParseComplete = useCallback(
+    (data: ParsedCSVData) => applyMappingForHeaders(data.headers),
+    [applyMappingForHeaders]
+  )
+
   const csvUpload = useCsvUpload({ objectType, onParseComplete })
+
+  /**
+   * Re-applies the mapping whenever "Use new mapping" is toggled (or the saved
+   * mapping finishes loading) after a CSV is already parsed — otherwise flipping
+   * the checkbox post-parse would leave the stale auto-detected mapping in place
+   * and fail to skip the Configure step even though a valid saved mapping exists.
+   */
+  const parsedHeaders = csvUpload.parsedData.headers
+  useEffect(() => {
+    if (parsedHeaders.length > 0) {
+      applyMappingForHeaders(parsedHeaders)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useNewMapping, storedMapping])
 
   const handleObjectTypeChange = useCallback(
     (type: ObjectType) => {
