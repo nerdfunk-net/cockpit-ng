@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CheckCircle2, ShieldCheck, XCircle } from 'lucide-react'
 import {
   Dialog,
@@ -13,6 +13,10 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { StatusIcon } from '@/components/shared/status-icon'
 import { useCheckDevices } from '../hooks/use-check-devices'
+import { useFilterPagination } from '../hooks/use-filter-pagination'
+import { CsvFilterPagination } from './csv-filter-pagination'
+
+type StatusFilter = 'all' | 'found' | 'missing'
 
 interface CheckDevicesDialogProps {
   open: boolean
@@ -26,10 +30,15 @@ export function CheckDevicesDialog({
   deviceNames,
 }: CheckDevicesDialogProps) {
   const { isChecking, progress, results, runCheck } = useCheckDevices()
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
   useEffect(() => {
     if (open) runCheck(deviceNames)
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open])
+
+  useEffect(() => {
+    if (open) setStatusFilter('all')
   }, [open])
 
   const foundCount = results.filter(r => r.found).length
@@ -37,9 +46,24 @@ export function CheckDevicesDialog({
   const progressPercent =
     progress.total > 0 ? (progress.checked / progress.total) * 100 : 0
 
+  const filteredResults = useMemo(() => {
+    if (statusFilter === 'found') return results.filter(r => r.found)
+    if (statusFilter === 'missing') return results.filter(r => !r.found)
+    return results
+  }, [results, statusFilter])
+
+  const { pagination, currentPageItems, handlePageChange, handlePageSizeChange, resetPage } =
+    useFilterPagination(filteredResults.length)
+
+  useEffect(() => {
+    resetPage()
+  }, [statusFilter, results, resetPage])
+
+  const paginatedResults = currentPageItems(filteredResults)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-primary" />
@@ -67,59 +91,86 @@ export function CheckDevicesDialog({
         {/* Results */}
         {!isChecking && results.length > 0 && (
           <>
-            <div className="flex items-center gap-3 text-sm">
-              <span className="flex items-center gap-1.5 text-success-foreground">
-                <CheckCircle2 className="h-4 w-4" />
-                {foundCount} found
-              </span>
-              {notFoundCount > 0 && (
-                <span className="flex items-center gap-1.5 text-error-foreground">
-                  <XCircle className="h-4 w-4" />
-                  {notFoundCount} not found
-                </span>
-              )}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant={statusFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={() => setStatusFilter('all')}
+              >
+                All ({results.length})
+              </Button>
+              <Button
+                variant={statusFilter === 'found' ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 px-2 text-xs gap-1"
+                onClick={() => setStatusFilter('found')}
+              >
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                Show existing ({foundCount})
+              </Button>
+              <Button
+                variant={statusFilter === 'missing' ? 'default' : 'outline'}
+                size="sm"
+                className="h-7 px-2 text-xs gap-1"
+                onClick={() => setStatusFilter('missing')}
+              >
+                <XCircle className="h-3.5 w-3.5" />
+                Show missing ({notFoundCount})
+              </Button>
             </div>
 
-            <div className="rounded-md border overflow-hidden">
-              <table className="w-full text-xs">
-                <thead className="bg-muted border-b">
-                  <tr>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground w-5" />
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">
-                      Device name
-                    </th>
-                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">
-                      Nautobot
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {results.map(entry => (
-                    <tr
-                      key={entry.deviceName}
-                      className={entry.found ? '' : 'bg-error/40'}
-                    >
-                      <td className="px-3 py-2 text-center">
-                        <StatusIcon
-                          variant={entry.found ? 'success' : 'error'}
-                          className="h-3.5 w-3.5 inline"
-                        />
-                      </td>
-                      <td className="px-3 py-2 font-mono text-muted-foreground">
-                        {entry.deviceName}
-                      </td>
-                      <td className="px-3 py-2 font-mono">
-                        {entry.found ? (
-                          <span className="text-success-foreground">found</span>
-                        ) : (
-                          <span className="text-destructive italic">not found</span>
-                        )}
-                      </td>
+            {filteredResults.length === 0 ? (
+              <div className="py-8 text-center text-xs text-muted-foreground">
+                No devices match this filter.
+              </div>
+            ) : (
+              <div className="rounded-md border overflow-hidden">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted border-b">
+                    <tr>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground w-5" />
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">
+                        Device name
+                      </th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">
+                        Nautobot
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y">
+                    {paginatedResults.map(entry => (
+                      <tr
+                        key={entry.deviceName}
+                        className={entry.found ? '' : 'bg-error/40'}
+                      >
+                        <td className="px-3 py-2 text-center">
+                          <StatusIcon
+                            variant={entry.found ? 'success' : 'error'}
+                            className="h-3.5 w-3.5 inline"
+                          />
+                        </td>
+                        <td className="px-3 py-2 font-mono text-muted-foreground">
+                          {entry.deviceName}
+                        </td>
+                        <td className="px-3 py-2 font-mono">
+                          {entry.found ? (
+                            <span className="text-success-foreground">found</span>
+                          ) : (
+                            <span className="text-destructive italic">not found</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <CsvFilterPagination
+                  pagination={pagination}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
+                />
+              </div>
+            )}
           </>
         )}
 
