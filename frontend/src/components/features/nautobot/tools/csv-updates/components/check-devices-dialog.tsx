@@ -16,9 +16,12 @@ import { useToast } from '@/hooks/use-toast'
 import { useCheckDevices } from '../hooks/use-check-devices'
 import { useFilterPagination } from '../hooks/use-filter-pagination'
 import { useAddMissingDevices } from '../hooks/use-add-missing-devices'
+import type { AddDeviceResult } from '../hooks/use-add-missing-devices'
 import { buildDeviceUpdatePayloads } from '../utils/device-merge'
 import { CsvFilterPagination } from './csv-filter-pagination'
 import type { DeviceCsvRow } from '../types'
+
+const EMPTY_ADD_RESULTS: Record<string, AddDeviceResult> = {}
 
 type StatusFilter = 'all' | 'found' | 'missing'
 
@@ -41,6 +44,8 @@ export function CheckDevicesDialog({
   const { isAdding, progress: addProgress, addDevices } = useAddMissingDevices()
   const { toast } = useToast()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const [addResultsByName, setAddResultsByName] =
+    useState<Record<string, AddDeviceResult>>(EMPTY_ADD_RESULTS)
 
   useEffect(() => {
     if (open) runCheck(deviceNames)
@@ -48,7 +53,10 @@ export function CheckDevicesDialog({
   }, [open])
 
   useEffect(() => {
-    if (open) setStatusFilter('all')
+    if (open) {
+      setStatusFilter('all')
+      setAddResultsByName(EMPTY_ADD_RESULTS)
+    }
   }, [open])
 
   const foundCount = results.filter(r => r.found).length
@@ -70,6 +78,8 @@ export function CheckDevicesDialog({
     if (payloads.length === 0) return
 
     const entries = await addDevices(payloads)
+    setAddResultsByName(Object.fromEntries(entries.map(e => [e.deviceName, e])))
+
     const successCount = entries.filter(e => e.status === 'success').length
     const failed = entries.filter(e => e.status !== 'success')
 
@@ -78,9 +88,9 @@ export function CheckDevicesDialog({
       description:
         failed.length === 0
           ? `Created ${successCount} of ${entries.length} device(s)`
-          : `Created ${successCount} of ${entries.length} device(s). Failed: ${failed
-              .map(e => e.deviceName)
-              .join(', ')}`,
+          : `Created ${successCount} of ${entries.length} device(s).\n${failed
+              .map(e => `${e.deviceName}: ${e.message}`)
+              .join('\n')}`,
       variant: failed.length === 0 ? undefined : 'destructive',
     })
 
@@ -190,29 +200,39 @@ export function CheckDevicesDialog({
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {paginatedResults.map(entry => (
-                      <tr
-                        key={entry.deviceName}
-                        className={entry.found ? '' : 'bg-error/40'}
-                      >
-                        <td className="px-3 py-2 text-center">
-                          <StatusIcon
-                            variant={entry.found ? 'success' : 'error'}
-                            className="h-3.5 w-3.5 inline"
-                          />
-                        </td>
-                        <td className="px-3 py-2 font-mono text-muted-foreground">
-                          {entry.deviceName}
-                        </td>
-                        <td className="px-3 py-2 font-mono">
-                          {entry.found ? (
-                            <span className="text-success-foreground">found</span>
-                          ) : (
-                            <span className="text-destructive italic">not found</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {paginatedResults.map(entry => {
+                      const addResult = addResultsByName[entry.deviceName]
+                      return (
+                        <tr
+                          key={entry.deviceName}
+                          className={entry.found ? '' : 'bg-error/40'}
+                        >
+                          <td className="px-3 py-2 text-center">
+                            <StatusIcon
+                              variant={entry.found ? 'success' : 'error'}
+                              className="h-3.5 w-3.5 inline"
+                            />
+                          </td>
+                          <td className="px-3 py-2 font-mono text-muted-foreground">
+                            {entry.deviceName}
+                          </td>
+                          <td className="px-3 py-2 font-mono">
+                            {entry.found ? (
+                              <span className="text-success-foreground">found</span>
+                            ) : addResult ? (
+                              <span
+                                className="text-destructive italic"
+                                title={addResult.message}
+                              >
+                                {addResult.status}: {addResult.message}
+                              </span>
+                            ) : (
+                              <span className="text-destructive italic">not found</span>
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })}
                   </tbody>
                 </table>
                 <CsvFilterPagination
