@@ -104,31 +104,23 @@ export function buildDeviceUpdatePayloads(
 }
 
 /**
- * Fills in values missing from a device payload (and its interfaces) from
- * Network Defaults — mirrors the server-side interface_type fallback in
- * update_devices_task.py, extended to every default the caller supplies.
- * Never overwrites a value the CSV/mapping already supplied.
+ * Fills in interface status/type missing from a device payload's interfaces —
+ * mirrors the server-side interface_type fallback in update_devices_task.py.
+ * This is the only field-defaulting the update flow performs: it never touches
+ * device-level fields the CSV didn't supply, since an update must only ever
+ * change what the CSV explicitly provides.
  */
 export function applyDeviceDefaults(
   payload: DeviceUpdatePayload,
   defaults: DefaultProperty[]
 ): DeviceUpdatePayload {
-  const interfaceDefaults = defaults.filter(
-    d => d.field === INTERFACE_STATUS_FIELD_KEY || d.field === INTERFACE_TYPE_FIELD_KEY
-  )
-  const deviceDefaults = defaults.filter(
-    d => d.field !== INTERFACE_STATUS_FIELD_KEY && d.field !== INTERFACE_TYPE_FIELD_KEY
-  )
+  if (defaults.length === 0) return payload
 
-  const next: DeviceUpdatePayload = { ...payload }
-  for (const d of deviceDefaults) {
-    if (!next[d.field]) next[d.field] = d.value
-  }
-
-  if (interfaceDefaults.length > 0) {
-    next.interfaces = next.interfaces.map(iface => {
+  return {
+    ...payload,
+    interfaces: payload.interfaces.map(iface => {
       const patched = { ...iface }
-      for (const d of interfaceDefaults) {
+      for (const d of defaults) {
         if (d.field === INTERFACE_STATUS_FIELD_KEY && !patched.status) {
           patched.status = d.value
         }
@@ -137,8 +129,6 @@ export function applyDeviceDefaults(
         }
       }
       return patched
-    })
+    }),
   }
-
-  return next
 }

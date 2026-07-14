@@ -88,6 +88,22 @@ export const NAUTOBOT_UPDATE_FIELDS: Record<
 }
 
 /**
+ * Fields eligible for "Default Properties". Deliberately narrow: an update must only
+ * ever touch what the CSV explicitly provides, with one exception — a CSV row that
+ * defines a new interface (by name) but omits its status/type still needs a fallback
+ * so the interface can be created. No other field may be defaulted.
+ */
+export const DEFAULT_PROPERTY_FIELDS: Record<ObjectType, { key: string; label: string }[]> = {
+  devices: [
+    { key: 'interface_status', label: 'Interface Status' },
+    { key: 'interface_type', label: 'Interface Type' },
+  ],
+  'ip-prefixes': [],
+  'ip-addresses': [],
+  locations: [],
+}
+
+/**
  * Auto-detect field mapping for a CSV based on known Nautobot field keys.
  * Exact header-name matches are mapped automatically; others default to null.
  */

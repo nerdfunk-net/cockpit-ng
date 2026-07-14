@@ -58,23 +58,15 @@ const PRIMARY_KEY_PREFERENCES: Record<ObjectType, string[]> = {
   'ip-addresses': ['address', 'id'],
 }
 
-/** Network Defaults keys applied per object type, mapped onto NAUTOBOT_UPDATE_FIELDS keys. */
+/**
+ * Network Defaults keys auto-applied per object type. Deliberately narrow: an update
+ * must only ever touch what the CSV explicitly provides, with one exception — a new
+ * interface (defined by the CSV) that omits status/type still needs a fallback.
+ */
 const DEFAULTS_FIELD_MAP: Partial<Record<ObjectType, Record<string, string>>> = {
   devices: {
-    location: 'location',
-    platform: 'platform',
-    device_status: 'status',
-    device_role: 'role',
     interface_status: 'interface_status',
     interface_type: 'interface_type',
-  },
-  'ip-prefixes': {
-    namespace: 'namespace',
-    ip_prefix_status: 'status',
-  },
-  'ip-addresses': {
-    namespace: 'namespace',
-    ip_address_status: 'status',
   },
 }
 

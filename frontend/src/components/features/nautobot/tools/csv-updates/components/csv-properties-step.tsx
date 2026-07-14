@@ -28,7 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { NAUTOBOT_UPDATE_FIELDS } from '../constants'
+import { DEFAULT_PROPERTY_FIELDS } from '../constants'
 import type {
   MatchingStrategy,
   DefaultProperty,
@@ -125,7 +125,7 @@ export function CsvPropertiesStep({
   rackLocationColumn,
   onRackLocationColumnChange,
 }: CsvPropertiesStepProps) {
-  const availableFields = NAUTOBOT_UPDATE_FIELDS[objectType] ?? []
+  const availableFields = DEFAULT_PROPERTY_FIELDS[objectType] ?? []
   const [tryModalOpen, setTryModalOpen] = useState(false)
 
   const showMatchingStrategy = primaryKeyColumn === 'name'
@@ -482,83 +482,86 @@ export function CsvPropertiesStep({
         </div>
       )}
 
-      {/* Default Properties */}
-      <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Settings2 className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold text-foreground">Default Properties</h3>
-          </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleAddProperty}
-            className="h-7 px-2 text-xs gap-1"
-          >
-            <Plus className="h-3.5 w-3.5" />
-            Add
-          </Button>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Set default values for fields that are not included in your CSV. These values
-          are applied to every row during the import.
-        </p>
-
-        {defaultProperties.length === 0 ? (
-          <div className="text-xs text-muted-foreground italic py-2 text-center">
-            No default properties configured. Click <strong>Add</strong> to define one.
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {/* Header row */}
-            <div className="grid grid-cols-[1fr_1fr_auto] gap-2 px-1">
-              <Label className="text-xs text-muted-foreground">Field</Label>
-              <Label className="text-xs text-muted-foreground">Default value</Label>
-              <span className="w-7" />
+      {/* Default Properties — only ever eligible when this object type can have new
+          sub-entries (currently: device interfaces) that the CSV might not fully specify. */}
+      {availableFields.length > 0 && (
+        <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Settings2 className="h-4 w-4 text-primary" />
+              <h3 className="text-sm font-semibold text-foreground">Default Properties</h3>
             </div>
-
-            {defaultProperties.map((prop, index) => (
-              <div
-                key={prop.rowKey}
-                className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center"
-              >
-                <Select
-                  value={prop.field}
-                  onValueChange={value => handlePropertyFieldChange(index, value)}
-                >
-                  <SelectTrigger className="h-8 text-xs">
-                    <SelectValue placeholder="Select field…" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableFields.map(f => (
-                      <SelectItem key={f.key} value={f.key} className="text-xs">
-                        {f.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Input
-                  value={prop.value}
-                  onChange={e => handlePropertyValueChange(index, e.target.value)}
-                  placeholder="Value…"
-                  className="h-8 text-xs"
-                />
-
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => handleRemoveProperty(index)}
-                  className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                  title="Remove"
-                >
-                  <Minus className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAddProperty}
+              className="h-7 px-2 text-xs gap-1"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Add
+            </Button>
           </div>
-        )}
-      </div>
+          <p className="text-xs text-muted-foreground">
+            Fallback values used only when a CSV row defines a new interface but leaves
+            these fields blank. Fields already present in your CSV are never overridden.
+          </p>
+
+          {defaultProperties.length === 0 ? (
+            <div className="text-xs text-muted-foreground italic py-2 text-center">
+              No default properties configured. Click <strong>Add</strong> to define one.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {/* Header row */}
+              <div className="grid grid-cols-[1fr_1fr_auto] gap-2 px-1">
+                <Label className="text-xs text-muted-foreground">Field</Label>
+                <Label className="text-xs text-muted-foreground">Default value</Label>
+                <span className="w-7" />
+              </div>
+
+              {defaultProperties.map((prop, index) => (
+                <div
+                  key={prop.rowKey}
+                  className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center"
+                >
+                  <Select
+                    value={prop.field}
+                    onValueChange={value => handlePropertyFieldChange(index, value)}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Select field…" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableFields.map(f => (
+                        <SelectItem key={f.key} value={f.key} className="text-xs">
+                          {f.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Input
+                    value={prop.value}
+                    onChange={e => handlePropertyValueChange(index, e.target.value)}
+                    placeholder="Value…"
+                    className="h-8 text-xs"
+                  />
+
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleRemoveProperty(index)}
+                    className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                    title="Remove"
+                  >
+                    <Minus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Info box when matching strategy is not shown */}
       {!showMatchingStrategy && (

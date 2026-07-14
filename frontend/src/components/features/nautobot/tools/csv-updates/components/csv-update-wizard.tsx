@@ -1,7 +1,15 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
-import { ArrowLeft, ArrowRight, Search, Play, Zap, FileSpreadsheet } from 'lucide-react'
+import {
+  ArrowLeft,
+  ArrowRight,
+  Search,
+  Play,
+  Zap,
+  FileSpreadsheet,
+  ShieldCheck,
+} from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCsvWizard } from '../hooks/use-csv-wizard'
 import type { WizardStep } from '../hooks/use-csv-wizard'
@@ -13,6 +21,7 @@ import { CsvSourceStep } from './csv-source-step'
 import { CsvConfigureStep } from './csv-configure-step'
 import { CsvPropertiesStep } from './csv-properties-step'
 import { CsvFilterStep } from './csv-filter-step'
+import { CheckDevicesDialog } from './check-devices-dialog'
 import { CsvPreviewStep } from './csv-preview-step'
 import { CsvProcessingStep } from './csv-processing-step'
 import { CsvSummaryStep } from './csv-summary-step'
@@ -53,6 +62,7 @@ export function CsvUpdateWizard() {
   const [completedStatus, setCompletedStatus] = useState<string>('')
   const [completedResult, setCompletedResult] = useState<unknown>(null)
   const [completedError, setCompletedError] = useState<string | undefined>(undefined)
+  const [checkDevicesOpen, setCheckDevicesOpen] = useState(false)
 
   const {
     step,
@@ -115,6 +125,12 @@ export function CsvUpdateWizard() {
   const { parsedData, validationResults, validationSummary, csvConfig } = csvUpload
   const isDevices = objectType === 'devices'
 
+  /** Unique device names among the currently selected rows, for the "Check Devices" dialog. */
+  const uniqueSelectedDeviceNames = useMemo(
+    () => Array.from(new Set(selectedDeviceRows.map(r => r.deviceName).filter(Boolean))),
+    [selectedDeviceRows]
+  )
+
   /** True when the 'rack' Nautobot field is mapped to any CSV column. */
   const isRackMapped = useMemo(
     () => Object.values(fieldMapping).includes('rack'),
@@ -127,59 +143,6 @@ export function CsvUpdateWizard() {
     if (idx === -1) return []
     return parsedData.rows.map(row => row[idx] ?? '').filter(Boolean)
   }, [parsedData, primaryKeyColumn])
-
-  /**
-   * Enrich the filtered+selected CSV data with default properties (manual or
-   * Network-Defaults-sourced): for each default property whose field is NOT
-   * already a CSV column, inject a synthetic column with the constant value
-   * into every row.
-   */
-  const enrichedCsvData = useMemo(() => {
-    const validDefaults = effectiveDefaultProperties.filter(dp => dp.field && dp.value)
-    if (validDefaults.length === 0) return selectedParsedData
-
-    const existingHeaders = new Set(selectedParsedData.headers)
-    const toInject = validDefaults.filter(dp => !existingHeaders.has(dp.field))
-    if (toInject.length === 0) return selectedParsedData
-
-    return {
-      headers: [...selectedParsedData.headers, ...toInject.map(dp => dp.field)],
-      rows: selectedParsedData.rows.map(row => [
-        ...row,
-        ...toInject.map(dp => dp.value),
-      ]),
-      rowCount: selectedParsedData.rowCount,
-    }
-  }, [selectedParsedData, effectiveDefaultProperties])
-
-  /** Extend column mapping with injected default columns. */
-  const enrichedColumnMapping = useMemo(() => {
-    const base = { ...columnMappingForBackend }
-    const existingHeaders = new Set(selectedParsedData.headers)
-    for (const dp of effectiveDefaultProperties) {
-      if (dp.field && dp.value && !existingHeaders.has(dp.field)) {
-        base[dp.field] = dp.field
-      }
-    }
-    return base
-  }, [columnMappingForBackend, effectiveDefaultProperties, selectedParsedData.headers])
-
-  /** Extend selected columns with injected default columns. */
-  const enrichedSelectedColumns = useMemo(() => {
-    const base = [...selectedColumns]
-    const existingHeaders = new Set(selectedParsedData.headers)
-    for (const dp of effectiveDefaultProperties) {
-      if (
-        dp.field &&
-        dp.value &&
-        !existingHeaders.has(dp.field) &&
-        !base.includes(dp.field)
-      ) {
-        base.push(dp.field)
-      }
-    }
-    return base
-  }, [selectedColumns, effectiveDefaultProperties, selectedParsedData.headers])
 
   /** Synthetic preview table for the devices JSON submission path. */
   const devicePreviewData = useMemo<ParsedCSVData>(() => {
@@ -219,12 +182,12 @@ export function CsvUpdateWizard() {
 
       const response = await processUpdates.mutateAsync({
         objectType,
-        csvData: { headers: enrichedCsvData.headers, rows: enrichedCsvData.rows },
+        csvData: { headers: selectedParsedData.headers, rows: selectedParsedData.rows },
         csvOptions: csvConfig,
         dryRun: true,
         tagsMode,
-        columnMapping: enrichedColumnMapping,
-        selectedColumns: enrichedSelectedColumns,
+        columnMapping: columnMappingForBackend,
+        selectedColumns,
         primaryKeyColumn,
         matchingStrategy,
         nameTransform,
@@ -242,11 +205,11 @@ export function CsvUpdateWizard() {
     processDeviceUpdates,
     processUpdates,
     objectType,
-    enrichedCsvData,
+    selectedParsedData,
     csvConfig,
     tagsMode,
-    enrichedColumnMapping,
-    enrichedSelectedColumns,
+    columnMappingForBackend,
+    selectedColumns,
     primaryKeyColumn,
     matchingStrategy,
     nameTransform,
@@ -273,12 +236,12 @@ export function CsvUpdateWizard() {
 
       const response = await processUpdates.mutateAsync({
         objectType,
-        csvData: { headers: enrichedCsvData.headers, rows: enrichedCsvData.rows },
+        csvData: { headers: selectedParsedData.headers, rows: selectedParsedData.rows },
         csvOptions: csvConfig,
         dryRun: false,
         tagsMode,
-        columnMapping: enrichedColumnMapping,
-        selectedColumns: enrichedSelectedColumns,
+        columnMapping: columnMappingForBackend,
+        selectedColumns,
         primaryKeyColumn,
         matchingStrategy,
         nameTransform,
@@ -298,11 +261,11 @@ export function CsvUpdateWizard() {
     processDeviceUpdates,
     processUpdates,
     objectType,
-    enrichedCsvData,
+    selectedParsedData,
     csvConfig,
     tagsMode,
-    enrichedColumnMapping,
-    enrichedSelectedColumns,
+    columnMappingForBackend,
+    selectedColumns,
     primaryKeyColumn,
     matchingStrategy,
     nameTransform,
@@ -529,7 +492,7 @@ export function CsvUpdateWizard() {
 
           {step === 'preview' && (
             <CsvPreviewStep
-              parsedData={isDevices ? devicePreviewData : enrichedCsvData}
+              parsedData={isDevices ? devicePreviewData : selectedParsedData}
               validationResults={isDevices ? EMPTY_VALIDATION_RESULTS : validationResults}
               validationSummary={isDevices ? VALID_SUMMARY : validationSummary}
               dryRunTaskId={dryRunTaskId}
@@ -583,6 +546,17 @@ export function CsvUpdateWizard() {
                 </>
               ) : step === 'filter' ? (
                 <>
+                  {isDevices && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setCheckDevicesOpen(true)}
+                      disabled={selectedDeviceRows.length === 0}
+                    >
+                      <ShieldCheck className="h-4 w-4 mr-1" />
+                      Check Devices
+                    </Button>
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -607,6 +581,12 @@ export function CsvUpdateWizard() {
           </div>
         )}
       </div>
+
+      <CheckDevicesDialog
+        open={checkDevicesOpen}
+        onOpenChange={setCheckDevicesOpen}
+        deviceNames={uniqueSelectedDeviceNames}
+      />
     </div>
   )
 }
