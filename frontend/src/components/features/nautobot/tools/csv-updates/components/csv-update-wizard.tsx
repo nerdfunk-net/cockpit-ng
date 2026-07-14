@@ -586,6 +586,8 @@ export function CsvUpdateWizard() {
         open={checkDevicesOpen}
         onOpenChange={setCheckDevicesOpen}
         deviceNames={uniqueSelectedDeviceNames}
+        selectedDeviceRows={selectedDeviceRows}
+        primaryIpByDevice={primaryIpByDevice}
       />
     </div>
   )

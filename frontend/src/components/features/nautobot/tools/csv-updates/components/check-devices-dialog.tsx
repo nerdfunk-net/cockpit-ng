@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, ShieldCheck, XCircle } from 'lucide-react'
+import { CheckCircle2, ShieldCheck, UserPlus, XCircle } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -12,9 +12,13 @@ import {
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { StatusIcon } from '@/components/shared/status-icon'
+import { useToast } from '@/hooks/use-toast'
 import { useCheckDevices } from '../hooks/use-check-devices'
 import { useFilterPagination } from '../hooks/use-filter-pagination'
+import { useAddMissingDevices } from '../hooks/use-add-missing-devices'
+import { buildDeviceUpdatePayloads } from '../utils/device-merge'
 import { CsvFilterPagination } from './csv-filter-pagination'
+import type { DeviceCsvRow } from '../types'
 
 type StatusFilter = 'all' | 'found' | 'missing'
 
@@ -22,14 +26,20 @@ interface CheckDevicesDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   deviceNames: string[]
+  selectedDeviceRows: DeviceCsvRow[]
+  primaryIpByDevice: Record<string, string | null>
 }
 
 export function CheckDevicesDialog({
   open,
   onOpenChange,
   deviceNames,
+  selectedDeviceRows,
+  primaryIpByDevice,
 }: CheckDevicesDialogProps) {
   const { isChecking, progress, results, runCheck } = useCheckDevices()
+  const { isAdding, progress: addProgress, addDevices } = useAddMissingDevices()
+  const { toast } = useToast()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
 
   useEffect(() => {
@@ -45,6 +55,37 @@ export function CheckDevicesDialog({
   const notFoundCount = results.filter(r => !r.found).length
   const progressPercent =
     progress.total > 0 ? (progress.checked / progress.total) * 100 : 0
+  const addProgressPercent =
+    addProgress.total > 0 ? (addProgress.done / addProgress.total) * 100 : 0
+
+  const handleAddMissingDevices = async () => {
+    const missingNames = new Set(
+      results.filter(r => !r.found).map(r => r.deviceName)
+    )
+    const payloads = buildDeviceUpdatePayloads(
+      selectedDeviceRows,
+      primaryIpByDevice
+    ).filter(payload => missingNames.has(payload.name))
+
+    if (payloads.length === 0) return
+
+    const entries = await addDevices(payloads)
+    const successCount = entries.filter(e => e.status === 'success').length
+    const failed = entries.filter(e => e.status !== 'success')
+
+    toast({
+      title: failed.length === 0 ? 'Success' : 'Partial Success',
+      description:
+        failed.length === 0
+          ? `Created ${successCount} of ${entries.length} device(s)`
+          : `Created ${successCount} of ${entries.length} device(s). Failed: ${failed
+              .map(e => e.deviceName)
+              .join(', ')}`,
+      variant: failed.length === 0 ? undefined : 'destructive',
+    })
+
+    await runCheck(deviceNames)
+  }
 
   const filteredResults = useMemo(() => {
     if (statusFilter === 'found') return results.filter(r => r.found)
@@ -81,15 +122,25 @@ export function CheckDevicesDialog({
           </div>
         )}
 
+        {/* Adding state */}
+        {!isChecking && isAdding && (
+          <div className="flex flex-col items-center justify-center py-10 gap-3">
+            <Progress value={addProgressPercent} className="h-2 w-full" />
+            <span className="text-sm text-muted-foreground">
+              Adding {addProgress.done} / {addProgress.total} device(s)…
+            </span>
+          </div>
+        )}
+
         {/* Empty selection */}
-        {!isChecking && deviceNames.length === 0 && (
+        {!isChecking && !isAdding && deviceNames.length === 0 && (
           <div className="py-10 text-center text-sm text-muted-foreground">
             No devices selected to check.
           </div>
         )}
 
         {/* Results */}
-        {!isChecking && results.length > 0 && (
+        {!isChecking && !isAdding && results.length > 0 && (
           <>
             <div className="flex flex-wrap items-center gap-2">
               <Button
@@ -175,8 +226,19 @@ export function CheckDevicesDialog({
         )}
 
         <DialogFooter className="pt-4 border-t mt-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isAdding}
+          >
             Close
+          </Button>
+          <Button
+            onClick={handleAddMissingDevices}
+            disabled={isChecking || isAdding || notFoundCount === 0}
+          >
+            <UserPlus className="h-4 w-4 mr-1" />
+            Add new Devices ({notFoundCount})
           </Button>
         </DialogFooter>
       </DialogContent>

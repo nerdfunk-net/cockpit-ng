@@ -157,6 +157,7 @@ class NetworkDefaultsRequest(BaseModel):
     interface_status: Optional[str] = None
     interface_type: Optional[str] = None
     device_status: Optional[str] = None
+    device_type: Optional[str] = None
     ip_address_status: Optional[str] = None
     ip_prefix_status: Optional[str] = None
     namespace: Optional[str] = None
@@ -174,6 +175,7 @@ class ServerDefaultsRequest(BaseModel):
     interface_status: Optional[str] = None
     interface_type: Optional[str] = None
     device_status: Optional[str] = None
+    device_type: Optional[str] = None
     ip_address_status: Optional[str] = None
     ip_prefix_status: Optional[str] = None
     namespace: Optional[str] = None

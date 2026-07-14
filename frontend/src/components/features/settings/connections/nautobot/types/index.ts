@@ -1,3 +1,5 @@
+import type { DeviceType } from '@/components/features/nautobot/add-device/types'
+
 export interface NautobotSettings {
   url: string
   token: string
@@ -79,6 +81,7 @@ export interface NautobotOptionsData {
   platforms: NautobotOption[]
   locations: LocationItem[]
   secretGroups: NautobotOption[]
+  deviceTypes: DeviceType[]
 }
 
 export interface ApiResponse<T = unknown> {

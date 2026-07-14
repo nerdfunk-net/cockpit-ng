@@ -28,7 +28,18 @@ import type {
   InterfaceTypeOption,
   LocationItem,
 } from '@/components/features/settings/connections/nautobot/types'
+import { SearchableDropdownInput } from '@/components/features/nautobot/add-device/components/searchable-dropdown-input'
+import { useSearchableDropdown } from '@/components/features/nautobot/add-device/hooks/use-searchable-dropdown'
+import type { DeviceType } from '@/components/features/nautobot/add-device/types'
 import type { DefaultsFields } from '../types/defaults-fields'
+
+function deviceTypeFilterPredicate(dt: DeviceType, query: string): boolean {
+  return (dt.display || dt.model).toLowerCase().includes(query)
+}
+
+function deviceTypeDisplayText(dt: DeviceType): string {
+  return dt.display || dt.model
+}
 
 interface DefaultsSettingsFormProps {
   title: string
@@ -72,15 +83,6 @@ export function DefaultsSettingsForm({
 
   const isLoading = isLoadingDefaults || optionsLoading
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        <span className="ml-2 text-muted-foreground">{loadingMessage}</span>
-      </div>
-    )
-  }
-
   const {
     deviceStatuses = EMPTY_ARRAY as NautobotOption[],
     interfaceStatuses = EMPTY_ARRAY as NautobotOption[],
@@ -92,7 +94,25 @@ export function DefaultsSettingsForm({
     platforms = EMPTY_ARRAY as NautobotOption[],
     locations = EMPTY_ARRAY as LocationItem[],
     secretGroups = EMPTY_ARRAY as NautobotOption[],
+    deviceTypes = EMPTY_ARRAY as DeviceType[],
   } = options || {}
+
+  const deviceTypeDropdown = useSearchableDropdown({
+    items: deviceTypes,
+    selectedId: localDefaults.device_type,
+    onSelect: id => updateDefault('device_type', id),
+    getDisplayText: deviceTypeDisplayText,
+    filterPredicate: deviceTypeFilterPredicate,
+  })
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2 text-muted-foreground">{loadingMessage}</span>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -235,6 +255,23 @@ export function DefaultsSettingsForm({
                 </SelectContent>
               </Select>
               <p className="text-xs text-muted-foreground">Default status for new devices</p>
+            </div>
+
+            <div className="space-y-2">
+              <SearchableDropdownInput
+                id="default-device-type"
+                label="Device Type"
+                placeholder="Search device type..."
+                dropdownState={deviceTypeDropdown}
+                renderItem={dt => (
+                  <span>
+                    {dt.manufacturer?.name ? `${dt.manufacturer.name} ` : ''}
+                    {dt.model}
+                  </span>
+                )}
+                getItemKey={dt => dt.id}
+              />
+              <p className="text-xs text-muted-foreground">Default device type for new devices</p>
             </div>
 
             <div className="space-y-2">

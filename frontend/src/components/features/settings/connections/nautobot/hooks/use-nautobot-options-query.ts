@@ -7,6 +7,7 @@ import type {
   InterfaceTypeOption,
   LocationItem,
 } from '../types'
+import type { DeviceType } from '@/components/features/nautobot/add-device/types'
 import { CACHE_TIME, EMPTY_ARRAY } from '../utils/constants'
 import { buildLocationHierarchy } from '../utils/location-utils'
 
@@ -41,6 +42,7 @@ export function useNautobotOptionsQuery(
         platformsRes,
         locationsRes,
         secretGroupsRes,
+        deviceTypesRes,
       ] = await Promise.all([
         apiCall('nautobot/statuses/device'),
         apiCall('nautobot/statuses/interface'),
@@ -52,6 +54,7 @@ export function useNautobotOptionsQuery(
         apiCall('nautobot/platforms'),
         apiCall('nautobot/locations'),
         apiCall('nautobot/secret-groups'),
+        apiCall('nautobot/device-types'),
       ])
 
       // Build location hierarchy
@@ -87,6 +90,9 @@ export function useNautobotOptionsQuery(
         secretGroups: Array.isArray(secretGroupsRes)
           ? (secretGroupsRes as NautobotOption[])
           : (EMPTY_ARRAY as NautobotOption[]),
+        deviceTypes: Array.isArray(deviceTypesRes)
+          ? (deviceTypesRes as DeviceType[])
+          : (EMPTY_ARRAY as DeviceType[]),
       }
     },
     enabled,

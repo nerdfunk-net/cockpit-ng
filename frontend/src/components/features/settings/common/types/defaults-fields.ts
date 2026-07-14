@@ -5,6 +5,7 @@ export interface DefaultsFields {
   interface_status: string
   interface_type: string
   device_status: string
+  device_type: string
   ip_address_status: string
   ip_prefix_status: string
   namespace: string

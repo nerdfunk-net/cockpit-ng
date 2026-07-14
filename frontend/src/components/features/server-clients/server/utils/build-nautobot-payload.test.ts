@@ -15,6 +15,7 @@ const FULL_DEFAULTS: DefaultsFields = {
   interface_status: 'if-status-1',
   interface_type: 'if-type-1',
   device_status: 'dev-status-1',
+  device_type: 'dev-type-1',
   ip_address_status: 'ip-st-1',
   ip_prefix_status: 'pfx-st-1',
   namespace: 'ns-global',

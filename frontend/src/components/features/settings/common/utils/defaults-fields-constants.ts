@@ -6,6 +6,7 @@ export const EMPTY_DEFAULTS_FIELDS: DefaultsFields = {
   interface_status: '',
   interface_type: '',
   device_status: '',
+  device_type: '',
   ip_address_status: '',
   ip_prefix_status: '',
   namespace: '',
