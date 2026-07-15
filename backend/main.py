@@ -178,8 +178,8 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # Content-Security-Policy for the JSON API + self-hosted Swagger UI assets.
 # The API returns JSON; the only HTML it serves is /docs and /redoc, which load
-# assets from /api/static/swagger-ui (same origin). Tighten further if the API
-# never needs to render HTML in your deployment.
+# assets from /api/static/swagger-ui (same origin). FastAPI's Swagger HTML uses
+# an inline bootstrap script, so /docs needs 'unsafe-inline' for script-src.
 _CSP = (
     "default-src 'self'; "
     "script-src 'self'; "
@@ -189,6 +189,16 @@ _CSP = (
     "frame-ancestors 'none'; "
     "base-uri 'self'"
 )
+_CSP_DOCS = (
+    "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline'; "
+    "style-src 'self' 'unsafe-inline'; "
+    "img-src 'self' data:; "
+    "connect-src 'self'; "
+    "frame-ancestors 'none'; "
+    "base-uri 'self'"
+)
+_DOCS_PATHS = frozenset({"/docs", "/redoc"})
 
 
 @app.middleware("http")
@@ -198,7 +208,9 @@ async def security_headers(request: Request, call_next) -> Response:
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Content-Security-Policy"] = _CSP
+    response.headers["Content-Security-Policy"] = (
+        _CSP_DOCS if request.url.path in _DOCS_PATHS else _CSP
+    )
     # HSTS is only meaningful over HTTPS; harmless over plain HTTP (ignored by
     # browsers) but only send it when the request arrived as https.
     if request.url.scheme == "https":
