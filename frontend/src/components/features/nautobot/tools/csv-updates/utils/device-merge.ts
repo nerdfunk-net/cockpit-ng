@@ -1,5 +1,10 @@
 import {
+  DEVICE_LOCATION_FIELD_KEY,
   DEVICE_NAME_FIELD_KEY,
+  DEVICE_PLATFORM_FIELD_KEY,
+  DEVICE_ROLE_FIELD_KEY,
+  DEVICE_STATUS_FIELD_KEY,
+  DEVICE_TYPE_FIELD_KEY,
   INTERFACE_CONFIG_FIELD_KEYS,
   INTERFACE_NAME_FIELD_KEY,
   INTERFACE_STATUS_FIELD_KEY,
@@ -103,12 +108,20 @@ export function buildDeviceUpdatePayloads(
   }))
 }
 
+/** Device-level fields eligible for profile backfill (mirrors DEFAULTS_FIELD_MAP in use-csv-wizard.ts). */
+const DEVICE_LEVEL_DEFAULT_FIELD_KEYS: string[] = [
+  DEVICE_STATUS_FIELD_KEY,
+  DEVICE_ROLE_FIELD_KEY,
+  DEVICE_LOCATION_FIELD_KEY,
+  DEVICE_TYPE_FIELD_KEY,
+  DEVICE_PLATFORM_FIELD_KEY,
+]
+
 /**
- * Fills in interface status/type missing from a device payload's interfaces —
- * mirrors the server-side interface_type fallback in update_devices_task.py.
- * This is the only field-defaulting the update flow performs: it never touches
- * device-level fields the CSV didn't supply, since an update must only ever
- * change what the CSV explicitly provides.
+ * Fills in device- and interface-level fields missing from a device payload with
+ * the selected profile's values. The CSV always wins — a default is only applied
+ * when the CSV left that field blank — so this applies equally to a brand-new
+ * device (Add Missing Devices) and an update to an existing one.
  */
 export function applyDeviceDefaults(
   payload: DeviceUpdatePayload,
@@ -116,19 +129,26 @@ export function applyDeviceDefaults(
 ): DeviceUpdatePayload {
   if (defaults.length === 0) return payload
 
+  const patched: DeviceUpdatePayload = { ...payload }
+  for (const d of defaults) {
+    if (DEVICE_LEVEL_DEFAULT_FIELD_KEYS.includes(d.field) && !patched[d.field]) {
+      patched[d.field] = d.value
+    }
+  }
+
   return {
-    ...payload,
+    ...patched,
     interfaces: payload.interfaces.map(iface => {
-      const patched = { ...iface }
+      const patchedIface = { ...iface }
       for (const d of defaults) {
-        if (d.field === INTERFACE_STATUS_FIELD_KEY && !patched.status) {
-          patched.status = d.value
+        if (d.field === INTERFACE_STATUS_FIELD_KEY && !patchedIface.status) {
+          patchedIface.status = d.value
         }
-        if (d.field === INTERFACE_TYPE_FIELD_KEY && !patched.type) {
-          patched.type = d.value
+        if (d.field === INTERFACE_TYPE_FIELD_KEY && !patchedIface.type) {
+          patchedIface.type = d.value
         }
       }
-      return patched
+      return patchedIface
     }),
   }
 }

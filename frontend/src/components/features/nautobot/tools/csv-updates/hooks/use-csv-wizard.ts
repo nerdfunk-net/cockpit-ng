@@ -61,12 +61,18 @@ const PRIMARY_KEY_PREFERENCES: Record<ObjectType, string[]> = {
 }
 
 /**
- * Network Defaults keys auto-applied per object type. Deliberately narrow: an update
- * must only ever touch what the CSV explicitly provides, with one exception — a new
- * interface (defined by the CSV) that omits status/type still needs a fallback.
+ * Profile keys auto-applied per object type, keyed by profile field name → device
+ * payload field name. The CSV value always wins; a profile value only fills in a
+ * field the CSV left blank — for both new devices (Add Missing Devices) and updates
+ * to existing ones.
  */
 const DEFAULTS_FIELD_MAP: Partial<Record<ObjectType, Record<string, string>>> = {
   devices: {
+    device_status: 'status',
+    device_role: 'role',
+    location: 'location',
+    device_type: 'device_type',
+    platform: 'platform',
     interface_status: 'interface_status',
     interface_type: 'interface_type',
   },
@@ -447,7 +453,7 @@ export function useCsvWizard() {
     return { headers: csvUpload.parsedData.headers, rows, rowCount: rows.length }
   }, [csvUpload.parsedData, isRowSelected])
 
-  // --- Network-defaults-driven default properties ---
+  // --- Profile-driven default properties ---
 
   const autoDefaultProperties = useMemo<DefaultProperty[]>(() => {
     if (!useDefaultProperties || !profileFields) return EMPTY_DEFAULT_PROPERTIES
