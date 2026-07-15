@@ -27,7 +27,7 @@ CHECKMK_CONFIG_PATH = CONFIG_BASE_PATH / "checkmk"
 @router.post("/validate")
 async def validate_yaml_content(
     file_content: ConfigFileContent,
-    current_user: dict = Depends(require_permission("settings.common", "read")),
+    current_user: dict = Depends(require_permission("settings.defaults", "read")),
 ):
     """Validate YAML content syntax.
 
@@ -79,7 +79,7 @@ async def validate_yaml_content(
 @router.get("/checkmk/{filename}")
 async def read_checkmk_config_file(
     filename: str,
-    current_user: dict = Depends(require_permission("settings.common", "read")),
+    current_user: dict = Depends(require_permission("settings.defaults", "read")),
 ):
     """Read a CheckMK-specific configuration file from config/checkmk/."""
     try:
@@ -129,7 +129,7 @@ async def read_checkmk_config_file(
 async def write_checkmk_config_file(
     filename: str,
     file_content: ConfigFileContent,
-    current_user: dict = Depends(require_permission("settings.common", "write")),
+    current_user: dict = Depends(require_permission("settings.defaults", "write")),
     config_service=Depends(get_checkmk_config_service),
 ):
     """Write a CheckMK-specific configuration file to config/checkmk/."""
@@ -171,7 +171,7 @@ async def write_checkmk_config_file(
 @router.get("/{filename}")
 async def read_config_file(
     filename: str,
-    current_user: dict = Depends(require_permission("settings.common", "read")),
+    current_user: dict = Depends(require_permission("settings.defaults", "read")),
 ):
     """Read a configuration file."""
     try:
@@ -222,7 +222,7 @@ async def read_config_file(
 async def write_config_file(
     filename: str,
     file_content: ConfigFileContent,
-    current_user: dict = Depends(require_permission("settings.common", "write")),
+    current_user: dict = Depends(require_permission("settings.defaults", "write")),
     config_service=Depends(get_checkmk_config_service),
 ):
     """Write a configuration file."""

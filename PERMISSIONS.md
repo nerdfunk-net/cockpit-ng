@@ -167,8 +167,8 @@ Every permission follows the pattern:
 | `settings.credentials:read` | View stored credentials |
 | `settings.credentials:write` | Create/modify credentials |
 | `settings.credentials:delete` | Delete credentials |
-| `settings.common:read` | View common settings (incl. SNMP passwords) |
-| `settings.common:write` | Modify common settings (SNMP mapping) |
+| `settings.defaults:read` | View defaults settings (SNMP mapping incl. passwords, default-value profiles) |
+| `settings.defaults:write` | Modify defaults settings (SNMP mapping, default-value profiles) |
 | `settings.templates:read` | View template settings |
 | `settings.templates:write` | Modify template settings |
 
@@ -223,7 +223,7 @@ Key additions over `operator`: `network.templates:*`, `network.netmiko:execute`,
 
 ### `viewer` — Read-Only
 
-Can view devices, configurations, jobs, and logs. Cannot modify anything or access sensitive settings (`settings.credentials`, `settings.common`).
+Can view devices, configurations, jobs, and logs. Cannot modify anything or access sensitive settings (`settings.credentials`, `settings.defaults`).
 
 ---
 

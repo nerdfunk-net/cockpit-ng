@@ -5,7 +5,9 @@ import { useCsvUpload } from './use-csv-upload'
 import { useFilterPagination } from './use-filter-pagination'
 import { useFieldMappingQuery } from '@/hooks/queries/use-field-mapping-query'
 import { useFieldMappingMutations } from '@/hooks/queries/use-field-mapping-mutations'
-import { useNetworkDefaultsQuery } from '@/components/features/settings/common/hooks/use-network-defaults-query'
+import { useProfilesQuery } from '@/components/features/settings/defaults/profiles/hooks/use-profiles-query'
+import { useProfileFieldsQuery } from '@/components/features/settings/defaults/profiles/hooks/use-profile-fields-query'
+import { EMPTY_PROFILES } from '@/components/features/settings/defaults/profiles/utils/constants'
 import {
   buildAutoFieldMapping,
   CSV_UPDATE_APP_NAME,
@@ -121,9 +123,19 @@ export function useCsvWizard() {
 
   const { data: storedMapping } = useFieldMappingQuery(CSV_UPDATE_APP_NAME)
   const { saveFieldMapping } = useFieldMappingMutations()
-  const { data: networkDefaults } = useNetworkDefaultsQuery({
+
+  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null)
+  const { data: profiles = EMPTY_PROFILES } = useProfilesQuery()
+  const { data: profileFields } = useProfileFieldsQuery(selectedProfileId, {
     enabled: useDefaultProperties,
   })
+
+  // Default the profile picker to the built-in "Network" profile once the list loads
+  useEffect(() => {
+    if (selectedProfileId !== null || profiles.length === 0) return
+    const network = profiles.find(p => p.built_in_key === 'network')
+    if (network) setSelectedProfileId(network.id)
+  }, [profiles, selectedProfileId])
 
   /**
    * In-memory mirror of the last-known-good saved mapping blob. Writes go
@@ -438,18 +450,18 @@ export function useCsvWizard() {
   // --- Network-defaults-driven default properties ---
 
   const autoDefaultProperties = useMemo<DefaultProperty[]>(() => {
-    if (!useDefaultProperties || !networkDefaults) return EMPTY_DEFAULT_PROPERTIES
+    if (!useDefaultProperties || !profileFields) return EMPTY_DEFAULT_PROPERTIES
     const map = DEFAULTS_FIELD_MAP[objectType]
     if (!map) return EMPTY_DEFAULT_PROPERTIES
 
-    const defaultsRecord = networkDefaults as unknown as Record<string, string>
+    const defaultsRecord = profileFields as unknown as Record<string, string>
     const result: DefaultProperty[] = []
     for (const [defaultsKey, fieldKey] of Object.entries(map)) {
       const value = defaultsRecord[defaultsKey]
       if (value) result.push({ field: fieldKey, value, rowKey: defaultsKey })
     }
     return result
-  }, [useDefaultProperties, networkDefaults, objectType])
+  }, [useDefaultProperties, profileFields, objectType])
 
   const effectiveDefaultProperties = useDefaultProperties
     ? autoDefaultProperties
@@ -503,6 +515,10 @@ export function useCsvWizard() {
       primaryIpEnabled,
       setPrimaryIpEnabled,
       configureSkippable,
+      // Profile picker (drives auto default properties + Add Missing Devices)
+      profiles,
+      selectedProfileId,
+      setSelectedProfileId,
       // Devices rows / filter / selection
       deviceRows,
       selectedDeviceRows,
@@ -557,6 +573,8 @@ export function useCsvWizard() {
       primaryIpEnabled,
       setPrimaryIpEnabled,
       configureSkippable,
+      profiles,
+      selectedProfileId,
       deviceRows,
       selectedDeviceRows,
       filterRows,

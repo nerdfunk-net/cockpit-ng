@@ -99,6 +99,9 @@ export function CsvUpdateWizard() {
     primaryIpEnabled,
     setPrimaryIpEnabled,
     configureSkippable,
+    profiles,
+    selectedProfileId,
+    setSelectedProfileId,
     selectedDeviceRows,
     filteredRows,
     paginatedRows,
@@ -435,6 +438,9 @@ export function CsvUpdateWizard() {
               onUseDefaultPropertiesChange={setUseDefaultProperties}
               primaryIpEnabled={primaryIpEnabled}
               onPrimaryIpEnabledChange={setPrimaryIpEnabled}
+              profiles={profiles}
+              selectedProfileId={selectedProfileId}
+              onProfileChange={setSelectedProfileId}
             />
           )}
 
@@ -588,6 +594,7 @@ export function CsvUpdateWizard() {
         deviceNames={uniqueSelectedDeviceNames}
         selectedDeviceRows={selectedDeviceRows}
         primaryIpByDevice={primaryIpByDevice}
+        profileId={selectedProfileId}
       />
     </div>
   )

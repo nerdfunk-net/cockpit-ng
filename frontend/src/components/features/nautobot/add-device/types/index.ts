@@ -208,6 +208,7 @@ export interface NautobotDefaults {
   ip_address_status: string
   namespace: string
   device_role: string
+  device_type: string
   secret_group: string
   csv_delimiter: string
 }

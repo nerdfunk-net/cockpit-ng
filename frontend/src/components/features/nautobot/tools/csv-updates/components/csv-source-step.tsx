@@ -21,6 +21,7 @@ import { useGetDataAgents } from '../hooks/use-get-data-agents'
 import { OBJECT_TYPE_LABELS } from '../constants'
 import { combineAgentKeys } from '../utils/agent-data'
 import type { ObjectType, CSVConfig, ParsedCSVData, ValidationResult } from '../types'
+import type { Profile } from '@/components/features/settings/defaults/profiles/types'
 
 interface CsvSourceStepProps {
   objectType: ObjectType
@@ -48,6 +49,9 @@ interface CsvSourceStepProps {
   onUseDefaultPropertiesChange: (value: boolean) => void
   primaryIpEnabled: boolean
   onPrimaryIpEnabledChange: (value: boolean) => void
+  profiles: Profile[]
+  selectedProfileId: number | null
+  onProfileChange: (profileId: number) => void
 }
 
 const OBJECT_TYPE_OPTIONS: ObjectType[] = [
@@ -85,6 +89,9 @@ export function CsvSourceStep({
   onUseDefaultPropertiesChange,
   primaryIpEnabled,
   onPrimaryIpEnabledChange,
+  profiles,
+  selectedProfileId,
+  onProfileChange,
 }: CsvSourceStepProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -400,6 +407,26 @@ export function CsvSourceStep({
 
       {/* Options */}
       <div className="space-y-2 border-t pt-3">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="profile-select" className="text-sm text-muted-foreground">
+            Profile
+          </Label>
+          <Select
+            value={selectedProfileId != null ? String(selectedProfileId) : ''}
+            onValueChange={value => onProfileChange(Number(value))}
+          >
+            <SelectTrigger id="profile-select" className="w-56 h-8">
+              <SelectValue placeholder="Select a profile" />
+            </SelectTrigger>
+            <SelectContent>
+              {profiles.map(profile => (
+                <SelectItem key={profile.id} value={String(profile.id)}>
+                  {profile.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
         <div className="flex items-center space-x-2">
           <Checkbox
             id="use-new-mapping"
@@ -417,8 +444,7 @@ export function CsvSourceStep({
             onCheckedChange={value => onUseDefaultPropertiesChange(value === true)}
           />
           <Label htmlFor="use-default-properties" className="text-sm text-muted-foreground">
-            Use Default Properties (fill missing values from Settings / Common / Network
-            Defaults)
+            Use Default Properties (fill missing values from the selected profile above)
           </Label>
         </div>
         {objectType === 'devices' && (

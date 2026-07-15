@@ -3,6 +3,7 @@ from sqlalchemy import (
     Boolean,
     Column,
     DateTime,
+    Index,
     Integer,
     String,
     Text,
@@ -223,6 +224,46 @@ class ServerDefault(Base):
         onupdate=func.now(),
         nullable=False,
     )
+
+
+class Profile(Base):
+    """Named, reusable sets of Nautobot device/IP default values.
+
+    'Network' and 'Server' are seeded built-in rows (built_in_key set to
+    'network'/'server') that back the legacy network_defaults/server_defaults
+    singleton tables via a compatibility layer; all other rows are
+    user-created custom profiles (built_in_key IS NULL).
+    """
+
+    __tablename__ = "profiles"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String(255), nullable=False, unique=True)
+    built_in_key = Column(String(50), nullable=True)  # 'network' | 'server' | None
+    location = Column(String(255))
+    platform = Column(String(255))
+    interface_status = Column(String(255))
+    interface_type = Column(String(255))
+    device_status = Column(String(255))
+    device_type = Column(String(255))
+    ip_address_status = Column(String(255))
+    ip_prefix_status = Column(String(255))
+    namespace = Column(String(255))
+    device_role = Column(String(255))
+    secret_group = Column(String(255))
+    csv_delimiter = Column(String(10), default=",")
+    csv_quote_char = Column(String(10), default='"')
+    created_at = Column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
+    updated_at = Column(
+        DateTime(timezone=True),
+        server_default=func.now(),
+        onupdate=func.now(),
+        nullable=False,
+    )
+
+    __table_args__ = (Index("idx_profiles_built_in_key", "built_in_key"),)
 
 
 class CelerySetting(Base):

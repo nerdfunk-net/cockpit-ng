@@ -30,7 +30,7 @@ def _get_service() -> CheckMKPriorityRulesService:
     response_model=List[CheckMKPriorityRuleResponse],
 )
 async def list_priority_rules(
-    current_user: dict = Depends(require_permission("settings.common", "read")),
+    current_user: dict = Depends(require_permission("settings.defaults", "read")),
     service: CheckMKPriorityRulesService = Depends(_get_service),
 ):
     """List all CheckMK priority rules ordered by priority."""
@@ -47,7 +47,7 @@ async def list_priority_rules(
 )
 async def create_priority_rule(
     request: CheckMKPriorityRuleCreate,
-    current_user: dict = Depends(require_permission("settings.common", "write")),
+    current_user: dict = Depends(require_permission("settings.defaults", "write")),
     service: CheckMKPriorityRulesService = Depends(_get_service),
 ):
     """Create a new CheckMK priority rule."""
@@ -66,7 +66,7 @@ async def create_priority_rule(
 )
 async def reorder_priority_rules(
     request: CheckMKPriorityRulesReorderRequest,
-    current_user: dict = Depends(require_permission("settings.common", "write")),
+    current_user: dict = Depends(require_permission("settings.defaults", "write")),
     service: CheckMKPriorityRulesService = Depends(_get_service),
 ):
     """Reorder priority rules by providing a list of ids in the desired order."""
@@ -86,7 +86,7 @@ async def reorder_priority_rules(
 async def update_priority_rule(
     rule_id: int,
     request: CheckMKPriorityRuleUpdate,
-    current_user: dict = Depends(require_permission("settings.common", "write")),
+    current_user: dict = Depends(require_permission("settings.defaults", "write")),
     service: CheckMKPriorityRulesService = Depends(_get_service),
 ):
     """Update a CheckMK priority rule."""
@@ -103,7 +103,7 @@ async def update_priority_rule(
 @router.delete("/priority-rules/{rule_id}", status_code=204)
 async def delete_priority_rule(
     rule_id: int,
-    current_user: dict = Depends(require_permission("settings.common", "write")),
+    current_user: dict = Depends(require_permission("settings.defaults", "write")),
     service: CheckMKPriorityRulesService = Depends(_get_service),
 ):
     """Delete a CheckMK priority rule."""

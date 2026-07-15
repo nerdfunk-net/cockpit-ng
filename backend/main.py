@@ -116,6 +116,7 @@ from routers.settings import (
     git_settings_router,
     nautobot_settings_router,
     network_defaults_router,
+    profiles_router,
     rbac_router,
     server_defaults_router,
     templates_router,
@@ -238,6 +239,7 @@ app.include_router(settings_router)
 app.include_router(nautobot_settings_router)
 app.include_router(network_defaults_router)
 app.include_router(server_defaults_router)
+app.include_router(profiles_router)
 app.include_router(git_settings_router)
 app.include_router(checkmk_settings_router)
 app.include_router(agents_settings_router)
@@ -425,6 +427,18 @@ async def _startup_services():
     except Exception as e:
         logger.error("Failed to ensure built-in queues: %s", e)
         # Don't raise - this is not critical for startup
+
+    # Seed built-in "Network"/"Server" profiles from legacy singleton tables (idempotent)
+    try:
+        from services.settings.profile_service import ProfileService
+
+        ProfileService().ensure_builtin_profiles_seeded()
+        logger.info("Built-in profiles verified")
+    except Exception as e:
+        logger.error("Failed to seed built-in profiles: %s", e)
+        # Don't raise - not critical for startup; NetworkDefaultsService and
+        # ServerDefaultsService fall back to dataclass defaults, and each
+        # will create its built-in row lazily on first update() call.
 
     # Export SSH keys to filesystem
     try:

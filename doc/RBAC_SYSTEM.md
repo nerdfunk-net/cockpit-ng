@@ -185,7 +185,7 @@ nautobot.offboard:execute
 settings.cache:{read, write}
 settings.celery:{read, write}
 settings.credentials:{read, write, delete}
-settings.common:{read, write}
+settings.defaults:{read, write}
 settings.templates:{read, write}
 
 # Users & RBAC
@@ -225,7 +225,7 @@ Four system roles are created at startup. System roles (`is_system=True`) cannot
 
 ### `viewer`
 - Read-only access to most resources
-- No access to: users, settings.credentials, settings.common, RBAC management
+- No access to: users, settings.credentials, settings.defaults, RBAC management
 
 ---
 

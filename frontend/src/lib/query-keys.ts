@@ -354,6 +354,13 @@ export const queryKeys = {
       [...queryKeys.commonSettings.all, 'serverDefaults'] as const,
   },
 
+  // Profiles (Settings / Defaults / Profiles)
+  profiles: {
+    all: ['profiles'] as const,
+    list: () => [...queryKeys.profiles.all, 'list'] as const,
+    detail: (id: number | string) => [...queryKeys.profiles.all, 'detail', id] as const,
+  },
+
   // Nautobot Settings
   nautobotSettings: {
     all: ['nautobotSettings'] as const,

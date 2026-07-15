@@ -31,6 +31,7 @@ interface CheckDevicesDialogProps {
   deviceNames: string[]
   selectedDeviceRows: DeviceCsvRow[]
   primaryIpByDevice: Record<string, string | null>
+  profileId: number | null
 }
 
 export function CheckDevicesDialog({
@@ -39,9 +40,10 @@ export function CheckDevicesDialog({
   deviceNames,
   selectedDeviceRows,
   primaryIpByDevice,
+  profileId,
 }: CheckDevicesDialogProps) {
   const { isChecking, progress, results, runCheck } = useCheckDevices()
-  const { isAdding, progress: addProgress, addDevices } = useAddMissingDevices()
+  const { isAdding, progress: addProgress, addDevices } = useAddMissingDevices(profileId)
   const { toast } = useToast()
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
   const [addResultsByName, setAddResultsByName] =

@@ -25,6 +25,7 @@ from .credentials import router as credentials_router
 from .git_settings import router as git_settings_router
 from .nautobot import router as nautobot_settings_router
 from .network_defaults import router as network_defaults_router
+from .profiles import router as profiles_router
 from .rbac import router as rbac_router
 from .server_defaults import router as server_defaults_router
 from .templates import router as templates_router
@@ -45,4 +46,5 @@ __all__ = [
     "agents_settings_router",
     "compliance_router",
     "config_router",
+    "profiles_router",
 ]

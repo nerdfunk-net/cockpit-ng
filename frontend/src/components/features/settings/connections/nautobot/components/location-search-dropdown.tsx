@@ -118,7 +118,16 @@ export function LocationSearchDropdown({
               <div
                 key={location.id}
                 className="px-3 py-2 hover:bg-muted cursor-pointer text-sm border-b border-border last:border-b-0"
-                onClick={() => handleSelect(location)}
+                onMouseDown={e => {
+                  // Select on mousedown (with preventDefault) rather than click.
+                  // Otherwise the input's onBlur fires first (mousedown shifts
+                  // focus away from the input), which resets searchQuery back
+                  // to displayValue and re-filters the list before the click
+                  // event arrives - so the item under the cursor at click time
+                  // is no longer the one the user moused down on.
+                  e.preventDefault()
+                  handleSelect(location)
+                }}
               >
                 {location.hierarchicalPath}
               </div>

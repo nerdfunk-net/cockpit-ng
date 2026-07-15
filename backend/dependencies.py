@@ -176,6 +176,11 @@ def get_compliance_service():
     return service_factory.build_compliance_service()
 
 
+def get_defaults_profile_service():
+    """Provide a settings-defaults ProfileService instance."""
+    return service_factory.build_defaults_profile_service()
+
+
 def get_user_service():
     """Provide a UserService instance."""
     return service_factory.build_user_service()

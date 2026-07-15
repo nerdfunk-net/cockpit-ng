@@ -185,6 +185,36 @@ class ServerDefaultsRequest(BaseModel):
     csv_quote_char: Optional[str] = '"'
 
 
+class ProfileFieldsRequest(BaseModel):
+    """Shared default-value fields for a named profile (create/update payloads)."""
+
+    location: Optional[str] = None
+    platform: Optional[str] = None
+    interface_status: Optional[str] = None
+    interface_type: Optional[str] = None
+    device_status: Optional[str] = None
+    device_type: Optional[str] = None
+    ip_address_status: Optional[str] = None
+    ip_prefix_status: Optional[str] = None
+    namespace: Optional[str] = None
+    device_role: Optional[str] = None
+    secret_group: Optional[str] = None
+    csv_delimiter: Optional[str] = ","
+    csv_quote_char: Optional[str] = '"'
+
+
+class ProfileCreateRequest(ProfileFieldsRequest):
+    """Request to create a new custom profile."""
+
+    name: str
+
+
+class ProfileUpdateRequest(ProfileFieldsRequest):
+    """Request to update a profile's fields, optionally renaming it."""
+
+    name: Optional[str] = None
+
+
 # ============================================================================
 # Compliance Settings Models
 # ============================================================================

@@ -51,6 +51,7 @@ import {
   LayoutGrid,
   Layers,
   Users,
+  Network,
 } from 'lucide-react'
 
 interface NavItem {
@@ -167,7 +168,14 @@ const navigationSections: NavSection[] = [
   {
     title: 'Settings',
     items: [
-      { label: 'Common', href: '/settings/common', icon: Settings },
+      {
+        label: 'Defaults',
+        icon: Settings,
+        children: [
+          { label: 'SNMP', href: '/settings/defaults/snmp', icon: Network },
+          { label: 'Profiles', href: '/settings/defaults/profiles', icon: Database },
+        ],
+      },
       {
         label: 'Connections',
         icon: Plug,

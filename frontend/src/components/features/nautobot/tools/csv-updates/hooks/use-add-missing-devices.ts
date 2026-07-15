@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
-import { useNetworkDefaultsQuery } from '@/components/features/settings/common/hooks/use-network-defaults-query'
+import { useProfileFieldsQuery } from '@/components/features/settings/defaults/profiles/hooks/use-profile-fields-query'
 import type {
   DeviceSubmissionData,
   InterfaceData,
@@ -35,15 +35,15 @@ function firstString(value: unknown): string {
 
 /**
  * Fills device-level and interface-level fields missing from a CSV-derived
- * payload with the configured Network Defaults, then submits each resulting
- * device to `nautobot/add-device` — the same endpoint the add-device feature
- * uses, so the existing automatic-prefix-creation behavior (`add_prefix`)
- * applies here too.
+ * payload with the values from the selected profile (defaults to "Network"),
+ * then submits each resulting device to `nautobot/add-device` — the same
+ * endpoint the add-device feature uses, so the existing
+ * automatic-prefix-creation behavior (`add_prefix`) applies here too.
  */
-export function useAddMissingDevices() {
+export function useAddMissingDevices(profileId: number | null) {
   const { apiCall } = useApi()
   const queryClient = useQueryClient()
-  const { data: defaults } = useNetworkDefaultsQuery()
+  const { data: defaults } = useProfileFieldsQuery(profileId)
 
   const [isAdding, setIsAdding] = useState(false)
   const [progress, setProgress] = useState<AddProgress>(EMPTY_PROGRESS)

@@ -11,3 +11,7 @@ class CredentialNotFoundError(Exception):
 
 class CredentialMissingFieldError(Exception):
     """Raised when a requested decrypted field (password, SSH key) is absent."""
+
+
+class ProfileValidationError(Exception):
+    """Raised for invalid profile input (duplicate/empty name, built-in mutation)."""

@@ -31,7 +31,7 @@ import type {
 import { SearchableDropdownInput } from '@/components/features/nautobot/add-device/components/searchable-dropdown-input'
 import { useSearchableDropdown } from '@/components/features/nautobot/add-device/hooks/use-searchable-dropdown'
 import type { DeviceType } from '@/components/features/nautobot/add-device/types'
-import type { DefaultsFields } from '../types/defaults-fields'
+import type { DefaultsFields } from '@/components/features/settings/common/types/defaults-fields'
 
 function deviceTypeFilterPredicate(dt: DeviceType, query: string): boolean {
   return (dt.display || dt.model).toLowerCase().includes(query)

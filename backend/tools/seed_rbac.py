@@ -97,11 +97,15 @@ DEFAULT_PERMISSIONS = [
     ("settings.credentials", "write", "Create/modify credentials"),
     ("settings.credentials", "delete", "Delete credentials"),
     (
-        "settings.common",
+        "settings.defaults",
         "read",
-        "View common settings (SNMP mapping with passwords)",
+        "View defaults settings (SNMP mapping with passwords, and default-value profiles)",
     ),
-    ("settings.common", "write", "Modify common settings (SNMP mapping)"),
+    (
+        "settings.defaults",
+        "write",
+        "Modify defaults settings (SNMP mapping, default-value profiles)",
+    ),
     ("settings.templates", "read", "View template settings"),
     ("settings.templates", "write", "Modify template settings"),
     # User management permissions
@@ -137,10 +141,13 @@ DEFAULT_PERMISSIONS = [
 #   by migrate_inventory_permissions)
 # - devices.onboard / devices.offboard: never valid; the correct permissions are
 #   nautobot.onboard / nautobot.offboard
+# - settings.common: renamed to settings.defaults (assignments migrated first
+#   by migrate_common_settings_permissions)
 OBSOLETE_RESOURCES = [
     "network.inventory",
     "devices.onboard",
     "devices.offboard",
+    "settings.common",
 ]
 
 
@@ -205,6 +212,104 @@ def migrate_inventory_permissions(verbose: bool = True):
                     if verbose:
                         print(
                             f"  ✗ Error migrating permission for role '{role['name']}': {e}"
+                        )
+
+    if verbose:
+        if migrated_count > 0:
+            print(f"\n  ✅ Migrated {migrated_count} permission assignments")
+        else:
+            print("  - No permissions needed migration")
+
+
+def migrate_common_settings_permissions(verbose: bool = True):
+    """Migrate settings.common permissions to settings.defaults.
+
+    Unlike migrate_inventory_permissions (which only migrates role grants),
+    this also migrates direct user-level permission overrides, since
+    settings.common has historically been granted directly to individual
+    users in addition to roles.
+    """
+    if verbose:
+        print(
+            "\nMigrating settings permissions from settings.common to settings.defaults..."
+        )
+
+    all_permissions = rbac.list_permissions()
+
+    old_perms = {
+        p["id"]: p for p in all_permissions if p["resource"] == "settings.common"
+    }
+
+    if not old_perms:
+        if verbose:
+            print("  - No settings.common permissions found to migrate")
+        return
+
+    def _new_perm_id(action):
+        for p in all_permissions:
+            if p["resource"] == "settings.defaults" and p["action"] == action:
+                return p["id"]
+        return None
+
+    migrated_count = 0
+
+    # Roles
+    for role in rbac.list_roles():
+        role_perms = rbac.get_role_permissions(role["id"])
+        for old_perm_id, old_perm in old_perms.items():
+            if any(p["id"] == old_perm_id for p in role_perms):
+                new_perm_id = _new_perm_id(old_perm["action"])
+                if new_perm_id:
+                    try:
+                        rbac.assign_permission_to_role(
+                            role["id"], new_perm_id, granted=True
+                        )
+                        migrated_count += 1
+                        if verbose:
+                            print(
+                                f"  ✓ Migrated settings.common:{old_perm['action']} -> "
+                                f"settings.defaults:{old_perm['action']} for role '{role['name']}'"
+                            )
+                    except Exception as e:
+                        if verbose:
+                            print(
+                                f"  ✗ Error migrating permission for role '{role['name']}': {e}"
+                            )
+
+    # Direct user-level permission overrides
+    for user in user_db.get_all_users():
+        try:
+            overrides = rbac.get_user_permission_overrides(user["id"])
+        except Exception as e:
+            if verbose:
+                print(
+                    f"  ✗ Error reading permission overrides for user '{user.get('username', user['id'])}': {e}"
+                )
+            continue
+
+        for override in overrides:
+            if override["resource"] != "settings.common" or not override.get(
+                "granted", False
+            ):
+                continue
+            new_perm_id = _new_perm_id(override["action"])
+            if new_perm_id:
+                try:
+                    rbac.assign_permission_to_user(
+                        user["id"], new_perm_id, granted=True
+                    )
+                    migrated_count += 1
+                    if verbose:
+                        print(
+                            f"  ✓ Migrated settings.common:{override['action']} -> "
+                            f"settings.defaults:{override['action']} for user "
+                            f"'{user.get('username', user['id'])}'"
+                        )
+                except Exception as e:
+                    if verbose:
+                        print(
+                            f"  ✗ Error migrating permission for user "
+                            f"'{user.get('username', user['id'])}': {e}"
                         )
 
     if verbose:
@@ -530,6 +635,10 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "settings.nautobot:read",
         "settings.server:read",
         "settings.server:write",
+        # Defaults (read-only; needed for the CSV Updates profile picker,
+        # granted explicitly here rather than via the settings.common
+        # migration since operator never held settings.common)
+        "settings.defaults:read",
         # CheckMK
         "checkmk.devices:read",
         "checkmk.devices:write",
@@ -645,6 +754,10 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "settings.nautobot:read",
         "settings.server:read",
         "settings.server:write",
+        # Defaults (read-only; needed for the CSV Updates profile picker,
+        # granted explicitly here rather than via the settings.common
+        # migration since network_engineer never held settings.common)
+        "settings.defaults:read",
         # Jobs
         "jobs:read",
         "jobs:execute",
@@ -665,7 +778,7 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
     viewer_count = 0
     for perm_key, perm_id in perm_map.items():
         # Grant all read permissions, skip write/delete/execute
-        # Exclude sensitive permissions: users, settings.credentials, settings.common
+        # Exclude sensitive permissions: users, settings.credentials, settings.defaults
         if (
             (
                 ":read" in perm_key
@@ -676,7 +789,7 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
                     and "users" not in perm_key
                 )
             )
-            and "settings.common" not in perm_key
+            and "settings.defaults" not in perm_key
             and "settings.credentials" not in perm_key
         ):
             rbac.assign_permission_to_role(roles["viewer"]["id"], perm_id, granted=True)
@@ -758,6 +871,7 @@ def main(verbose: bool = True, remove_existing: bool = False):
     # Run migration / repair for existing systems (only if not removing all data)
     if not remove_existing:
         migrate_inventory_permissions(verbose=verbose)
+        migrate_common_settings_permissions(verbose=verbose)
 
         # Cleanup obsolete permissions (after migration is complete)
         cleanup_obsolete_permissions(verbose=verbose)

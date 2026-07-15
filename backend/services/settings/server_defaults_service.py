@@ -1,4 +1,10 @@
-"""Server defaults service (defaults stored in server_defaults)."""
+"""Server defaults service (device/IP creation defaults).
+
+Backed by the 'server' built-in row in the `profiles` table rather than the
+legacy `server_defaults` singleton table. Public method signatures are kept
+identical to before this change so callers (SettingsManager and the legacy
+`/api/settings/server/defaults` router) require no changes.
+"""
 
 from __future__ import annotations
 
@@ -6,35 +12,38 @@ import logging
 from dataclasses import asdict
 from typing import Any, Dict
 
-from repositories.settings.settings_repository import ServerDefaultRepository
+from repositories.settings.profile_repository import ProfileRepository
 from services.settings.defaults import ServerDefaults
 
 logger = logging.getLogger(__name__)
+
+BUILT_IN_KEY = "server"
+BUILT_IN_NAME = "Server"
 
 
 class ServerDefaultsService:
     def __init__(self, default: ServerDefaults) -> None:
         self._default = default
+        self._profile_repo = ProfileRepository()
 
     def get(self) -> Dict[str, Any]:
         try:
-            repo = ServerDefaultRepository()
-            settings = repo.get_defaults()
-            if settings:
+            profile = self._profile_repo.get_by_built_in_key(BUILT_IN_KEY)
+            if profile:
                 return {
-                    "location": settings.location,
-                    "platform": settings.platform,
-                    "interface_status": settings.interface_status,
-                    "interface_type": settings.interface_type,
-                    "device_status": settings.device_status,
-                    "device_type": settings.device_type,
-                    "ip_address_status": settings.ip_address_status,
-                    "ip_prefix_status": settings.ip_prefix_status,
-                    "namespace": settings.namespace,
-                    "device_role": settings.device_role,
-                    "secret_group": settings.secret_group,
-                    "csv_delimiter": settings.csv_delimiter or ",",
-                    "csv_quote_char": settings.csv_quote_char or '"',
+                    "location": profile.location,
+                    "platform": profile.platform,
+                    "interface_status": profile.interface_status,
+                    "interface_type": profile.interface_type,
+                    "device_status": profile.device_status,
+                    "device_type": profile.device_type,
+                    "ip_address_status": profile.ip_address_status,
+                    "ip_prefix_status": profile.ip_prefix_status,
+                    "namespace": profile.namespace,
+                    "device_role": profile.device_role,
+                    "secret_group": profile.secret_group,
+                    "csv_delimiter": profile.csv_delimiter or ",",
+                    "csv_quote_char": profile.csv_quote_char or '"',
                 }
             return asdict(self._default)
         except Exception as e:
@@ -43,8 +52,7 @@ class ServerDefaultsService:
 
     def update(self, data: Dict[str, Any]) -> bool:
         try:
-            repo = ServerDefaultRepository()
-            existing = repo.get_defaults()
+            existing = self._profile_repo.get_by_built_in_key(BUILT_IN_KEY)
             kwargs = {
                 "location": data.get("location", ""),
                 "platform": data.get("platform", ""),
@@ -61,9 +69,13 @@ class ServerDefaultsService:
                 "csv_quote_char": data.get("csv_quote_char", '"'),
             }
             if existing:
-                repo.update(existing.id, **kwargs)
+                self._profile_repo.update(existing.id, **kwargs)
             else:
-                repo.create(**kwargs)
+                # Defensive fallback - should not normally happen once the
+                # startup seed has run.
+                self._profile_repo.create(
+                    name=BUILT_IN_NAME, built_in_key=BUILT_IN_KEY, **kwargs
+                )
             logger.info("Server defaults updated successfully")
             return True
         except Exception as e:

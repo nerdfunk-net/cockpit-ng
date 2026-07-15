@@ -19,6 +19,7 @@ from core.models.settings import (
     GitSetting,
     NautobotSetting,
     NetworkDefault,
+    Profile,
     ServerDefault,
     Setting,
     SettingsMetadata,
@@ -53,6 +54,7 @@ __all__ = [
     "CacheSetting",
     "NetworkDefault",
     "ServerDefault",
+    "Profile",
     "CelerySetting",
     "SettingsMetadata",
     # Credentials

@@ -59,8 +59,29 @@ import {
   EMPTY_PLATFORMS,
   EMPTY_VIRTUAL_CHASSIS_LIST,
 } from './constants'
-import type { LocationItem, DeviceType, SoftwareVersion } from './types'
+import type { LocationItem, DeviceType, SoftwareVersion, NautobotDefaults } from './types'
 import type { DeviceFormValues } from './utils/validation'
+import type { UseFormReturn } from 'react-hook-form'
+
+/** Applies Nautobot settings defaults onto the device form's current values. */
+function applyNautobotDefaultsToForm(
+  form: UseFormReturn<DeviceFormValues>,
+  defaults: NautobotDefaults
+) {
+  if (defaults.device_role) form.setValue('selectedRole', defaults.device_role)
+  if (defaults.device_status) form.setValue('selectedStatus', defaults.device_status)
+  if (defaults.location) form.setValue('selectedLocation', defaults.location)
+  if (defaults.device_type) form.setValue('selectedDeviceType', defaults.device_type)
+  if (defaults.platform) form.setValue('selectedPlatform', defaults.platform)
+
+  const firstInterface = form.getValues('interfaces')[0]
+  if (firstInterface) {
+    if (defaults.interface_status)
+      form.setValue('interfaces.0.status', defaults.interface_status)
+    if (defaults.namespace && firstInterface.ip_addresses.length > 0)
+      form.setValue('interfaces.0.ip_addresses.0.namespace', defaults.namespace)
+  }
+}
 
 export function AddDevicePage() {
   const { toast } = useToast()
@@ -380,22 +401,27 @@ export function AddDevicePage() {
     const defaults = dropdownData.nautobotDefaults
     if (!defaults) return
 
-    if (defaults.device_role) form.setValue('selectedRole', defaults.device_role)
-    if (defaults.device_status) form.setValue('selectedStatus', defaults.device_status)
-    if (defaults.location) form.setValue('selectedLocation', defaults.location)
-    if (defaults.platform) form.setValue('selectedPlatform', defaults.platform)
-
-    const interfaces = form.getValues('interfaces')
-    const firstInterface = interfaces[0]
-    if (firstInterface) {
-      if (defaults.interface_status)
-        form.setValue('interfaces.0.status', defaults.interface_status)
-      if (defaults.namespace && firstInterface.ip_addresses.length > 0)
-        form.setValue('interfaces.0.ip_addresses.0.namespace', defaults.namespace)
-    }
+    applyNautobotDefaultsToForm(form, defaults)
 
     toast({ title: 'Defaults applied', description: 'Default values loaded from settings.' })
   }, [dropdownData.nautobotDefaults, form, toast])
+
+  // Auto-apply defaults once, as soon as they resolve — the dropdowns query
+  // may still be loading when the form first mounts (e.g. on a hard reload
+  // that bypasses cache), and react-hook-form's defaultValues are only
+  // captured at that first mount, so later data must be applied explicitly.
+  // The form fields stay hidden behind the loading state (below) until this
+  // has run, so controlled inputs like <Select> never mount with a value
+  // that changes out from under them right after mount.
+  const [defaultsApplied, setDefaultsApplied] = useState(false)
+  useEffect(() => {
+    if (defaultsApplied || isLoadingDropdowns) return
+
+    if (dropdownData.nautobotDefaults) {
+      applyNautobotDefaultsToForm(form, dropdownData.nautobotDefaults)
+    }
+    setDefaultsApplied(true)
+  }, [defaultsApplied, isLoadingDropdowns, dropdownData.nautobotDefaults, form])
 
   const handleClearForm = useCallback(() => {
     reset()
@@ -405,8 +431,10 @@ export function AddDevicePage() {
     vcManager.clearSelection()
   }, [reset, tagsManager, customFieldsManager, rackManager, vcManager])
 
-  // Loading state
-  if (isLoadingDropdowns) {
+  // Loading state — also wait for the auto-apply-defaults effect above so
+  // controlled fields (e.g. the Select-based role/status/platform inputs)
+  // mount with their final value already in place.
+  if (isLoadingDropdowns || !defaultsApplied) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">

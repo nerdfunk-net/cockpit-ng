@@ -304,6 +304,13 @@ def build_compliance_service():
     return ComplianceService()
 
 
+def build_defaults_profile_service():
+    """Create a fresh settings-defaults ProfileService instance."""
+    from services.settings.profile_service import ProfileService
+
+    return ProfileService()
+
+
 def build_user_service():
     """Create a fresh UserService instance."""
     from services.auth.user_service import UserService
