@@ -15,6 +15,7 @@ import { useCsvWizard } from '../hooks/use-csv-wizard'
 import type { WizardStep } from '../hooks/use-csv-wizard'
 import { useCsvUpdatesMutations } from '@/hooks/queries/use-csv-updates-mutations'
 import { useDeviceUpdatesMutations } from '@/hooks/queries/use-device-updates-mutations'
+import { useNautobotOptionsQuery } from '@/components/features/settings/connections/nautobot/hooks/use-nautobot-options-query'
 import { buildDeviceUpdatePayloads, applyDeviceDefaults } from '../utils/device-merge'
 import { EMPTY_PARSED_DATA } from '../constants'
 import { CsvSourceStep } from './csv-source-step'
@@ -54,10 +55,17 @@ const VALID_SUMMARY = {
   isValid: true,
 }
 
+/** UUID v4 pattern — preview-table values matching this are resolved to display names. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Payload fields whose values are Nautobot object UUIDs, keyed to their lookup list. */
+const PREVIEW_LOOKUP_FIELDS = new Set(['status', 'role', 'location', 'device_type', 'platform'])
+
 export function CsvUpdateWizard() {
   const wizard = useCsvWizard()
   const { processUpdates } = useCsvUpdatesMutations()
   const { processDeviceUpdates } = useDeviceUpdatesMutations()
+  const { data: nautobotOptions } = useNautobotOptionsQuery()
 
   const [completedStatus, setCompletedStatus] = useState<string>('')
   const [completedResult, setCompletedResult] = useState<unknown>(null)
@@ -147,6 +155,36 @@ export function CsvUpdateWizard() {
     return parsedData.rows.map(row => row[idx] ?? '').filter(Boolean)
   }, [parsedData, primaryKeyColumn])
 
+  /**
+   * Resolves a device-level field's value to its Nautobot display name when it's a
+   * UUID (e.g. a profile-backfilled status/role/location/device_type/platform) —
+   * mirrors the resolve() helper in csv-import-preview-step.tsx. Free-text CSV
+   * values (not UUIDs) pass through unchanged.
+   */
+  const resolvePreviewValue = useCallback(
+    (field: string, value: string): string => {
+      if (!value || !UUID_RE.test(value) || !nautobotOptions || !PREVIEW_LOOKUP_FIELDS.has(field))
+        return value
+      switch (field) {
+        case 'status':
+          return nautobotOptions.deviceStatuses.find(s => s.id === value)?.name ?? value
+        case 'role':
+          return nautobotOptions.deviceRoles.find(r => r.id === value)?.name ?? value
+        case 'location':
+          return nautobotOptions.locations.find(l => l.id === value)?.name ?? value
+        case 'device_type': {
+          const dt = nautobotOptions.deviceTypes.find(d => d.id === value)
+          return dt ? dt.display || dt.model : value
+        }
+        case 'platform':
+          return nautobotOptions.platforms.find(p => p.id === value)?.name ?? value
+        default:
+          return value
+      }
+    },
+    [nautobotOptions]
+  )
+
   /** Synthetic preview table for the devices JSON submission path. */
   const devicePreviewData = useMemo<ParsedCSVData>(() => {
     if (!isDevices) return EMPTY_PARSED_DATA
@@ -162,11 +200,17 @@ export function CsvUpdateWizard() {
     }
     const headers = Array.from(headerSet)
     const rows = payloads.map(payload => [
-      ...headers.map(h => String(payload[h] ?? '')),
+      ...headers.map(h => resolvePreviewValue(h, String(payload[h] ?? ''))),
       `${payload.interfaces.length} interface(s)`,
     ])
     return { headers: [...headers, 'interfaces'], rows, rowCount: rows.length }
-  }, [isDevices, selectedDeviceRows, primaryIpByDevice, effectiveDefaultProperties])
+  }, [
+    isDevices,
+    selectedDeviceRows,
+    primaryIpByDevice,
+    effectiveDefaultProperties,
+    resolvePreviewValue,
+  ])
 
   const handleDryRun = useCallback(async () => {
     try {

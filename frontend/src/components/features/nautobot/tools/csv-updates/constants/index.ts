@@ -150,3 +150,6 @@ export const LOOKUP_COLUMN_MAPPING_KEY = '__lookup_column__'
 export const USE_NEW_MAPPING_KEY = '__use_new_mapping__'
 export const USE_DEFAULT_PROPERTIES_KEY = '__use_default_properties__'
 export const PRIMARY_IP_ENABLED_KEY = '__primary_ip_enabled__'
+
+/** Reserved key used to persist the selected profile id alongside the field mapping. */
+export const SELECTED_PROFILE_ID_KEY = '__selected_profile_id__'

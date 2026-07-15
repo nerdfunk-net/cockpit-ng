@@ -15,6 +15,7 @@ import {
   USE_NEW_MAPPING_KEY,
   USE_DEFAULT_PROPERTIES_KEY,
   PRIMARY_IP_ENABLED_KEY,
+  SELECTED_PROFILE_ID_KEY,
 } from '../constants'
 import { buildDeviceRows } from '../utils/device-merge'
 import { buildFilterRows, sortFilterRowsByDisplayName } from '../utils/filter-rows'
@@ -130,17 +131,18 @@ export function useCsvWizard() {
   const { data: storedMapping } = useFieldMappingQuery(CSV_UPDATE_APP_NAME)
   const { saveFieldMapping } = useFieldMappingMutations()
 
-  const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null)
+  const [selectedProfileId, setSelectedProfileIdState] = useState<number | null>(null)
   const { data: profiles = EMPTY_PROFILES } = useProfilesQuery()
   const { data: profileFields } = useProfileFieldsQuery(selectedProfileId, {
     enabled: useDefaultProperties,
   })
 
-  // Default the profile picker to the built-in "Network" profile once the list loads
+  // Default the profile picker to the built-in "Network" profile once the list loads,
+  // unless a saved selection is (or will be) hydrated from the mapping blob below.
   useEffect(() => {
     if (selectedProfileId !== null || profiles.length === 0) return
     const network = profiles.find(p => p.built_in_key === 'network')
-    if (network) setSelectedProfileId(network.id)
+    if (network) setSelectedProfileIdState(network.id)
   }, [profiles, selectedProfileId])
 
   /**
@@ -159,7 +161,7 @@ export function useCsvWizard() {
     }
   }, [storedMapping])
 
-  // Hydrate the step-1 checkboxes from the saved mapping blob once, on first load.
+  // Hydrate the step-1 checkboxes (and selected profile) from the saved mapping blob once, on first load.
   useEffect(() => {
     if (checkboxesHydrated || !storedMapping) return
     if (storedMapping[USE_NEW_MAPPING_KEY] !== undefined) {
@@ -171,17 +173,26 @@ export function useCsvWizard() {
     if (storedMapping[PRIMARY_IP_ENABLED_KEY] !== undefined) {
       setPrimaryIpEnabledState(storedMapping[PRIMARY_IP_ENABLED_KEY] === 'true')
     }
+    if (storedMapping[SELECTED_PROFILE_ID_KEY] !== undefined) {
+      const parsed = Number(storedMapping[SELECTED_PROFILE_ID_KEY])
+      if (Number.isFinite(parsed)) setSelectedProfileIdState(parsed)
+    }
     setCheckboxesHydrated(true)
   }, [storedMapping, checkboxesHydrated])
 
-  /** Persists a single step-1 checkbox value alongside the rest of the saved mapping blob. */
-  const persistCheckbox = useCallback(
-    (key: string, value: boolean) => {
-      const next = { ...mappingBlobRef.current, [key]: value ? 'true' : 'false' }
+  /** Persists a single step-1 field value alongside the rest of the saved mapping blob. */
+  const persistField = useCallback(
+    (key: string, value: string) => {
+      const next = { ...mappingBlobRef.current, [key]: value }
       mappingBlobRef.current = next
       saveFieldMapping.mutate({ appName: CSV_UPDATE_APP_NAME, mapping: next })
     },
     [saveFieldMapping]
+  )
+
+  const persistCheckbox = useCallback(
+    (key: string, value: boolean) => persistField(key, value ? 'true' : 'false'),
+    [persistField]
   )
 
   const setUseNewMapping = useCallback(
@@ -206,6 +217,14 @@ export function useCsvWizard() {
       persistCheckbox(PRIMARY_IP_ENABLED_KEY, value)
     },
     [persistCheckbox]
+  )
+
+  const setSelectedProfileId = useCallback(
+    (profileId: number) => {
+      setSelectedProfileIdState(profileId)
+      persistField(SELECTED_PROFILE_ID_KEY, String(profileId))
+    },
+    [persistField]
   )
 
   /**
@@ -581,6 +600,7 @@ export function useCsvWizard() {
       configureSkippable,
       profiles,
       selectedProfileId,
+      setSelectedProfileId,
       deviceRows,
       selectedDeviceRows,
       filterRows,
