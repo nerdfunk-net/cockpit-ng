@@ -201,14 +201,6 @@ class UpdateDevicesJSONRequest(BaseModel):
     dry_run: bool = False
 
 
-class ImportDevicesRequest(BaseModel):
-    """Request model for importing devices from CSV."""
-
-    csv_content: str
-    csv_options: Optional[Dict[str, str]] = None
-    import_options: Optional[Dict[str, Any]] = None
-
-
 class UpdateIPPrefixesRequest(BaseModel):
     """Request model for updating IP prefixes from CSV."""
 

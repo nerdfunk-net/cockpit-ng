@@ -13,7 +13,13 @@ Two CSV formats are tested:
    import_format=generic, add_prefixes=True, prefix_length=/24
    Device: testdevice  location=City A  IP=192.168.184.253/24
 
-Tests call DeviceImportService directly — no Celery task, no Git repository.
+Tests exercise the live CSV Import job-template path — no Celery task, no Git
+repository: CSV rows are parsed and mapped with CsvImportService's static
+helpers, then turned into an AddDeviceRequest via
+CsvImportService._build_add_device_request() and created with
+DeviceCreationService.create_device_with_interfaces() — the same device
+creation code used by the Add Device form and the CSV Updates tool's "Add
+Missing Devices".
 
 Setup:
   1. Configure .env.test with test Nautobot credentials
@@ -32,13 +38,14 @@ import os
 
 import pytest
 
-from services.nautobot.devices.import_service import DeviceImportService
-from services.nautobot.imports.csv_import_service import CsvImportService
+from services.nautobot.devices.creation import DeviceCreationService
+from services.nautobot.imports.csv_import_service import CsvImportService, ImportContext
 
 _apply_column_mapping = CsvImportService._apply_column_mapping
 _apply_default_prefix_length = CsvImportService._apply_default_prefix_length
 _extract_interface_config = CsvImportService._extract_interface_config
 _filter_nautobot_nulls = CsvImportService._filter_nautobot_nulls
+_build_add_device_request = CsvImportService._build_add_device_request
 
 logger = logging.getLogger(__name__)
 
@@ -80,11 +87,12 @@ DEFAULT_PREFIX_LENGTH = "24"
 # Column mapping
 #
 # Maps Nautobot export column names to the field names expected by
-# DeviceImportService / _extract_interface_config.
+# _extract_interface_config / _build_add_device_request.
 # Columns absent from this dict pass through with their original name.
-# validate_import_data silently ignores any unknown fields, so unmapped
-# Nautobot-specific columns (location__parent__name, rack__name, …)
-# are harmless as long as they are not named after a real device field.
+# _build_add_device_request silently drops any field not in
+# _DEVICE_CREATE_FIELDS, so unmapped Nautobot-specific columns
+# (location__parent__name, rack__name, …) are harmless as long as they are
+# not named after a real device field.
 # ---------------------------------------------------------------------------
 
 COLUMN_MAPPING: dict[str, str | None] = {
@@ -111,7 +119,7 @@ COLUMN_MAPPING: dict[str, str | None] = {
 }
 
 # Defaults applied on top of the mapped CSV data.
-# DeviceImportService merges these (defaults as base, CSV values win).
+# These are merged in as a base layer (defaults first, CSV values win).
 IMPORT_DEFAULTS: dict[str, str] = {
     "interface_name": INTERFACE_NAME,
     "interface_type": INTERFACE_TYPE,
@@ -146,7 +154,8 @@ def build_device_payload(
       5. Append /24 to IP addresses without a CIDR mask
 
     Returns:
-        (device_data, interface_config) ready for DeviceImportService.import_device()
+        (device_data, interface_config) ready for
+        CsvImportService._build_add_device_request()
     """
     # Step 1: filter nulls
     filtered = _filter_nautobot_nulls(raw_row)
@@ -347,9 +356,63 @@ async def get_or_create_device_type(
 
 
 @pytest.fixture(scope="module")
-def import_service(real_nautobot_service):
-    """DeviceImportService backed by the real test Nautobot instance."""
-    return DeviceImportService(real_nautobot_service)
+def creation_service():
+    """DeviceCreationService backed by the real test Nautobot instance.
+
+    DeviceCreationService builds its own NautobotService via service_factory,
+    which is configured against .env.test in the integration test environment
+    (see conftest.py::real_nautobot_service).
+    """
+    return DeviceCreationService()
+
+
+def _make_import_context(
+    creation_service: DeviceCreationService,
+    add_prefixes: bool = True,
+    default_prefix_length: str = DEFAULT_PREFIX_LENGTH,
+) -> ImportContext:
+    """Build a minimal ImportContext for _build_add_device_request().
+
+    Only device_creation_service, add_prefixes, and default_prefix_length are
+    read by _build_add_device_request(); the rest are unused placeholders.
+    """
+    return ImportContext(
+        nautobot_service=None,
+        device_creation_service=creation_service,
+        device_update_service=None,
+        created=[],
+        updated=[],
+        skipped=[],
+        failures=[],
+        dry_run=False,
+        add_prefixes=add_prefixes,
+        default_prefix_length=default_prefix_length,
+    )
+
+
+async def create_device_from_csv_row(
+    creation_service: DeviceCreationService,
+    device_data: dict,
+    iface_config: list | None,
+) -> dict:
+    """Build an AddDeviceRequest from parsed CSV data and create the device.
+
+    Mirrors CsvImportService._create_device() (the CSV Import job template's
+    device-creation path) minus the asyncio.run() wrapper, since this helper
+    is itself async.
+    """
+    ctx = _make_import_context(creation_service)
+    request = _build_add_device_request(ctx, device_data, iface_config)
+    return await creation_service.create_device_with_interfaces(request)
+
+
+async def lookup_existing_device_id(nautobot, name: str) -> str | None:
+    """Look up a device by name via GraphQL — mirrors
+    CsvImportService._lookup_object() for import_type='devices', which is
+    what determines create-vs-skip in the real CSV Import job template."""
+    result = await nautobot.graphql_query('query { devices(name: "%s") { id } }' % name)
+    devices = result["data"]["devices"]
+    return devices[0]["id"] if devices else None
 
 
 @pytest.fixture(scope="module")
@@ -493,7 +556,7 @@ class TestImportDevicesFromCsv:
     async def test_import_device_from_nautobot_csv(
         self,
         real_nautobot_service,
-        import_service,
+        creation_service,
         ensure_device_type,
         cleanup_csv_import,
     ):
@@ -505,7 +568,7 @@ class TestImportDevicesFromCsv:
           2. Column mapping renames export columns to API field names
           3. Defaults supply the interface name, type, and status
           4. /24 is appended to the bare IP address
-          5. DeviceImportService resolves names to UUIDs and creates the device
+          5. DeviceCreationService resolves names to UUIDs and creates the device
           6. The interface Loopback is created with 192.168.183.254/24
           7. Primary IPv4 is assigned
           8. The parent prefix 192.168.183.0/24 is auto-created
@@ -536,11 +599,8 @@ class TestImportDevicesFromCsv:
         logger.info("Interface config: %s", iface_config)
 
         # --- Run the import -------------------------------------------------------
-        result = await import_service.import_device(
-            device_data=device_data,
-            interface_config=iface_config,
-            skip_if_exists=False,
-            add_prefixes_automatically=True,
+        result = await create_device_from_csv_row(
+            creation_service, device_data, iface_config
         )
 
         # Track for cleanup
@@ -548,12 +608,13 @@ class TestImportDevicesFromCsv:
             device_ids.append(result["device_id"])
 
         # --- Top-level result -----------------------------------------------------
-        assert result["success"] is True, f"Import failed: {result.get('message')}"
-        assert result["created"] is True, "Device should have been newly created"
+        assert result["success"] is True, (
+            f"Import failed: {result.get('workflow_status')}"
+        )
+        assert result["summary"]["device_created"] is True, (
+            "Device should have been newly created"
+        )
         assert result["device_id"] is not None
-
-        if result.get("warnings"):
-            logger.warning("Import warnings: %s", result["warnings"])
 
         # --- Verify device in Nautobot via GraphQL --------------------------------
         gql = f"""
@@ -632,13 +693,18 @@ class TestImportDevicesFromCsv:
     async def test_import_already_existing_device_is_skipped(
         self,
         real_nautobot_service,
-        import_service,
+        creation_service,
         ensure_device_type,
         cleanup_csv_import,
     ):
         """
-        When the device already exists and skip_if_exists=True, the import
-        must return success=True with created=False and no exception raised.
+        DeviceCreationService itself has no skip-if-exists mode — the real CSV
+        Import job template avoids re-creating existing devices by looking
+        each one up by name first (CsvImportService._lookup_object /
+        _process_single_object) and only calling _create_device when no
+        existing_id is found. This test verifies that lookup correctly finds
+        the device created by the first import, so a second pass would skip
+        creation rather than calling DeviceCreationService again.
         """
         device_ids, prefix_ids = cleanup_csv_import
 
@@ -646,13 +712,12 @@ class TestImportDevicesFromCsv:
         device_data, iface_config = build_device_payload(rows[0])
 
         # First import — create the device
-        first = await import_service.import_device(
-            device_data=device_data,
-            interface_config=iface_config,
-            skip_if_exists=True,
-            add_prefixes_automatically=True,
+        first = await create_device_from_csv_row(
+            creation_service, device_data, iface_config
         )
-        assert first["success"] is True, f"First import failed: {first.get('message')}"
+        assert first["success"] is True, (
+            f"First import failed: {first.get('workflow_status')}"
+        )
         if first.get("device_id"):
             device_ids.append(first["device_id"])
 
@@ -663,39 +728,35 @@ class TestImportDevicesFromCsv:
         for p in pfx_result["data"]["prefixes"]:
             prefix_ids.append(p["id"])
 
-        # Second import — device already exists, must be skipped gracefully
-        second = await import_service.import_device(
-            device_data=device_data,
-            interface_config=iface_config,
-            skip_if_exists=True,
-            add_prefixes_automatically=True,
+        # Second pass — the job template looks the device up first and,
+        # finding it, skips creation instead of calling DeviceCreationService
+        # again (see _process_single_object's existing_id branch).
+        existing_id = await lookup_existing_device_id(
+            real_nautobot_service, DEVICE_NAME
         )
 
-        assert second["success"] is True, (
-            f"Second import failed: {second.get('message')}"
-        )
-        assert second["created"] is False, (
-            "Device already existed — created must be False"
-        )
-        assert second["device_id"] is not None
+        assert existing_id is not None, "Device should already exist after first import"
+        assert existing_id == first["device_id"]
 
         logger.info(
-            "✓ Duplicate device '%s' correctly skipped (id=%s)",
+            "✓ Duplicate device '%s' correctly identified and would be skipped (id=%s)",
             DEVICE_NAME,
-            second["device_id"],
+            existing_id,
         )
 
     @pytest.mark.asyncio
     async def test_import_duplicate_without_skip_raises(
         self,
         real_nautobot_service,
-        import_service,
+        creation_service,
         ensure_device_type,
         cleanup_csv_import,
     ):
         """
-        When the device already exists and skip_if_exists=False, the import
-        must raise an exception (Nautobot enforces name+location uniqueness).
+        Calling DeviceCreationService.create_device_with_interfaces() directly
+        for a device that already exists must raise (Nautobot enforces
+        name+location uniqueness) — this is why the job template performs the
+        existing_id lookup before ever reaching this call.
         """
         device_ids, prefix_ids = cleanup_csv_import
 
@@ -703,11 +764,8 @@ class TestImportDevicesFromCsv:
         device_data, iface_config = build_device_payload(rows[0])
 
         # Create once
-        first = await import_service.import_device(
-            device_data=device_data,
-            interface_config=iface_config,
-            skip_if_exists=False,
-            add_prefixes_automatically=True,
+        first = await create_device_from_csv_row(
+            creation_service, device_data, iface_config
         )
         assert first["success"] is True
         if first.get("device_id"):
@@ -720,13 +778,10 @@ class TestImportDevicesFromCsv:
         for p in pfx_result["data"]["prefixes"]:
             prefix_ids.append(p["id"])
 
-        # Second attempt must raise
+        # Second attempt (no lookup this time) must raise
         with pytest.raises(Exception) as exc_info:
-            await import_service.import_device(
-                device_data=device_data,
-                interface_config=iface_config,
-                skip_if_exists=False,
-                add_prefixes_automatically=True,
+            await create_device_from_csv_row(
+                creation_service, device_data, iface_config
             )
 
         error = str(exc_info.value).lower()
@@ -735,7 +790,7 @@ class TestImportDevicesFromCsv:
         ), f"Expected a duplicate-device error, got: {exc_info.value}"
 
         logger.info(
-            "✓ Duplicate device correctly rejected when skip_if_exists=False: %s",
+            "✓ Duplicate device correctly rejected by DeviceCreationService: %s",
             exc_info.value,
         )
 
@@ -905,7 +960,7 @@ class TestImportDevicesFromGenericCsv:
     async def test_import_device_from_generic_csv(
         self,
         real_nautobot_service,
-        import_service,
+        creation_service,
         ensure_device_type,
         cleanup_csv_import,
     ):
@@ -946,23 +1001,21 @@ class TestImportDevicesFromGenericCsv:
         logger.info("Interface config: %s", iface_config)
 
         # --- Run the import -------------------------------------------------------
-        result = await import_service.import_device(
-            device_data=device_data,
-            interface_config=iface_config,
-            skip_if_exists=False,
-            add_prefixes_automatically=True,
+        result = await create_device_from_csv_row(
+            creation_service, device_data, iface_config
         )
 
         if result.get("device_id"):
             device_ids.append(result["device_id"])
 
         # --- Top-level result -----------------------------------------------------
-        assert result["success"] is True, f"Import failed: {result.get('message')}"
-        assert result["created"] is True, "Device should have been newly created"
+        assert result["success"] is True, (
+            f"Import failed: {result.get('workflow_status')}"
+        )
+        assert result["summary"]["device_created"] is True, (
+            "Device should have been newly created"
+        )
         assert result["device_id"] is not None
-
-        if result.get("warnings"):
-            logger.warning("Import warnings: %s", result["warnings"])
 
         # --- Verify in Nautobot via GraphQL ---------------------------------------
         gql = f"""
@@ -1027,7 +1080,7 @@ class TestImportDevicesFromGenericCsv:
     async def test_generic_csv_only_two_columns_are_needed(
         self,
         real_nautobot_service,
-        import_service,
+        creation_service,
         ensure_device_type,
         cleanup_csv_import,
     ):
@@ -1052,15 +1105,12 @@ class TestImportDevicesFromGenericCsv:
         rows = read_csv_rows(GENERIC_CSV_FILE)
         device_data, iface_config = build_generic_device_payload(rows[0])
 
-        result = await import_service.import_device(
-            device_data=device_data,
-            interface_config=iface_config,
-            skip_if_exists=False,
-            add_prefixes_automatically=True,
+        result = await create_device_from_csv_row(
+            creation_service, device_data, iface_config
         )
 
         assert result["success"] is True
-        assert result["created"] is True
+        assert result["summary"]["device_created"] is True
         device_ids.append(result["device_id"])
 
         # Track prefix for cleanup

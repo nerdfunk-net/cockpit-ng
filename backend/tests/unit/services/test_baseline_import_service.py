@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -11,7 +12,7 @@ from services.network.tools.baseline import BaselineImportService
 
 _PATCH_NB = "service_factory.build_nautobot_service"
 _PATCH_COMMON = "services.network.tools.baseline.DeviceCommonService"
-_PATCH_IMPORT = "services.network.tools.baseline.DeviceImportService"  # skip test only
+_PATCH_CREATION = "services.network.tools.baseline.DeviceCreationService"
 
 
 def _service() -> BaselineImportService:
@@ -357,17 +358,18 @@ async def test_create_location_types_patches_content_types() -> None:
 
 @pytest.mark.asyncio
 @pytest.mark.unit
-async def test_create_devices_imports_via_import_service() -> None:
+async def test_create_devices_creates_via_device_creation_service() -> None:
     mock_nb = MagicMock()
+    mock_common = MagicMock()
+    mock_common.resolve_device_by_name = AsyncMock(return_value=None)
     with patch(_PATCH_NB, return_value=mock_nb):
-        with patch(_PATCH_COMMON, return_value=MagicMock()):
+        with patch(_PATCH_COMMON, return_value=mock_common):
             svc = BaselineImportService()
 
-    with patch(
-        "services.nautobot.devices.import_service.DeviceImportService.import_device",
-        new_callable=AsyncMock,
-        return_value={"device_id": "dev-uuid", "created": True},
-    ) as mock_import:
+    with patch(_PATCH_CREATION) as mock_creation_cls:
+        mock_create = AsyncMock(return_value={"success": True, "device_id": "dev-uuid"})
+        mock_creation_cls.return_value.create_device_with_interfaces = mock_create
+
         created = await svc.create_devices(
             [
                 {
@@ -375,6 +377,8 @@ async def test_create_devices_imports_via_import_service() -> None:
                     "device_type": "networkA",
                     "location": "Site A",
                     "roles": ["Network"],
+                    "tags": ["lab"],
+                    "custom_fields": {"last_backup": date(2025, 1, 15)},
                     "interfaces": [
                         {
                             "name": "eth0",
@@ -388,16 +392,65 @@ async def test_create_devices_imports_via_import_service() -> None:
         )
 
     assert created["router1"] == "dev-uuid"
-    mock_import.assert_awaited_once()
+    mock_create.assert_awaited_once()
+
+    request = mock_create.await_args.args[0]
+    assert request.name == "router1"
+    assert request.role == "Network"
+    assert request.device_type == "networkA"
+    assert request.location == "Site A"
+    assert request.tags == ["lab"]
+    assert request.custom_fields == {"last_backup": "2025-01-15"}
+    assert request.add_prefix is False
+    assert request.dry_run is False
+
+    assert len(request.interfaces) == 1
+    iface = request.interfaces[0]
+    assert iface.name == "eth0"
+    assert iface.type == "1000base-t"
+    assert len(iface.ip_addresses) == 1
+    assert iface.ip_addresses[0].address == "10.0.0.1/24"
+    assert iface.ip_addresses[0].is_primary is True
+
+
+@pytest.mark.asyncio
+@pytest.mark.unit
+async def test_create_devices_skips_existing_device() -> None:
+    mock_nb = MagicMock()
+    mock_common = MagicMock()
+    mock_common.resolve_device_by_name = AsyncMock(return_value="existing-uuid")
+    with patch(_PATCH_NB, return_value=mock_nb):
+        with patch(_PATCH_COMMON, return_value=mock_common):
+            svc = BaselineImportService()
+
+    with patch(_PATCH_CREATION) as mock_creation_cls:
+        mock_create = AsyncMock()
+        mock_creation_cls.return_value.create_device_with_interfaces = mock_create
+
+        created = await svc.create_devices(
+            [
+                {
+                    "name": "router1",
+                    "device_type": "networkA",
+                    "location": "Site A",
+                    "role": "Network",
+                }
+            ]
+        )
+
+    assert created["router1"] == "existing-uuid"
+    mock_create.assert_not_awaited()
 
 
 @pytest.mark.asyncio
 @pytest.mark.unit
 async def test_create_devices_skips_when_role_missing() -> None:
     mock_nb = MagicMock()
+    mock_common = MagicMock()
+    mock_common.resolve_device_by_name = AsyncMock(return_value=None)
     with patch(_PATCH_NB, return_value=mock_nb):
-        with patch(_PATCH_COMMON, return_value=MagicMock()):
-            with patch(_PATCH_IMPORT, return_value=MagicMock()):
+        with patch(_PATCH_COMMON, return_value=mock_common):
+            with patch(_PATCH_CREATION, return_value=MagicMock()):
                 svc = BaselineImportService()
 
     created = await svc.create_devices([{"name": "orphan", "device_type": "x"}])

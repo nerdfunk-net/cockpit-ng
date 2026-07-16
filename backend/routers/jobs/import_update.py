@@ -2,7 +2,7 @@
 Device import and update task endpoints.
 
 Covers: update-devices-from-csv, update-ip-prefixes-from-csv,
-update-ip-addresses-from-csv, update-devices (JSON), import-devices-from-csv,
+update-ip-addresses-from-csv, update-devices (JSON),
 import-or-update-from-csv (Git-based).
 """
 
@@ -15,7 +15,6 @@ from core.auth import require_permission
 from core.celery_error_handler import handle_celery_errors
 from models.celery import (
     CsvImportRequest,
-    ImportDevicesRequest,
     TaskWithJobResponse,
     UpdateDevicesJSONRequest,
     UpdateDevicesRequest,
@@ -243,63 +242,6 @@ async def trigger_update_devices(
             f"Update devices task queued ({len(request.devices)} device(s))"
             f"{' (dry run mode)' if request.dry_run else ''}: {task.id}"
         ),
-    )
-
-
-@router.post("/tasks/import-devices-from-csv", response_model=TaskWithJobResponse)
-@handle_celery_errors("import devices from CSV")
-async def trigger_import_devices_from_csv(
-    request: ImportDevicesRequest,
-    current_user: dict = Depends(require_permission("nautobot.devices", "write")),
-):
-    from tasks.import_devices_task import import_devices_from_csv_task
-
-    if not request.csv_content:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="csv_content cannot be empty",
-        )
-
-    csv_options = None
-    if request.csv_options:
-        csv_options = {
-            "delimiter": request.csv_options.get("delimiter", ","),
-            "quoteChar": request.csv_options.get("quoteChar", '"'),
-        }
-
-    import_options = None
-    if request.import_options:
-        import_options = {
-            "skip_duplicates": request.import_options.get("skip_duplicates", False),
-            "create_interfaces": request.import_options.get("create_interfaces", True),
-        }
-
-    task = import_devices_from_csv_task.delay(
-        csv_content=request.csv_content,
-        csv_options=csv_options,
-        import_options=import_options,
-    )
-
-    skip_duplicates = (
-        import_options.get("skip_duplicates", False) if import_options else False
-    )
-    job_name = (
-        f"Import devices from CSV{' (skip duplicates)' if skip_duplicates else ''}"
-    )
-    _jrs = service_factory.build_job_run_service()
-    job_run = _jrs.create_job_run(
-        job_name=job_name,
-        job_type="import_devices_from_csv",
-        triggered_by="manual",
-        executed_by=current_user.get("username"),
-    )
-    _jrs.mark_started(job_run["id"], task.id)
-
-    return TaskWithJobResponse(
-        task_id=task.id,
-        job_id=str(job_run["id"]),
-        status="queued",
-        message=f"Import devices task queued{' (skip duplicates mode)' if skip_duplicates else ''}: {task.id}",
     )
 
 

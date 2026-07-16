@@ -112,7 +112,7 @@ class DeviceUpdateService:
                     ...
                 ]
 
-            create_if_missing: If True, create device if not found (uses DeviceImportService)
+            create_if_missing: If True, create device if not found (uses DeviceCreationService)
 
             default_interface_type: Fallback interface type slug (e.g. from the Network/Server
                 Defaults "New Interface Type" setting) used only when an entry in `interfaces`
@@ -159,7 +159,7 @@ class DeviceUpdateService:
 
             if not device_id:
                 if create_if_missing:
-                    # TODO: Call DeviceImportService to create device
+                    # TODO: Call DeviceCreationService to create device
                     # For now, raise error
                     raise ValueError(
                         "Device not found and create_if_missing not yet implemented"

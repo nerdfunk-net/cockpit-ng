@@ -9,8 +9,9 @@ from typing import Any, Dict, List, Optional
 
 import yaml
 
+from models.nautobot import AddDeviceRequest, InterfaceData, IpAddressData
 from services.nautobot.devices.common import DeviceCommonService
-from services.nautobot.devices.import_service import DeviceImportService
+from services.nautobot.devices.creation import DeviceCreationService
 from services.network.tools.baseline_dcim import BaselineDcimMixin
 from services.network.tools.baseline_extras import BaselineExtrasMixin
 
@@ -205,16 +206,27 @@ class BaselineImportService(
             return None
 
     async def create_devices(self, devices: List[Dict[str, Any]]) -> Dict[str, str]:
-        """Create devices in Nautobot using DeviceImportService."""
+        """Create devices in Nautobot using DeviceCreationService — the same code
+        path as the Add Device form and the CSV Updates tool's "Add Missing
+        Devices"."""
         created = {}
-        import_service = DeviceImportService(self.nautobot)
+        creation_service = DeviceCreationService()
 
         for device in devices:
             try:
                 device_name = device.get("name")
                 logger.info("Processing device: %s", device_name)
 
-                # Prepare device data for import service
+                # Idempotent re-runs: skip devices that already exist instead of
+                # relying on duplicate-error handling (DeviceCreationService
+                # raises on create if the name already exists).
+                existing_id = await self.common.resolve_device_by_name(device_name)
+                if existing_id:
+                    created[device_name] = existing_id
+                    logger.info("Device '%s' already exists, skipped", device_name)
+                    continue
+
+                # Prepare device data
                 device_data = {
                     "name": device_name,
                     "device_type": device.get("device_type"),
@@ -229,7 +241,7 @@ class BaselineImportService(
                 if "serial" in device:
                     device_data["serial"] = device["serial"]
 
-                # Handle roles (import service expects singular 'role')
+                # Handle roles (DeviceCreationService expects singular 'role')
                 if "roles" in device and device["roles"]:
                     role_name = (
                         device["roles"][0]
@@ -262,55 +274,62 @@ class BaselineImportService(
                             custom_fields[key] = value
                     device_data["custom_fields"] = custom_fields
 
-                # Prepare interface configuration if interfaces are provided
-                interface_config = None
+                # Prepare interfaces if provided
+                interfaces: List[InterfaceData] = []
                 if "interfaces" in device and device["interfaces"]:
-                    interface_config = []
                     for iface in device["interfaces"]:
-                        iface_data = {
-                            "name": iface.get("name"),
-                            "type": iface.get("type", "other"),
-                            "status": iface.get("status", "active"),
-                            "enabled": iface.get("enabled", True),
-                        }
+                        ip_addresses: List[IpAddressData] = []
 
-                        # Add IP address if provided
                         if "ip_address" in iface:
-                            iface_data["ip_address"] = iface["ip_address"]
-                            iface_data["namespace"] = iface.get("namespace", "Global")
+                            is_primary = False
+                            # Check if this is the primary IP
+                            if "primary_ip4" in device:
+                                # Extract just the IP part (without CIDR) for comparison
+                                primary_ip = device["primary_ip4"].split("/")[0]
+                                iface_ip = iface["ip_address"].split("/")[0]
+                                is_primary = primary_ip == iface_ip
 
-                        # Check if this is the primary IP
-                        if "primary_ip4" in device:
-                            # Extract just the IP part (without CIDR) for comparison
-                            primary_ip = device["primary_ip4"].split("/")[0]
-                            iface_ip = iface["ip_address"].split("/")[0]
-                            if primary_ip == iface_ip:
-                                iface_data["is_primary_ipv4"] = True
+                            ip_addresses.append(
+                                IpAddressData(
+                                    address=iface["ip_address"],
+                                    namespace=iface.get("namespace", "Global"),
+                                    is_primary=is_primary,
+                                )
+                            )
 
-                        # Add optional interface fields
-                        if "description" in iface:
-                            iface_data["description"] = iface["description"]
-                        if "mac_address" in iface:
-                            iface_data["mac_address"] = iface["mac_address"]
-                        if "mtu" in iface:
-                            iface_data["mtu"] = iface["mtu"]
+                        interfaces.append(
+                            InterfaceData(
+                                name=iface.get("name"),
+                                type=iface.get("type", "other"),
+                                status=iface.get("status", "active"),
+                                enabled=iface.get("enabled", True),
+                                description=iface.get("description"),
+                                mac_address=iface.get("mac_address"),
+                                mtu=iface.get("mtu"),
+                                ip_addresses=ip_addresses,
+                            )
+                        )
 
-                        interface_config.append(iface_data)
-
-                # Use DeviceImportService to create device with interfaces
-                # Service now raises exceptions on failure instead of returning error dict
-                result = await import_service.import_device(
-                    device_data=device_data,
-                    interface_config=interface_config,
-                    skip_if_exists=True,
+                # Baseline creates its own prefixes explicitly (step 8 of
+                # create_baseline) — do not let device creation auto-create them.
+                request = AddDeviceRequest(
+                    **device_data,
+                    interfaces=interfaces,
+                    add_prefix=False,
+                    dry_run=False,
                 )
 
-                # If we got here, the import succeeded
+                result = await creation_service.create_device_with_interfaces(request)
+
+                if not result.get("success"):
+                    raise RuntimeError(
+                        f"Device creation workflow failed for '{device_name}': "
+                        f"{result.get('workflow_status')}"
+                    )
+
+                # If we got here, the creation succeeded
                 created[device_name] = result["device_id"]
-                if result["created"]:
-                    logger.info("Created device: %s", device_name)
-                else:
-                    logger.info("Device '%s' already exists, skipped", device_name)
+                logger.info("Created device: %s", device_name)
 
             except Exception as e:
                 logger.error(

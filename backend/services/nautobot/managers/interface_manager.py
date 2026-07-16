@@ -193,7 +193,7 @@ class InterfaceManager:
         2. Creates/gets the new IP address in Nautobot
         3. Assigns the new IP to the existing interface
 
-        This method can be used by both DeviceUpdateService and DeviceImportService.
+        This method can be used by both DeviceUpdateService and DeviceCreationService.
 
         Args:
             device_id: Device UUID
