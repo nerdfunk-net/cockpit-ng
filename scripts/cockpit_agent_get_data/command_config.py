@@ -26,12 +26,17 @@ _FLOW_ID_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9_-]*$")
 class ExecuteStep:
     type: Literal["execute"]
     host: str
-    username: str
-    command: str
+    # Remote: single shell command string. Local (host=local): list of shell commands.
+    command: Union[str, List[str]]
+    username: Optional[str] = None
     ssh_key: bool = True
     ssh_key_file: Optional[str] = None
     port: int = 22
     password: Optional[str] = None
+
+    @property
+    def is_local(self) -> bool:
+        return self.host.lower() == "local"
 
 
 @dataclass(frozen=True)
@@ -76,17 +81,28 @@ def _require_str(mapping: dict, key: str, context: str) -> str:
     return value.strip()
 
 
-def _parse_action_step(step: dict, context: str) -> PipelineStep:
-    if not isinstance(step, dict):
-        raise ValueError(f"{context} must be a mapping")
-
-    step_type = step.get("type")
-    if step_type not in ("execute", "sftp_get"):
+def _parse_command_list(step: dict, context: str) -> List[str]:
+    """Parse ``command`` as a non-empty list of shell command strings (local host)."""
+    commands = step.get("command")
+    if not isinstance(commands, list) or not commands:
         raise ValueError(
-            f"{context}: type must be 'execute' or 'sftp_get', got {step_type!r}"
+            f"{context}: for host 'local', 'command' must be a non-empty list of strings"
         )
 
-    host = _require_str(step, "host", context)
+    parsed: List[str] = []
+    for index, command in enumerate(commands):
+        if not isinstance(command, str) or not command.strip():
+            raise ValueError(
+                f"{context}: command[{index}] must be a non-empty string"
+            )
+        parsed.append(command.strip())
+    return parsed
+
+
+def _parse_ssh_common(
+    step: dict, context: str
+) -> tuple[str, bool, Optional[str], Optional[str], int]:
+    """Parse shared SSH fields for remote execute / sftp_get steps."""
     username = _require_str(step, "username", context)
 
     ssh_key = step.get("ssh_key", True)
@@ -107,6 +123,36 @@ def _parse_action_step(step: dict, context: str) -> PipelineStep:
     port = step.get("port", 22)
     if not isinstance(port, int) or port < 1 or port > 65535:
         raise ValueError(f"{context}: 'port' must be an integer between 1 and 65535")
+
+    return username, ssh_key, ssh_key_file, password, port
+
+
+def _parse_local_execute_step(step: dict, host: str, context: str) -> ExecuteStep:
+    """Parse an execute step that runs on the agent host (host: local)."""
+    commands = _parse_command_list(step, context)
+    return ExecuteStep(
+        type="execute",
+        host=host,
+        command=commands,
+    )
+
+
+def _parse_action_step(step: dict, context: str) -> PipelineStep:
+    if not isinstance(step, dict):
+        raise ValueError(f"{context} must be a mapping")
+
+    step_type = step.get("type")
+    if step_type not in ("execute", "sftp_get"):
+        raise ValueError(
+            f"{context}: type must be 'execute' or 'sftp_get', got {step_type!r}"
+        )
+
+    host = _require_str(step, "host", context)
+
+    if step_type == "execute" and host.lower() == "local":
+        return _parse_local_execute_step(step, host, context)
+
+    username, ssh_key, ssh_key_file, password, port = _parse_ssh_common(step, context)
 
     if step_type == "execute":
         command = _require_str(step, "command", context)

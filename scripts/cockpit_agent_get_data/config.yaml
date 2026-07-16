@@ -12,6 +12,11 @@ commands:
       ssh_key: true
       src_file: /tmp/data
       dst_file: /tmp/cockpit/data_1
+    - type: execute
+      host: local
+      command:
+        - tail -n +2 /tmp/cockpit/data_1
+        - ls -l > /tmp/nonsense
     - result: /tmp/crypto.csv
   data-2:
     - type: execute

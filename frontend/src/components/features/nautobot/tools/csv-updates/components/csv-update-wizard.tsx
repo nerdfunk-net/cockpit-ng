@@ -121,6 +121,7 @@ export function CsvUpdateWizard() {
     isRowSelected,
     toggleRowSelected,
     toggleSelectAllVisible,
+    toggleSelectAllFiltered,
     selectedCount,
     primaryIpByDevice,
     setPrimaryIp,
@@ -534,6 +535,7 @@ export function CsvUpdateWizard() {
               isRowSelected={isRowSelected}
               toggleRowSelected={toggleRowSelected}
               toggleSelectAllVisible={toggleSelectAllVisible}
+              toggleSelectAllFiltered={toggleSelectAllFiltered}
               primaryIpEnabled={primaryIpEnabled}
               primaryIpByDevice={primaryIpByDevice}
               onSetPrimaryIp={setPrimaryIp}

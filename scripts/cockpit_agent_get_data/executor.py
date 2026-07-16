@@ -1,9 +1,10 @@
 """
 Command executor for Cockpit Get Data Agent.
 
-Runs named flows from config.yaml via SSH (execute) and SFTP (sftp_get).
-Only the ``echo`` health-check and configured flow identifiers are accepted
-from Redis — remote commands always come from the local config file.
+Runs named flows from config.yaml via SSH (execute), local shell (host: local),
+and SFTP (sftp_get). Only the ``echo`` health-check and configured flow
+identifiers are accepted from Redis — commands always come from the local
+config file.
 """
 
 from __future__ import annotations
@@ -177,6 +178,18 @@ class CommandExecutor:
         return {flow_id: content}, None
 
     async def _run_execute_step(self, step: ExecuteStep) -> dict:
+        if step.is_local:
+            return await self._run_local_execute_step(step)
+
+        if not isinstance(step.command, str):
+            return {
+                "type": "execute",
+                "host": step.host,
+                "command": step.command,
+                "status": "error",
+                "error": "Remote execute steps require a single command string",
+            }
+
         logger.info(
             "Executing remote command on %s as %s: %s",
             step.host,
@@ -195,6 +208,44 @@ class CommandExecutor:
             "host": step.host,
             "command": step.command,
             **result,
+        }
+
+    async def _run_local_execute_step(self, step: ExecuteStep) -> dict:
+        """Run one or more shell commands on the agent host (host: local)."""
+        if not isinstance(step.command, list):
+            return {
+                "type": "execute",
+                "host": step.host,
+                "command": step.command,
+                "status": "error",
+                "error": "Local execute steps require a list of command strings",
+            }
+
+        command_results: List[dict] = []
+        for command in step.command:
+            logger.info("Executing local command: %s", command)
+            result = await self._run_shell_command(
+                command,
+                label=f"local execute: {command}",
+            )
+            command_results.append({"command": command, **result})
+            if result["status"] != "success":
+                return {
+                    "type": "execute",
+                    "host": step.host,
+                    "command": step.command,
+                    "status": "error",
+                    "error": result.get("error") or f"Local command failed: {command}",
+                    "commands": command_results,
+                }
+
+        return {
+            "type": "execute",
+            "host": step.host,
+            "command": step.command,
+            "status": "success",
+            "commands": command_results,
+            "error": None,
         }
 
     async def _run_sftp_get_step(self, step: SftpGetStep) -> dict:
@@ -293,6 +344,9 @@ class CommandExecutor:
         self, step: PipelineStep
     ) -> tuple[list[str], dict, list[str], Optional[str]]:
         """Shared OpenSSH options for ssh/sftp (without login flags)."""
+        if not step.username:
+            raise RuntimeError("SSH steps require a username")
+
         options = [
             "-o",
             "BatchMode=yes",
@@ -345,6 +399,16 @@ class CommandExecutor:
         cmd += [step.host]
         return cmd, env
 
+    async def _run_shell_command(self, command: str, *, label: str) -> dict:
+        """Run a shell command on the agent host (supports redirects/pipes)."""
+        logger.debug("Running %s: %s", label, command)
+        process = await asyncio.create_subprocess_shell(
+            command,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        return await self._await_process(process, label=label)
+
     async def _run_subprocess(
         self,
         cmd: list[str],
@@ -363,7 +427,14 @@ class CommandExecutor:
             stderr=asyncio.subprocess.PIPE,
             env=env,
         )
+        return await self._await_process(process, label=label)
 
+    async def _await_process(
+        self,
+        process: asyncio.subprocess.Process,
+        *,
+        label: str,
+    ) -> dict:
         try:
             stdout, stderr = await asyncio.wait_for(
                 process.communicate(),

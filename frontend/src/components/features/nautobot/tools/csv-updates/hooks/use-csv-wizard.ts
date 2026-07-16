@@ -445,6 +445,19 @@ export function useCsvWizard() {
     })
   }, [paginatedRows, isRowSelected])
 
+  /** Selects/deselects every row matching the current filter, across all pagination pages. */
+  const toggleSelectAllFiltered = useCallback(() => {
+    const allSelected =
+      filteredRows.length > 0 && filteredRows.every(r => isRowSelected(r.id))
+    setSelectedOverrides(prev => {
+      const next = { ...prev }
+      for (const r of filteredRows) {
+        next[r.id] = !allSelected
+      }
+      return next
+    })
+  }, [filteredRows, isRowSelected])
+
   const setPrimaryIp = useCallback((deviceName: string, rowId: string) => {
     setPrimaryIpByDevice(prev => ({ ...prev, [deviceName]: rowId }))
   }, [])
@@ -558,6 +571,7 @@ export function useCsvWizard() {
       isRowSelected,
       toggleRowSelected,
       toggleSelectAllVisible,
+      toggleSelectAllFiltered,
       selectedCount,
       primaryIpByDevice,
       setPrimaryIp,
@@ -614,6 +628,7 @@ export function useCsvWizard() {
       isRowSelected,
       toggleRowSelected,
       toggleSelectAllVisible,
+      toggleSelectAllFiltered,
       selectedCount,
       primaryIpByDevice,
       setPrimaryIp,

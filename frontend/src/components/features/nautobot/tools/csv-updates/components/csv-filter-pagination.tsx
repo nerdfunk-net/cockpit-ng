@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Select,
   SelectContent,
@@ -16,12 +17,19 @@ interface CsvFilterPaginationProps {
   pagination: PaginationState
   onPageChange: (page: number) => void
   onPageSizeChange: (size: number) => void
+  /** When set, shows a "select all across pages" checkbox left of the row count. */
+  selectAllAcrossPages?: {
+    checked: boolean
+    onCheckedChange: () => void
+    label: string
+  }
 }
 
 export function CsvFilterPagination({
   pagination,
   onPageChange,
   onPageSizeChange,
+  selectAllAcrossPages,
 }: CsvFilterPaginationProps) {
   const { currentPage, pageSize, totalItems, totalPages } = pagination
 
@@ -31,6 +39,17 @@ export function CsvFilterPagination({
   return (
     <div className="bg-muted px-4 py-3 border-t flex flex-wrap items-center justify-between gap-2 rounded-b-lg">
       <div className="flex items-center space-x-2">
+        {selectAllAcrossPages && (
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox
+              checked={selectAllAcrossPages.checked}
+              onCheckedChange={selectAllAcrossPages.onCheckedChange}
+              aria-label={selectAllAcrossPages.label}
+              disabled={totalItems === 0}
+            />
+            <span className="text-sm text-muted-foreground">{selectAllAcrossPages.label}</span>
+          </label>
+        )}
         <span className="text-sm text-muted-foreground">
           Showing {startItem} to {endItem} of {totalItems} rows
         </span>

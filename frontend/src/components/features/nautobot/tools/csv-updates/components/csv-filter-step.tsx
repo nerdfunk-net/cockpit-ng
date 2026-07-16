@@ -30,6 +30,7 @@ interface CsvFilterStepProps {
   isRowSelected: (rowId: string) => boolean
   toggleRowSelected: (rowId: string) => void
   toggleSelectAllVisible: () => void
+  toggleSelectAllFiltered: () => void
   primaryIpEnabled: boolean
   primaryIpByDevice: Record<string, string | null>
   onSetPrimaryIp: (deviceName: string, rowId: string) => void
@@ -49,11 +50,14 @@ export function CsvFilterStep({
   isRowSelected,
   toggleRowSelected,
   toggleSelectAllVisible,
+  toggleSelectAllFiltered,
   primaryIpEnabled,
   primaryIpByDevice,
   onSetPrimaryIp,
 }: CsvFilterStepProps) {
   const showPrimaryIpColumn = objectType === 'devices' && primaryIpEnabled
+  const selectAllAcrossPagesLabel =
+    objectType === 'devices' ? 'Check ALL devices' : 'Check ALL rows'
 
   const identifierFieldKey = useMemo(
     () => (objectType === 'devices' ? DEVICE_NAME_FIELD_KEY : fieldMapping[primaryKeyColumn]),
@@ -73,6 +77,11 @@ export function CsvFilterStep({
   const allVisibleSelected = useMemo(
     () => paginatedRows.length > 0 && paginatedRows.every(row => isRowSelected(row.id)),
     [paginatedRows, isRowSelected]
+  )
+
+  const allFilteredSelected = useMemo(
+    () => filteredRows.length > 0 && filteredRows.every(row => isRowSelected(row.id)),
+    [filteredRows, isRowSelected]
   )
 
   return (
@@ -151,6 +160,11 @@ export function CsvFilterStep({
             pagination={pagination}
             onPageChange={onPageChange}
             onPageSizeChange={onPageSizeChange}
+            selectAllAcrossPages={{
+              checked: allFilteredSelected,
+              onCheckedChange: toggleSelectAllFiltered,
+              label: selectAllAcrossPagesLabel,
+            }}
           />
         </div>
       )}
