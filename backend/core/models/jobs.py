@@ -162,13 +162,25 @@ class JobTemplate(Base):
         Boolean, nullable=True
     )  # skip IPs with status "Reserved"
     # CSV Import (csv_import type)
+    csv_import_source = Column(
+        String(10), nullable=True
+    )  # "git" | "agent" — where the CSV data comes from at runtime
     csv_import_repo_id = Column(Integer, nullable=True)
     csv_import_file_path = Column(String(500), nullable=True)
+    csv_import_agent_id = Column(
+        String(255), nullable=True
+    )  # Get Data agent (source == "agent")
+    csv_import_agent_flows = Column(
+        Text, nullable=True
+    )  # JSON list of flow ids to fetch from the agent
     csv_import_type = Column(
         String(50), nullable=True
     )  # "devices" | "ip-prefixes" | "ip-addresses"
     csv_import_primary_key = Column(String(255), nullable=True)
     csv_import_update_existing = Column(Boolean, nullable=False, default=True)
+    csv_import_import_unknown = Column(
+        Boolean, nullable=False, default=True
+    )  # create objects not found in Nautobot
     csv_import_delimiter = Column(String(10), nullable=True)
     csv_import_quote_char = Column(String(10), nullable=True)
     csv_import_column_mapping = Column(
@@ -177,9 +189,9 @@ class JobTemplate(Base):
     csv_import_file_filter = Column(
         String(255), nullable=True
     )  # glob pattern like "*.csv"
-    csv_import_defaults = Column(
-        Text, nullable=True
-    )  # JSON: {"location": "Amsterdam", ...}
+    csv_import_profile_id = Column(
+        Integer, nullable=True
+    )  # profile whose values fill fields the CSV leaves blank
     csv_import_format = Column(
         String(50), nullable=True
     )  # "cockpit", "nautobot", "generic"

@@ -106,8 +106,6 @@ export const queryKeys = {
     // CSV Import dependencies
     csvImportRepos: () => [...queryKeys.jobs.all, 'csv-import-repos'] as const,
     csvExportRepos: () => [...queryKeys.jobs.all, 'csv-export-repos'] as const,
-    csvImportNautobotData: () =>
-      [...queryKeys.jobs.all, 'csv-import-nautobot-data'] as const,
     csvFiles: (repoId: number | null, query?: string) =>
       [...queryKeys.jobs.all, 'csv-files', repoId, query] as const,
     csvHeaders: (repoId: number | null, filePath: string | null, delimiter?: string) =>

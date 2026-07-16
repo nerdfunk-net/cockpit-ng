@@ -104,14 +104,22 @@ class _FakeJobTemplate:
         self.ip_remove_skip_reserved: Optional[bool] = kwargs.get(
             "ip_remove_skip_reserved", True
         )
+        self.csv_import_source: Optional[str] = kwargs.get("csv_import_source")
         self.csv_import_repo_id: Optional[int] = kwargs.get("csv_import_repo_id")
         self.csv_import_file_path: Optional[str] = kwargs.get("csv_import_file_path")
+        self.csv_import_agent_id: Optional[str] = kwargs.get("csv_import_agent_id")
+        self.csv_import_agent_flows: Optional[str] = kwargs.get(
+            "csv_import_agent_flows"
+        )
         self.csv_import_type: Optional[str] = kwargs.get("csv_import_type")
         self.csv_import_primary_key: Optional[str] = kwargs.get(
             "csv_import_primary_key"
         )
         self.csv_import_update_existing: bool = kwargs.get(
             "csv_import_update_existing", True
+        )
+        self.csv_import_import_unknown: bool = kwargs.get(
+            "csv_import_import_unknown", True
         )
         self.csv_import_delimiter: Optional[str] = kwargs.get("csv_import_delimiter")
         self.csv_import_quote_char: Optional[str] = kwargs.get("csv_import_quote_char")
@@ -121,7 +129,7 @@ class _FakeJobTemplate:
         self.csv_import_file_filter: Optional[str] = kwargs.get(
             "csv_import_file_filter"
         )
-        self.csv_import_defaults: Optional[str] = kwargs.get("csv_import_defaults")
+        self.csv_import_profile_id: Optional[int] = kwargs.get("csv_import_profile_id")
         self.csv_import_format: Optional[str] = kwargs.get("csv_import_format")
         self.csv_import_add_prefixes: bool = kwargs.get(
             "csv_import_add_prefixes", False

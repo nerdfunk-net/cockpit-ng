@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -25,22 +26,35 @@ import {
   Loader2,
   Settings2,
   Upload,
+  Zap,
 } from 'lucide-react'
 import { StatusAlert } from '@/components/shared/status-alert'
+import { useAgentMutations } from '@/components/features/agents/operating/hooks/use-agent-mutations'
+import { useGetDataAgents } from '@/components/features/nautobot/tools/csv-updates/hooks/use-get-data-agents'
+import { combineAgentKeys } from '@/components/features/nautobot/tools/csv-updates/utils/agent-data'
+import type { Profile } from '@/components/features/settings/defaults/profiles/types'
 import type { CsvRepoFile, GitRepository } from '../../types'
 import { CSV_IMPORT_FORMAT_LABELS, CSV_IMPORT_TYPE_LABELS } from '../../utils/constants'
 
 interface CsvImportJobTemplateProps {
+  formCsvImportSource: 'git' | 'agent'
+  setFormCsvImportSource: (value: 'git' | 'agent') => void
   formCsvImportRepoId: number | null
   setFormCsvImportRepoId: (value: number | null) => void
   formCsvImportFilePath: string
   setFormCsvImportFilePath: (value: string) => void
+  formCsvImportAgentId: string
+  setFormCsvImportAgentId: (value: string) => void
+  formCsvImportAgentFlows: string[]
+  setFormCsvImportAgentFlows: (value: string[]) => void
   formCsvImportType: string
   setFormCsvImportType: (value: string) => void
   formCsvImportPrimaryKey: string
   setFormCsvImportPrimaryKey: (value: string) => void
   formCsvImportUpdateExisting: boolean
   setFormCsvImportUpdateExisting: (value: boolean) => void
+  formCsvImportImportUnknown: boolean
+  setFormCsvImportImportUnknown: (value: boolean) => void
   formCsvImportDelimiter: string
   setFormCsvImportDelimiter: (value: string) => void
   formCsvImportQuoteChar: string
@@ -48,6 +62,8 @@ interface CsvImportJobTemplateProps {
   formCsvImportColumnMapping: Record<string, string | null>
   formCsvImportFileFilter: string
   setFormCsvImportFileFilter: (value: string) => void
+  formCsvImportProfileId: number | null
+  setFormCsvImportProfileId: (value: number | null) => void
   formCsvImportFormat: string
   setFormCsvImportFormat: (value: string) => void
   formCsvImportAddPrefixes: boolean
@@ -59,6 +75,8 @@ interface CsvImportJobTemplateProps {
   csvHeaders: string[]
   csvFilesLoading: boolean
   csvHeadersLoading: boolean
+  onAgentHeadersLoaded: (headers: string[]) => void
+  profiles: Profile[]
   mappedColumnCount: number
   onOpenMappingDialog: () => void
   fileQuery: string
@@ -66,22 +84,32 @@ interface CsvImportJobTemplateProps {
 }
 
 export function CsvImportJobTemplate({
+  formCsvImportSource,
+  setFormCsvImportSource,
   formCsvImportRepoId,
   setFormCsvImportRepoId,
   formCsvImportFilePath,
   setFormCsvImportFilePath,
+  formCsvImportAgentId,
+  setFormCsvImportAgentId,
+  formCsvImportAgentFlows,
+  setFormCsvImportAgentFlows,
   formCsvImportType,
   setFormCsvImportType,
   formCsvImportPrimaryKey,
   setFormCsvImportPrimaryKey,
   formCsvImportUpdateExisting,
   setFormCsvImportUpdateExisting,
+  formCsvImportImportUnknown,
+  setFormCsvImportImportUnknown,
   formCsvImportDelimiter,
   setFormCsvImportDelimiter,
   formCsvImportQuoteChar,
   setFormCsvImportQuoteChar,
   formCsvImportFileFilter,
   setFormCsvImportFileFilter,
+  formCsvImportProfileId,
+  setFormCsvImportProfileId,
   formCsvImportFormat,
   setFormCsvImportFormat,
   formCsvImportAddPrefixes,
@@ -93,6 +121,8 @@ export function CsvImportJobTemplate({
   csvHeaders,
   csvFilesLoading,
   csvHeadersLoading,
+  onAgentHeadersLoaded,
+  profiles,
   mappedColumnCount,
   onOpenMappingDialog,
   fileQuery,
@@ -100,6 +130,111 @@ export function CsvImportJobTemplate({
 }: CsvImportJobTemplateProps) {
   const [configOpen, setConfigOpen] = useState(true)
   const [optionsOpen, setOptionsOpen] = useState(true)
+  const [agentError, setAgentError] = useState<string | null>(null)
+  const [isFetchingAgentData, setIsFetchingAgentData] = useState(false)
+
+  const isAgentSource = formCsvImportSource === 'agent'
+
+  const { data: agents, isLoading: isLoadingAgents } = useGetDataAgents()
+  const { getData } = useAgentMutations()
+
+  const selectedAgent = agents.find(
+    agent => (agent.agent_id ?? agent.id) === formCsvImportAgentId
+  )
+
+  // Union of the flows the agent currently reports and the flows already saved
+  // on the template, so a saved selection stays visible while the agent is offline.
+  const availableFlows = useMemo(() => {
+    const reported = selectedAgent?.data_flows ?? []
+    return Array.from(new Set([...reported, ...formCsvImportAgentFlows]))
+  }, [selectedAgent, formCsvImportAgentFlows])
+
+  const toggleFlowId = useCallback(
+    (flowId: string) => {
+      setFormCsvImportAgentFlows(
+        formCsvImportAgentFlows.includes(flowId)
+          ? formCsvImportAgentFlows.filter(id => id !== flowId)
+          : [...formCsvImportAgentFlows, flowId]
+      )
+    },
+    [formCsvImportAgentFlows, setFormCsvImportAgentFlows]
+  )
+
+  // Fetches sample data from the agent and derives the CSV headers used for
+  // the primary key selector and the column mapping dialog — the same
+  // combine logic the CSV Updates tool uses.
+  const handleLoadAgentHeaders = useCallback(async () => {
+    if (!formCsvImportAgentId || formCsvImportAgentFlows.length === 0) return
+
+    setAgentError(null)
+    setIsFetchingAgentData(true)
+
+    const merged: Record<string, string> = {}
+    const errors: string[] = []
+
+    try {
+      const responses = await Promise.all(
+        formCsvImportAgentFlows.map(flowId =>
+          getData
+            .mutateAsync({ agent_id: formCsvImportAgentId, flow_id: flowId })
+            .then(data => ({ flowId, data }))
+            .catch((error: unknown) => ({
+              flowId,
+              data: {
+                status: 'error' as const,
+                error: error instanceof Error ? error.message : 'Request failed',
+                output: null,
+                command_id: '',
+                execution_time_ms: 0,
+              },
+            }))
+        )
+      )
+
+      for (const { flowId, data } of responses) {
+        if (data.status === 'success' && data.output) {
+          for (const [key, value] of Object.entries(data.output.result)) {
+            merged[`${flowId}::${key}`] = value
+          }
+        } else {
+          errors.push(`${flowId}: ${data.error ?? 'no data returned'}`)
+        }
+      }
+
+      if (Object.keys(merged).length === 0) {
+        setAgentError(errors.join('; ') || 'The agent returned no data.')
+        return
+      }
+
+      const combined = combineAgentKeys(merged, {
+        delimiter: formCsvImportDelimiter || ',',
+        quoteChar: formCsvImportQuoteChar || '"',
+      })
+      if (!combined.data) {
+        setAgentError(combined.error ?? 'Failed to combine agent data.')
+        return
+      }
+
+      if (errors.length > 0) {
+        setAgentError(`Some flows failed: ${errors.join('; ')}`)
+      }
+
+      onAgentHeadersLoaded(combined.data.headers)
+    } finally {
+      setIsFetchingAgentData(false)
+    }
+  }, [
+    formCsvImportAgentId,
+    formCsvImportAgentFlows,
+    formCsvImportDelimiter,
+    formCsvImportQuoteChar,
+    getData,
+    onAgentHeadersLoaded,
+  ])
+
+  const primaryKeyDisabled = isAgentSource
+    ? csvHeaders.length === 0
+    : !formCsvImportFilePath || csvHeadersLoading || csvHeaders.length === 0
 
   return (
     <div className="space-y-4">
@@ -121,95 +256,230 @@ export function CsvImportJobTemplate({
           </CollapsibleTrigger>
           <CollapsibleContent>
             <div className="panel-content p-6 space-y-4">
-              {/* Info alert */}
-              <StatusAlert variant="info">
-                The <strong>CSV File</strong> and file filter below are used only to
-                load an example file for column mapping configuration. The actual
-                files imported at runtime are determined by the{' '}
-                <strong>Import Options</strong> file filter below.
-              </StatusAlert>
-
-              {/* Git Repository */}
+              {/* Data Source */}
               <div className="space-y-1">
                 <Label className="text-xs font-medium text-muted-foreground">
-                  Git Repository
+                  Data Source
                 </Label>
                 <Select
-                  value={formCsvImportRepoId?.toString() || ''}
+                  value={formCsvImportSource}
                   onValueChange={val => {
-                    setFormCsvImportRepoId(val ? parseInt(val) : null)
-                    setFormCsvImportFilePath('')
+                    setFormCsvImportSource(val as 'git' | 'agent')
                     setFormCsvImportPrimaryKey('')
                   }}
                 >
                   <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
-                    <SelectValue placeholder="Select a CSV imports repository..." />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {csvImportRepos.map(repo => (
-                      <SelectItem key={repo.id} value={repo.id.toString()}>
-                        {repo.name}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="git">Git Repository</SelectItem>
+                    <SelectItem value="agent">Get Data Agent</SelectItem>
                   </SelectContent>
                 </Select>
-                {csvImportRepos.length === 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    No repositories with category &quot;csv_imports&quot; found. Add one
-                    in Settings → Git.
-                  </p>
-                )}
+                <p className="text-xs text-muted-foreground">
+                  Where the CSV data comes from when the job runs: files in a Git
+                  repository, or the output of a Get Data agent.
+                </p>
               </div>
 
-              {/* File Selector */}
-              {formCsvImportRepoId && (
-                <div className="space-y-1">
-                  <Label className="text-xs font-medium text-muted-foreground">
-                    CSV File (example for mapping)
-                  </Label>
-                  <Input
-                    className="h-7 text-xs mb-1 bg-card border-border shadow-sm"
-                    placeholder="Filter files..."
-                    value={fileQuery}
-                    onChange={e => setFileQuery(e.target.value)}
-                  />
-                  <Select
-                    value={formCsvImportFilePath}
-                    onValueChange={val => {
-                      setFormCsvImportFilePath(val)
-                      setFormCsvImportPrimaryKey('')
-                    }}
-                  >
-                    <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
-                      {csvFilesLoading ? (
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Loader2 className="h-3 w-3 animate-spin" /> Loading...
-                        </span>
-                      ) : (
-                        <SelectValue placeholder="Select a CSV file..." />
-                      )}
-                    </SelectTrigger>
-                    <SelectContent>
-                      {csvFiles.length === 0 && !csvFilesLoading && (
-                        <SelectItem value="__none__" disabled>
-                          No CSV files found
-                        </SelectItem>
-                      )}
-                      {csvFiles
-                        .filter(f => f.path.trim() !== '')
-                        .map(file => (
-                          <SelectItem key={file.path} value={file.path}>
-                            {file.path}
+              {!isAgentSource && (
+                <>
+                  {/* Info alert */}
+                  <StatusAlert variant="info">
+                    The <strong>CSV File</strong> below is used only to load an example
+                    file for column mapping configuration. The actual files imported at
+                    runtime are determined by the <strong>Import Options</strong> file
+                    filter below.
+                  </StatusAlert>
+
+                  {/* Git Repository */}
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Git Repository
+                    </Label>
+                    <Select
+                      value={formCsvImportRepoId?.toString() || ''}
+                      onValueChange={val => {
+                        setFormCsvImportRepoId(val ? parseInt(val) : null)
+                        setFormCsvImportFilePath('')
+                        setFormCsvImportPrimaryKey('')
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
+                        <SelectValue placeholder="Select a CSV imports repository..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {csvImportRepos.map(repo => (
+                          <SelectItem key={repo.id} value={repo.id.toString()}>
+                            {repo.name}
                           </SelectItem>
                         ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+                      </SelectContent>
+                    </Select>
+                    {csvImportRepos.length === 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        No repositories with category &quot;csv_imports&quot; found. Add
+                        one in Settings → Git.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* File Selector */}
+                  {formCsvImportRepoId && (
+                    <div className="space-y-1">
+                      <Label className="text-xs font-medium text-muted-foreground">
+                        CSV File (example for mapping)
+                      </Label>
+                      <Input
+                        className="h-7 text-xs mb-1 bg-card border-border shadow-sm"
+                        placeholder="Filter files..."
+                        value={fileQuery}
+                        onChange={e => setFileQuery(e.target.value)}
+                      />
+                      <Select
+                        value={formCsvImportFilePath}
+                        onValueChange={val => {
+                          setFormCsvImportFilePath(val)
+                          setFormCsvImportPrimaryKey('')
+                        }}
+                      >
+                        <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
+                          {csvFilesLoading ? (
+                            <span className="flex items-center gap-1 text-muted-foreground">
+                              <Loader2 className="h-3 w-3 animate-spin" /> Loading...
+                            </span>
+                          ) : (
+                            <SelectValue placeholder="Select a CSV file..." />
+                          )}
+                        </SelectTrigger>
+                        <SelectContent>
+                          {csvFiles.length === 0 && !csvFilesLoading && (
+                            <SelectItem value="__none__" disabled>
+                              No CSV files found
+                            </SelectItem>
+                          )}
+                          {csvFiles
+                            .filter(f => f.path.trim() !== '')
+                            .map(file => (
+                              <SelectItem key={file.path} value={file.path}>
+                                {file.path}
+                              </SelectItem>
+                            ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {isAgentSource && (
+                <>
+                  <StatusAlert variant="info">
+                    The job fetches CSV data from the selected agent&apos;s flows at
+                    runtime. Use <strong>Load Headers</strong> to fetch sample data now
+                    and configure the primary key and column mapping.
+                  </StatusAlert>
+
+                  {/* Agent Selector */}
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Get Data Agent
+                    </Label>
+                    <Select
+                      value={formCsvImportAgentId}
+                      onValueChange={val => {
+                        setFormCsvImportAgentId(val)
+                        setFormCsvImportAgentFlows([])
+                        setFormCsvImportPrimaryKey('')
+                      }}
+                    >
+                      <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
+                        <SelectValue
+                          placeholder={
+                            isLoadingAgents
+                              ? 'Loading agents…'
+                              : 'Select a Get Data agent...'
+                          }
+                        />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {agents.length === 0 ? (
+                          <SelectItem value="__none__" disabled>
+                            No Get Data agents configured
+                          </SelectItem>
+                        ) : (
+                          agents.map(agent => (
+                            <SelectItem
+                              key={agent.id}
+                              value={agent.agent_id ?? agent.id}
+                            >
+                              {agent.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Flow selection */}
+                  <div className="space-y-1">
+                    <Label className="text-xs font-medium text-muted-foreground">
+                      Data Flows (command-chain keys)
+                    </Label>
+                    <div className="border rounded-md p-2 space-y-0.5 max-h-28 overflow-y-auto">
+                      {!formCsvImportAgentId ? (
+                        <p className="text-xs text-muted-foreground px-1 py-0.5">
+                          Select an agent first
+                        </p>
+                      ) : availableFlows.length === 0 ? (
+                        <p className="text-xs text-muted-foreground px-1 py-0.5">
+                          Agent has not reported any flows yet
+                        </p>
+                      ) : (
+                        availableFlows.map(flowId => (
+                          <label
+                            key={flowId}
+                            className="flex items-center gap-2 px-1 py-0.5 text-sm cursor-pointer"
+                          >
+                            <Checkbox
+                              checked={formCsvImportAgentFlows.includes(flowId)}
+                              onCheckedChange={() => toggleFlowId(flowId)}
+                            />
+                            <span className="truncate">{flowId}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="h-8"
+                    onClick={handleLoadAgentHeaders}
+                    disabled={
+                      !formCsvImportAgentId ||
+                      formCsvImportAgentFlows.length === 0 ||
+                      isFetchingAgentData
+                    }
+                  >
+                    {isFetchingAgentData ? (
+                      <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                    ) : (
+                      <Zap className="h-3.5 w-3.5 mr-1.5" />
+                    )}
+                    {isFetchingAgentData ? 'Loading Headers…' : 'Load Headers'}
+                  </Button>
+
+                  {agentError && <StatusAlert variant="error">{agentError}</StatusAlert>}
+                </>
               )}
 
               {/* Import Type */}
               <div className="space-y-1">
-                <Label className="text-xs font-medium text-muted-foreground">Import Type</Label>
+                <Label className="text-xs font-medium text-muted-foreground">
+                  Import Type
+                </Label>
                 <Select
                   value={formCsvImportType}
                   onValueChange={val => {
@@ -238,23 +508,23 @@ export function CsvImportJobTemplate({
                 <Select
                   value={formCsvImportPrimaryKey}
                   onValueChange={setFormCsvImportPrimaryKey}
-                  disabled={
-                    !formCsvImportFilePath ||
-                    csvHeadersLoading ||
-                    csvHeaders.length === 0
-                  }
+                  disabled={primaryKeyDisabled}
                 >
                   <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
-                    {csvHeadersLoading ? (
+                    {csvHeadersLoading && !isAgentSource ? (
                       <span className="flex items-center gap-1 text-muted-foreground">
                         <Loader2 className="h-3 w-3 animate-spin" /> Loading headers...
                       </span>
                     ) : (
                       <SelectValue
                         placeholder={
-                          !formCsvImportFilePath
-                            ? 'Select a file first...'
-                            : 'Select lookup column...'
+                          isAgentSource
+                            ? csvHeaders.length === 0
+                              ? 'Load headers from the agent first...'
+                              : 'Select lookup column...'
+                            : !formCsvImportFilePath
+                              ? 'Select a file first...'
+                              : 'Select lookup column...'
                         }
                       />
                     )}
@@ -275,26 +545,79 @@ export function CsvImportJobTemplate({
                 </p>
               </div>
 
-              {/* Update Existing */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-xs font-medium text-muted-foreground">
-                    Update Existing Objects
+              {/* Update / Import behavior */}
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="csv-import-update-data"
+                    checked={formCsvImportUpdateExisting}
+                    onCheckedChange={value =>
+                      setFormCsvImportUpdateExisting(value === true)
+                    }
+                  />
+                  <Label
+                    htmlFor="csv-import-update-data"
+                    className="text-sm text-muted-foreground"
+                  >
+                    Update data (update objects that already exist in Nautobot)
                   </Label>
-                  <p className="text-xs text-muted-foreground">
-                    When off, existing objects are skipped instead of updated
-                  </p>
                 </div>
-                <Switch
-                  checked={formCsvImportUpdateExisting}
-                  onCheckedChange={setFormCsvImportUpdateExisting}
-                />
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="csv-import-import-unknown"
+                    checked={formCsvImportImportUnknown}
+                    onCheckedChange={value =>
+                      setFormCsvImportImportUnknown(value === true)
+                    }
+                  />
+                  <Label
+                    htmlFor="csv-import-import-unknown"
+                    className="text-sm text-muted-foreground"
+                  >
+                    Import unknown data (create objects not found in Nautobot, using the
+                    profile below for missing values)
+                  </Label>
+                </div>
+              </div>
+
+              {/* Profile */}
+              <div className="space-y-1">
+                <Label className="text-xs font-medium text-muted-foreground">
+                  Profile
+                </Label>
+                <Select
+                  value={
+                    formCsvImportProfileId != null
+                      ? String(formCsvImportProfileId)
+                      : ''
+                  }
+                  onValueChange={val =>
+                    setFormCsvImportProfileId(val ? Number(val) : null)
+                  }
+                >
+                  <SelectTrigger className="h-8 text-sm bg-card border-border shadow-sm">
+                    <SelectValue placeholder="Select a profile..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profiles.map(profile => (
+                      <SelectItem key={profile.id} value={String(profile.id)}>
+                        {profile.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  Profile values fill fields the CSV leaves blank — for updates and for
+                  new objects. The CSV value always wins.
+                </p>
               </div>
 
               {/* Delimiter & Quote Char */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-xs font-medium text-muted-foreground">Delimiter</Label>
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    Delimiter
+                  </Label>
                   <Input
                     className="h-8 text-sm bg-card border-border shadow-sm"
                     value={formCsvImportDelimiter}
@@ -427,20 +750,25 @@ export function CsvImportJobTemplate({
                   </div>
                 )}
               </div>
-              <div className="space-y-1">
-                <Label className="text-xs font-medium text-muted-foreground">File Filter</Label>
-                <Input
-                  className="h-8 text-sm bg-card border-border shadow-sm"
-                  value={formCsvImportFileFilter}
-                  onChange={e => setFormCsvImportFileFilter(e.target.value)}
-                  placeholder="e.g. *.csv or devices_*.csv"
-                />
-                <p className="text-xs text-muted-foreground">
-                  Glob pattern to select which CSV files are imported when the job runs.
-                  All matching files in the repository will be processed sequentially.
-                  Leave empty to import only the example file selected above.
-                </p>
-              </div>
+              {!isAgentSource && (
+                <div className="space-y-1">
+                  <Label className="text-xs font-medium text-muted-foreground">
+                    File Filter
+                  </Label>
+                  <Input
+                    className="h-8 text-sm bg-card border-border shadow-sm"
+                    value={formCsvImportFileFilter}
+                    onChange={e => setFormCsvImportFileFilter(e.target.value)}
+                    placeholder="e.g. *.csv or devices_*.csv"
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Glob pattern to select which CSV files are imported when the job
+                    runs. All matching files in the repository will be processed
+                    sequentially. Leave empty to import only the example file selected
+                    above.
+                  </p>
+                </div>
+              )}
             </div>
           </CollapsibleContent>
         </div>

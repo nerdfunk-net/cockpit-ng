@@ -119,22 +119,21 @@ def task_context():
 
 
 def _make_services():
-    """Return (nautobot_svc, import_svc, update_svc) with safe async defaults.
+    """Return (nautobot_svc, creation_svc, update_svc) with safe async defaults.
 
     graphql_query always returns "no devices found" so that every object is
-    treated as new and routed through import_device.
+    treated as new and routed through create_device_with_interfaces.
     """
     nautobot_svc = MagicMock()
     nautobot_svc.graphql_query = AsyncMock(return_value={"data": {"devices": []}})
     nautobot_svc.rest_request = AsyncMock(return_value={"id": "rest-created-uuid"})
 
-    import_svc = MagicMock()
-    import_svc.import_device = AsyncMock(
+    creation_svc = MagicMock()
+    creation_svc.create_device_with_interfaces = AsyncMock(
         return_value={
             "success": True,
             "device_id": "created-device-uuid",
-            "device_name": "imported",
-            "warnings": [],
+            "workflow_status": {},
         }
     )
 
@@ -147,17 +146,25 @@ def _make_services():
         }
     )
 
-    return nautobot_svc, import_svc, update_svc
+    return nautobot_svc, creation_svc, update_svc
 
 
-def _run(csv_repo_dir, task_context, nautobot_svc, import_svc, update_svc, **kwargs):
+def _created_requests(creation_svc):
+    """Return the AddDeviceRequest objects passed to create_device_with_interfaces."""
+    return [
+        positional[0] if positional else keyword["request"]
+        for positional, keyword in creation_svc.create_device_with_interfaces.call_args_list
+    ]
+
+
+def _run(csv_repo_dir, task_context, nautobot_svc, creation_svc, update_svc, **kwargs):
     """Call CsvImportService.run_import with all external dependencies patched.
 
     Patches applied:
     - git_repo_manager.get_repository → returns a dummy repo object
     - git_repo_path → returns str(csv_repo_dir)
     - service_factory.build_nautobot_service → returns nautobot_svc
-    - DeviceImportService constructor → returns import_svc
+    - DeviceCreationService constructor → returns creation_svc
     - DeviceUpdateService constructor → returns update_svc
     """
     _MODULE = "services.nautobot.imports.csv_import_service"
@@ -179,8 +186,8 @@ def _run(csv_repo_dir, task_context, nautobot_svc, import_svc, update_svc, **kwa
 
         stack.enter_context(
             patch(
-                f"{_MODULE}.DeviceImportService",
-                return_value=import_svc,
+                f"{_MODULE}.DeviceCreationService",
+                return_value=creation_svc,
             )
         )
         stack.enter_context(
@@ -215,16 +222,16 @@ class TestImportFromNautobotCsv:
 
         Verifies:
         - result is successful with 3 created, 0 updated, 0 failures
-        - import_device is called exactly 3 times
-        - add_prefixes_automatically=True is forwarded on every call
+        - create_device_with_interfaces is called exactly 3 times
+        - add_prefix=True is forwarded on every request
         """
-        nautobot_svc, import_svc, update_svc = _make_services()
+        nautobot_svc, creation_svc, update_svc = _make_services()
 
         result = _run(
             csv_repo_dir,
             task_context,
             nautobot_svc,
-            import_svc,
+            creation_svc,
             update_svc,
             file_path=_NAUTOBOT_CSV,
             import_type="devices",
@@ -247,26 +254,28 @@ class TestImportFromNautobotCsv:
         assert summary["skipped"] == 0
         assert summary["files_processed"] == 1
 
-        # One import_device call per device
-        assert import_svc.import_device.call_count == _NAUTOBOT_DEVICE_COUNT
+        # One create_device_with_interfaces call per device
+        requests = _created_requests(creation_svc)
+        assert len(requests) == _NAUTOBOT_DEVICE_COUNT
 
-        # Every call must request automatic prefix creation
-        for _positional, keyword in import_svc.import_device.call_args_list:
-            assert keyword.get("add_prefixes_automatically") is True
+        # Every request must ask for automatic prefix creation
+        for request in requests:
+            assert request.add_prefix is True
+            assert request.default_prefix_length == "/24"
 
     def test_nautobot_null_sentinels_are_stripped(self, csv_repo_dir, task_context):
         """NULL/NoObject values from the Nautobot export are removed before import.
 
         The nautobot CSV contains many 'NULL' and 'NoObject' values. In nautobot
-        format these must be filtered out so they are not sent to DeviceImportService.
+        format these must be filtered out so they are not sent to the creation service.
         """
-        nautobot_svc, import_svc, update_svc = _make_services()
+        nautobot_svc, creation_svc, update_svc = _make_services()
 
         _run(
             csv_repo_dir,
             task_context,
             nautobot_svc,
-            import_svc,
+            creation_svc,
             update_svc,
             file_path=_NAUTOBOT_CSV,
             import_type="devices",
@@ -279,12 +288,9 @@ class TestImportFromNautobotCsv:
 
         _SENTINELS = {"NULL", "NoObject", "null"}
 
-        for positional, keyword in import_svc.import_device.call_args_list:
-            device_data = (
-                positional[0] if positional else keyword.get("device_data", {})
-            )
+        for request in _created_requests(creation_svc):
             # Sentinel values must not appear as top-level string fields
-            for field_value in device_data.values():
+            for field_value in request.model_dump().values():
                 if isinstance(field_value, str):
                     assert field_value not in _SENTINELS, (
                         f"Sentinel value '{field_value}' found in device payload"
@@ -310,16 +316,17 @@ class TestImportFromCockpitCsv:
 
         Verifies:
         - result is successful with 2 created, 0 updated, 0 failures
-        - import_device is called exactly 2 times (once per unique device name)
-        - add_prefixes_automatically=True is forwarded on every call
+        - create_device_with_interfaces is called exactly 2 times (once per
+          unique device name)
+        - add_prefix=True is forwarded on every request
         """
-        nautobot_svc, import_svc, update_svc = _make_services()
+        nautobot_svc, creation_svc, update_svc = _make_services()
 
         result = _run(
             csv_repo_dir,
             task_context,
             nautobot_svc,
-            import_svc,
+            creation_svc,
             update_svc,
             file_path=_COCKPIT_CSV,
             import_type="devices",
@@ -341,27 +348,28 @@ class TestImportFromCockpitCsv:
         assert summary["skipped"] == 0
         assert summary["files_processed"] == 1
 
-        # One import_device call per unique device name
-        assert import_svc.import_device.call_count == _COCKPIT_DEVICE_COUNT
+        # One create_device_with_interfaces call per unique device name
+        requests = _created_requests(creation_svc)
+        assert len(requests) == _COCKPIT_DEVICE_COUNT
 
-        # Every call must request automatic prefix creation
-        for _positional, keyword in import_svc.import_device.call_args_list:
-            assert keyword.get("add_prefixes_automatically") is True
+        # Every request must ask for automatic prefix creation
+        for request in requests:
+            assert request.add_prefix is True
 
     def test_all_interfaces_are_passed_per_device(self, csv_repo_dir, task_context):
-        """Each device import call receives interface_config with all 4 interfaces.
+        """Each device creation request carries all 4 interfaces.
 
         The Cockpit CSV has 4 rows per device (one row per interface).
         _process_cockpit_rows must group them and pass all interfaces in a
-        single import_device call.
+        single create_device_with_interfaces call.
         """
-        nautobot_svc, import_svc, update_svc = _make_services()
+        nautobot_svc, creation_svc, update_svc = _make_services()
 
         _run(
             csv_repo_dir,
             task_context,
             nautobot_svc,
-            import_svc,
+            creation_svc,
             update_svc,
             file_path=_COCKPIT_CSV,
             import_type="devices",
@@ -372,11 +380,10 @@ class TestImportFromCockpitCsv:
             default_prefix_length="24",
         )
 
-        for _positional, keyword in import_svc.import_device.call_args_list:
-            interface_config = keyword.get("interface_config")
-            assert interface_config is not None, "interface_config must be provided"
-            assert len(interface_config) == _COCKPIT_INTERFACES_PER_DEVICE, (
-                f"Expected {_COCKPIT_INTERFACES_PER_DEVICE} interfaces, got {len(interface_config)}"
+        for request in _created_requests(creation_svc):
+            assert len(request.interfaces) == _COCKPIT_INTERFACES_PER_DEVICE, (
+                f"Expected {_COCKPIT_INTERFACES_PER_DEVICE} interfaces, "
+                f"got {len(request.interfaces)}"
             )
 
     def test_set_primary_ipv4_flag_is_respected(self, csv_repo_dir, task_context):
@@ -384,15 +391,15 @@ class TestImportFromCockpitCsv:
 
         In the Cockpit CSV, Ethernet0/0 has set_primary_ipv4=true and
         Ethernet0/1 has set_primary_ipv4=false.  Both carry IP addresses, but
-        only the first should have is_primary_ipv4=True.
+        only the first should have its IP marked is_primary=True.
         """
-        nautobot_svc, import_svc, update_svc = _make_services()
+        nautobot_svc, creation_svc, update_svc = _make_services()
 
         _run(
             csv_repo_dir,
             task_context,
             nautobot_svc,
-            import_svc,
+            creation_svc,
             update_svc,
             file_path=_COCKPIT_CSV,
             import_type="devices",
@@ -403,21 +410,173 @@ class TestImportFromCockpitCsv:
             default_prefix_length="24",
         )
 
-        for _positional, keyword in import_svc.import_device.call_args_list:
-            interface_config = keyword.get("interface_config", [])
-
-            ip_interfaces = [i for i in interface_config if i.get("ip_address")]
-            primary_interfaces = [i for i in ip_interfaces if i.get("is_primary_ipv4")]
+        for request in _created_requests(creation_svc):
+            ip_interfaces = [i for i in request.interfaces if i.ip_addresses]
+            primary_interfaces = [
+                i for i in ip_interfaces if i.ip_addresses[0].is_primary
+            ]
             non_primary_interfaces = [
-                i for i in ip_interfaces if not i.get("is_primary_ipv4")
+                i for i in ip_interfaces if not i.ip_addresses[0].is_primary
             ]
 
             # Exactly one interface is designated as primary
             assert len(primary_interfaces) == 1, (
-                "Exactly one interface should have is_primary_ipv4=True"
+                "Exactly one interface should have a primary IP"
             )
-            assert primary_interfaces[0]["name"] == "Ethernet0/0"
+            assert primary_interfaces[0].name == "Ethernet0/0"
 
             # The second IP-bearing interface must not be primary
             assert len(non_primary_interfaces) == 1
-            assert non_primary_interfaces[0]["name"] == "Ethernet0/1"
+            assert non_primary_interfaces[0].name == "Ethernet0/1"
+
+
+# ---------------------------------------------------------------------------
+# Test 3 – Behavior flags and data sources (import_unknown, profile, agent)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.unit
+class TestImportBehaviorFlags:
+    """import_unknown gating, profile-based defaults, and the agent data source."""
+
+    def test_import_unknown_disabled_skips_creation(self, csv_repo_dir, task_context):
+        """With import_unknown=False, unknown devices are skipped, not created."""
+        nautobot_svc, creation_svc, update_svc = _make_services()
+
+        result = _run(
+            csv_repo_dir,
+            task_context,
+            nautobot_svc,
+            creation_svc,
+            update_svc,
+            file_path=_COCKPIT_CSV,
+            import_type="devices",
+            primary_key="name",
+            import_format="cockpit",
+            update_existing=True,
+            import_unknown=False,
+        )
+
+        assert result["success"] is True
+        summary = result["summary"]
+        assert summary["created"] == 0
+        assert summary["skipped"] == _COCKPIT_DEVICE_COUNT
+        assert summary["failed"] == 0
+        creation_svc.create_device_with_interfaces.assert_not_called()
+
+    def test_profile_defaults_fill_blank_fields(self, csv_repo_dir, task_context):
+        """Profile values fill fields the CSV does not provide; CSV values win."""
+        minimal_csv = csv_repo_dir / "minimal.csv"
+        minimal_csv.write_text("name,serial,status\ndev1,SN1,Active\n")
+
+        nautobot_svc, creation_svc, update_svc = _make_services()
+
+        profile_svc = MagicMock()
+        profile_svc.get.return_value = {
+            "id": 7,
+            "name": "Network",
+            "device_status": "Planned",
+            "device_role": "Switch",
+            "location": "Berlin",
+            "device_type": "Linux",
+            "platform": "Cisco IOS",
+            "interface_status": "Active",
+            "interface_type": "other",
+            "namespace": "Global",
+        }
+
+        with patch(
+            "services.settings.profile_service.ProfileService",
+            return_value=profile_svc,
+        ):
+            result = _run(
+                csv_repo_dir,
+                task_context,
+                nautobot_svc,
+                creation_svc,
+                update_svc,
+                file_path="minimal.csv",
+                import_type="devices",
+                primary_key="name",
+                import_format="generic",
+                profile_id=7,
+            )
+
+        assert result["summary"]["created"] == 1
+        request = _created_requests(creation_svc)[0]
+        # Profile fills the blanks…
+        assert request.role == "Switch"
+        assert request.location == "Berlin"
+        assert request.device_type == "Linux"
+        # …but the CSV value wins where present
+        assert request.status == "Active"
+
+    def test_missing_required_fields_without_profile_skips(
+        self, csv_repo_dir, task_context
+    ):
+        """Without a profile, rows lacking required creation fields are skipped."""
+        minimal_csv = csv_repo_dir / "minimal.csv"
+        minimal_csv.write_text("name,serial\ndev1,SN1\n")
+
+        nautobot_svc, creation_svc, update_svc = _make_services()
+
+        result = _run(
+            csv_repo_dir,
+            task_context,
+            nautobot_svc,
+            creation_svc,
+            update_svc,
+            file_path="minimal.csv",
+            import_type="devices",
+            primary_key="name",
+            import_format="generic",
+        )
+
+        assert result["summary"]["created"] == 0
+        assert result["summary"]["skipped"] == 1
+        creation_svc.create_device_with_interfaces.assert_not_called()
+
+    def test_agent_source_processes_flow_blocks(self, csv_repo_dir, task_context):
+        """source='agent' fetches CSV text per flow and processes each block."""
+        nautobot_svc, creation_svc, update_svc = _make_services()
+
+        agent_svc = MagicMock()
+        agent_svc.send_get_data.return_value = {
+            "status": "success",
+            "output": {
+                "result": {
+                    "servers": (
+                        "name,role,status,location,device_type\n"
+                        "dev1,Server,Active,Berlin,Linux\n"
+                        "dev2,Server,Active,Berlin,Linux\n"
+                    )
+                }
+            },
+        }
+
+        with (
+            patch("core.database.SessionLocal", return_value=MagicMock()),
+            patch(
+                "services.cockpit_agent.cockpit_agent_service.CockpitAgentService",
+                return_value=agent_svc,
+            ),
+        ):
+            result = _run(
+                csv_repo_dir,
+                task_context,
+                nautobot_svc,
+                creation_svc,
+                update_svc,
+                source="agent",
+                agent_id="agent-1",
+                agent_flows=["flow1"],
+                import_type="devices",
+                primary_key="name",
+                import_format="generic",
+            )
+
+        assert result["success"] is True
+        assert result["summary"]["created"] == 2
+        agent_svc.send_get_data.assert_called_once_with(
+            agent_id="agent-1", flow_id="flow1", sent_by="scheduler"
+        )

@@ -21,11 +21,9 @@ import {
   useCsvHeaders,
   useNautobotDefaults,
 } from '../hooks/use-template-queries'
-import {
-  useCsvImportNautobotQuery,
-  EMPTY_CSV_IMPORT_NAUTOBOT_DATA,
-} from '../hooks/use-csv-import-nautobot-query'
 import { useAgentsQuery } from '@/hooks/queries/use-agents-query'
+import { useProfilesQuery } from '@/components/features/settings/defaults/profiles/hooks/use-profiles-query'
+import { EMPTY_PROFILES } from '@/components/features/settings/defaults/profiles/utils/constants'
 import {
   EMPTY_IP_STATUSES,
   EMPTY_IP_TAGS,
@@ -54,7 +52,6 @@ import { GetServerFactsJobTemplate } from './template-types/GetServerFactsJobTem
 import { GetOpenPortsJobTemplate } from './template-types/GetOpenPortsJobTemplate'
 import { PortScanJobTemplate } from './template-types/PortScanJobTemplate'
 import { CsvImportMappingDialog } from './template-types/CsvImportMappingDialog'
-import { CsvImportDefaultsPanel } from './csv-import-defaults-panel'
 import type { DeployTemplateEntryData } from './template-types/DeployTemplateEntry'
 import type { FactsPrefixEntry } from './template-types/GetServerFactsJobTemplate'
 import type { OpenPortsPrefixEntry } from './template-types/GetOpenPortsJobTemplate'
@@ -160,11 +157,18 @@ export function TemplateFormDialog({
   const [formIpRemoveSkipAssigned, setFormIpRemoveSkipAssigned] = useState(true)
   const [formIpRemoveSkipReserved, setFormIpRemoveSkipReserved] = useState(true)
   // CSV Import
+  const [formCsvImportSource, setFormCsvImportSource] = useState<'git' | 'agent'>(
+    'git'
+  )
   const [formCsvImportRepoId, setFormCsvImportRepoId] = useState<number | null>(null)
   const [formCsvImportFilePath, setFormCsvImportFilePath] = useState('')
+  const [formCsvImportAgentId, setFormCsvImportAgentId] = useState('')
+  const [formCsvImportAgentFlows, setFormCsvImportAgentFlows] = useState<string[]>([])
+  const [agentCsvHeaders, setAgentCsvHeaders] = useState<string[]>([])
   const [formCsvImportType, setFormCsvImportType] = useState('')
   const [formCsvImportPrimaryKey, setFormCsvImportPrimaryKey] = useState('')
   const [formCsvImportUpdateExisting, setFormCsvImportUpdateExisting] = useState(true)
+  const [formCsvImportImportUnknown, setFormCsvImportImportUnknown] = useState(true)
   const [formCsvImportDelimiter, setFormCsvImportDelimiter] = useState(',')
   const [formCsvImportQuoteChar, setFormCsvImportQuoteChar] = useState('"')
   const [formCsvImportColumnMapping, setFormCsvImportColumnMapping] = useState<
@@ -173,9 +177,9 @@ export function TemplateFormDialog({
   const [formCsvMappingDialogOpen, setFormCsvMappingDialogOpen] = useState(false)
   const [csvFileQuery, setCsvFileQuery] = useState('')
   const [formCsvImportFileFilter, setFormCsvImportFileFilter] = useState('')
-  const [formCsvImportDefaults, setFormCsvImportDefaults] = useState<
-    Record<string, string>
-  >({})
+  const [formCsvImportProfileId, setFormCsvImportProfileId] = useState<number | null>(
+    null
+  )
   const [formCsvImportFormat, setFormCsvImportFormat] = useState('generic')
   const [formCsvImportAddPrefixes, setFormCsvImportAddPrefixes] = useState(false)
   const [formCsvImportDefaultPrefixLength, setFormCsvImportDefaultPrefixLength] =
@@ -253,10 +257,14 @@ export function TemplateFormDialog({
       enabled: isCsvImport,
     })
   const { data: nautobotDefaults } = useNautobotDefaults({ enabled: isCsvImport })
-  const {
-    data: csvImportNautobotData = EMPTY_CSV_IMPORT_NAUTOBOT_DATA,
-    isLoading: csvImportNautobotLoading,
-  } = useCsvImportNautobotQuery({ enabled: isCsvImport })
+  const { data: profiles = EMPTY_PROFILES } = useProfilesQuery({
+    enabled: isCsvImport,
+  })
+
+  // Headers used for the primary key selector and column mapping: from the git
+  // example file, or from the sample data fetched from the Get Data agent.
+  const effectiveCsvHeaders =
+    formCsvImportSource === 'agent' ? agentCsvHeaders : csvHeaders
 
   // CSV Export data (only fetched when job type is csv_export)
   const isCsvExport = formJobType === 'csv_export'
@@ -358,17 +366,22 @@ export function TemplateFormDialog({
     setFormIpMarkDescription('')
     setFormIpRemoveSkipAssigned(true)
     setFormIpRemoveSkipReserved(true)
+    setFormCsvImportSource('git')
     setFormCsvImportRepoId(null)
     setFormCsvImportFilePath('')
+    setFormCsvImportAgentId('')
+    setFormCsvImportAgentFlows([])
+    setAgentCsvHeaders([])
     setFormCsvImportType('')
     setFormCsvImportPrimaryKey('')
     setFormCsvImportUpdateExisting(true)
+    setFormCsvImportImportUnknown(true)
     setFormCsvImportDelimiter(',')
     setFormCsvImportQuoteChar('"')
     setFormCsvImportColumnMapping({})
     setCsvFileQuery('')
     setFormCsvImportFileFilter('')
-    setFormCsvImportDefaults({})
+    setFormCsvImportProfileId(null)
     setFormCsvImportFormat('generic')
     setFormCsvImportAddPrefixes(false)
     setFormCsvImportDefaultPrefixLength('')
@@ -487,16 +500,27 @@ export function TemplateFormDialog({
       setFormIpMarkDescription(editingTemplate.ip_mark_description || '')
       setFormIpRemoveSkipAssigned(editingTemplate.ip_remove_skip_assigned ?? true)
       setFormIpRemoveSkipReserved(editingTemplate.ip_remove_skip_reserved ?? true)
+      setFormCsvImportSource(editingTemplate.csv_import_source || 'git')
       setFormCsvImportRepoId(editingTemplate.csv_import_repo_id || null)
       setFormCsvImportFilePath(editingTemplate.csv_import_file_path || '')
+      setFormCsvImportAgentId(editingTemplate.csv_import_agent_id || '')
+      setFormCsvImportAgentFlows(editingTemplate.csv_import_agent_flows || [])
+      // A saved mapping implies the headers it maps — reuse its keys so the
+      // primary key and mapping stay editable without re-fetching agent data.
+      setAgentCsvHeaders(
+        editingTemplate.csv_import_source === 'agent'
+          ? Object.keys(editingTemplate.csv_import_column_mapping || {})
+          : []
+      )
       setFormCsvImportType(editingTemplate.csv_import_type || '')
       setFormCsvImportPrimaryKey(editingTemplate.csv_import_primary_key || '')
       setFormCsvImportUpdateExisting(editingTemplate.csv_import_update_existing ?? true)
+      setFormCsvImportImportUnknown(editingTemplate.csv_import_import_unknown ?? true)
       setFormCsvImportDelimiter(editingTemplate.csv_import_delimiter || ',')
       setFormCsvImportQuoteChar(editingTemplate.csv_import_quote_char || '"')
       setFormCsvImportColumnMapping(editingTemplate.csv_import_column_mapping || {})
       setFormCsvImportFileFilter(editingTemplate.csv_import_file_filter ?? '')
-      setFormCsvImportDefaults(editingTemplate.csv_import_defaults ?? {})
+      setFormCsvImportProfileId(editingTemplate.csv_import_profile_id ?? null)
       setFormCsvImportFormat(editingTemplate.csv_import_format || 'generic')
       setFormCsvImportAddPrefixes(editingTemplate.csv_import_add_prefixes ?? false)
       setFormCsvImportDefaultPrefixLength(
@@ -611,13 +635,12 @@ export function TemplateFormDialog({
       if (!formIpFilterField.trim() || !formIpFilterValue.trim()) return false
     }
     if (formJobType === 'csv_import') {
-      if (
-        !formCsvImportRepoId ||
-        !formCsvImportFilePath ||
-        !formCsvImportType ||
-        !formCsvImportPrimaryKey
-      )
-        return false
+      if (!formCsvImportType || !formCsvImportPrimaryKey) return false
+      if (formCsvImportSource === 'agent') {
+        if (!formCsvImportAgentId || formCsvImportAgentFlows.length === 0) return false
+      } else {
+        if (!formCsvImportRepoId || !formCsvImportFilePath) return false
+      }
     }
     if (formJobType === 'csv_export') {
       if (
@@ -665,8 +688,11 @@ export function TemplateFormDialog({
     formDeployTemplateEntries,
     formIpFilterField,
     formIpFilterValue,
+    formCsvImportSource,
     formCsvImportRepoId,
     formCsvImportFilePath,
+    formCsvImportAgentId,
+    formCsvImportAgentFlows,
     formCsvImportType,
     formCsvImportPrimaryKey,
     formCsvExportRepoId,
@@ -823,16 +849,32 @@ export function TemplateFormDialog({
           ? formIpRemoveSkipReserved
           : undefined,
       // CSV Import fields
+      csv_import_source:
+        formJobType === 'csv_import' ? formCsvImportSource : undefined,
       csv_import_repo_id:
-        formJobType === 'csv_import' ? formCsvImportRepoId || undefined : undefined,
+        formJobType === 'csv_import' && formCsvImportSource === 'git'
+          ? formCsvImportRepoId || undefined
+          : undefined,
       csv_import_file_path:
-        formJobType === 'csv_import' ? formCsvImportFilePath || undefined : undefined,
+        formJobType === 'csv_import' && formCsvImportSource === 'git'
+          ? formCsvImportFilePath || undefined
+          : undefined,
+      csv_import_agent_id:
+        formJobType === 'csv_import' && formCsvImportSource === 'agent'
+          ? formCsvImportAgentId || undefined
+          : undefined,
+      csv_import_agent_flows:
+        formJobType === 'csv_import' && formCsvImportSource === 'agent'
+          ? formCsvImportAgentFlows
+          : undefined,
       csv_import_type:
         formJobType === 'csv_import' ? formCsvImportType || undefined : undefined,
       csv_import_primary_key:
         formJobType === 'csv_import' ? formCsvImportPrimaryKey || undefined : undefined,
       csv_import_update_existing:
         formJobType === 'csv_import' ? formCsvImportUpdateExisting : undefined,
+      csv_import_import_unknown:
+        formJobType === 'csv_import' ? formCsvImportImportUnknown : undefined,
       csv_import_delimiter:
         formJobType === 'csv_import' ? formCsvImportDelimiter || undefined : undefined,
       csv_import_quote_char:
@@ -840,11 +882,11 @@ export function TemplateFormDialog({
       csv_import_column_mapping:
         formJobType === 'csv_import' ? formCsvImportColumnMapping : undefined,
       csv_import_file_filter:
-        formJobType === 'csv_import' ? formCsvImportFileFilter || undefined : undefined,
-      csv_import_defaults:
-        formJobType === 'csv_import' && Object.keys(formCsvImportDefaults).length > 0
-          ? formCsvImportDefaults
+        formJobType === 'csv_import' && formCsvImportSource === 'git'
+          ? formCsvImportFileFilter || undefined
           : undefined,
+      csv_import_profile_id:
+        formJobType === 'csv_import' ? formCsvImportProfileId ?? undefined : undefined,
       csv_import_format:
         formJobType === 'csv_import' ? formCsvImportFormat || undefined : undefined,
       csv_import_add_prefixes:
@@ -1112,16 +1154,24 @@ export function TemplateFormDialog({
           {formJobType === 'csv_import' && (
             <>
               <CsvImportJobTemplate
+                formCsvImportSource={formCsvImportSource}
+                setFormCsvImportSource={setFormCsvImportSource}
                 formCsvImportRepoId={formCsvImportRepoId}
                 setFormCsvImportRepoId={setFormCsvImportRepoId}
                 formCsvImportFilePath={formCsvImportFilePath}
                 setFormCsvImportFilePath={setFormCsvImportFilePath}
+                formCsvImportAgentId={formCsvImportAgentId}
+                setFormCsvImportAgentId={setFormCsvImportAgentId}
+                formCsvImportAgentFlows={formCsvImportAgentFlows}
+                setFormCsvImportAgentFlows={setFormCsvImportAgentFlows}
                 formCsvImportType={formCsvImportType}
                 setFormCsvImportType={setFormCsvImportType}
                 formCsvImportPrimaryKey={formCsvImportPrimaryKey}
                 setFormCsvImportPrimaryKey={setFormCsvImportPrimaryKey}
                 formCsvImportUpdateExisting={formCsvImportUpdateExisting}
                 setFormCsvImportUpdateExisting={setFormCsvImportUpdateExisting}
+                formCsvImportImportUnknown={formCsvImportImportUnknown}
+                setFormCsvImportImportUnknown={setFormCsvImportImportUnknown}
                 formCsvImportDelimiter={formCsvImportDelimiter}
                 setFormCsvImportDelimiter={setFormCsvImportDelimiter}
                 formCsvImportQuoteChar={formCsvImportQuoteChar}
@@ -1129,6 +1179,8 @@ export function TemplateFormDialog({
                 formCsvImportColumnMapping={formCsvImportColumnMapping}
                 formCsvImportFileFilter={formCsvImportFileFilter}
                 setFormCsvImportFileFilter={setFormCsvImportFileFilter}
+                formCsvImportProfileId={formCsvImportProfileId}
+                setFormCsvImportProfileId={setFormCsvImportProfileId}
                 formCsvImportFormat={formCsvImportFormat}
                 setFormCsvImportFormat={setFormCsvImportFormat}
                 formCsvImportAddPrefixes={formCsvImportAddPrefixes}
@@ -1139,9 +1191,11 @@ export function TemplateFormDialog({
                 }
                 csvImportRepos={csvImportRepos}
                 csvFiles={csvFiles}
-                csvHeaders={csvHeaders}
+                csvHeaders={effectiveCsvHeaders}
                 csvFilesLoading={csvFilesLoading}
                 csvHeadersLoading={csvHeadersLoading}
+                onAgentHeadersLoaded={setAgentCsvHeaders}
+                profiles={profiles}
                 mappedColumnCount={mappedColumnCount}
                 onOpenMappingDialog={() => setFormCsvMappingDialogOpen(true)}
                 fileQuery={csvFileQuery}
@@ -1150,17 +1204,10 @@ export function TemplateFormDialog({
               <CsvImportMappingDialog
                 open={formCsvMappingDialogOpen}
                 onOpenChange={setFormCsvMappingDialogOpen}
-                csvHeaders={csvHeaders}
+                csvHeaders={effectiveCsvHeaders}
                 importType={formCsvImportType}
                 columnMapping={formCsvImportColumnMapping}
                 onMappingChange={setFormCsvImportColumnMapping}
-              />
-              <CsvImportDefaultsPanel
-                importType={formCsvImportType}
-                defaults={formCsvImportDefaults}
-                onDefaultsChange={setFormCsvImportDefaults}
-                nautobotData={csvImportNautobotData}
-                isLoading={csvImportNautobotLoading}
               />
             </>
           )}

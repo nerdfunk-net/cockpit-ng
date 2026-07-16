@@ -379,13 +379,18 @@ class IPAddressesTaskRequest(BaseModel):
 
 
 class CsvImportRequest(BaseModel):
-    """Request model for importing/updating Nautobot objects from a CSV file in a Git repo."""
+    """Request model for importing/updating Nautobot objects from CSV data
+    (Git repository files or Get Data agent output)."""
 
-    repo_id: int
-    file_path: str
     import_type: str  # "devices", "ip-prefixes", "ip-addresses"
     primary_key: str  # CSV column name used as the lookup key
+    source: str = "git"  # "git" | "agent"
+    repo_id: Optional[int] = None  # required when source == "git"
+    file_path: str = ""
+    agent_id: Optional[str] = None  # required when source == "agent"
+    agent_flows: Optional[List[str]] = None  # flow ids to fetch from the agent
     update_existing: bool = True
+    import_unknown: bool = True  # create objects not found in Nautobot
     delimiter: str = ","
     quote_char: str = '"'
     column_mapping: Optional[Dict[str, Optional[str]]] = None
@@ -394,6 +399,7 @@ class CsvImportRequest(BaseModel):
     file_filter: Optional[str] = (
         None  # glob pattern; if set, process all matching files instead of file_path
     )
+    profile_id: Optional[int] = None  # profile whose values fill blank CSV fields
 
 
 class CsvExportRequest(BaseModel):

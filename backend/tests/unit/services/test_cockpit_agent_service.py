@@ -201,7 +201,9 @@ def test_send_ansible_get_cisco_facts_nxos(
             ansible_user="admin",
         )
 
-    assert wait_mock.call_args.kwargs["params"]["ansible_network_os"] == "cisco.nxos.nxos"
+    assert (
+        wait_mock.call_args.kwargs["params"]["ansible_network_os"] == "cisco.nxos.nxos"
+    )
 
 
 @pytest.mark.unit

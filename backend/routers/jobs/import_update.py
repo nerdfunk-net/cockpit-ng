@@ -312,17 +312,22 @@ async def trigger_import_or_update_from_csv(
     from tasks.import_or_update_from_csv_task import import_or_update_from_csv_task
 
     task = import_or_update_from_csv_task.delay(
-        repo_id=request.repo_id,
-        file_path=request.file_path,
         import_type=request.import_type,
         primary_key=request.primary_key,
+        source=request.source,
+        repo_id=request.repo_id,
+        file_path=request.file_path,
+        agent_id=request.agent_id,
+        agent_flows=request.agent_flows,
         update_existing=request.update_existing,
+        import_unknown=request.import_unknown,
         delimiter=request.delimiter,
         quote_char=request.quote_char,
         column_mapping=request.column_mapping,
         dry_run=request.dry_run,
         template_id=request.template_id,
         file_filter=request.file_filter,
+        profile_id=request.profile_id,
     )
 
     job_name = (

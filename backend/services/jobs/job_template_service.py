@@ -64,16 +64,20 @@ class JobTemplateService:
         ip_mark_description: Optional[str] = None,
         ip_remove_skip_assigned: Optional[bool] = True,
         ip_remove_skip_reserved: Optional[bool] = True,
+        csv_import_source: Optional[str] = None,
         csv_import_repo_id: Optional[int] = None,
         csv_import_file_path: Optional[str] = None,
+        csv_import_agent_id: Optional[str] = None,
+        csv_import_agent_flows: Optional[List[str]] = None,
         csv_import_type: Optional[str] = None,
         csv_import_primary_key: Optional[str] = None,
         csv_import_update_existing: bool = True,
+        csv_import_import_unknown: bool = True,
         csv_import_delimiter: Optional[str] = None,
         csv_import_quote_char: Optional[str] = None,
         csv_import_column_mapping: Optional[Dict[str, Any]] = None,
         csv_import_file_filter: Optional[str] = None,
-        csv_import_defaults: Optional[Dict[str, Any]] = None,
+        csv_import_profile_id: Optional[int] = None,
         csv_import_format: Optional[str] = None,
         csv_import_add_prefixes: bool = False,
         csv_import_default_prefix_length: Optional[str] = None,
@@ -118,8 +122,10 @@ class JobTemplateService:
             if csv_import_column_mapping is not None
             else None
         )
-        csv_import_defaults_json = (
-            json.dumps(csv_import_defaults) if csv_import_defaults is not None else None
+        csv_import_agent_flows_json = (
+            json.dumps(csv_import_agent_flows)
+            if csv_import_agent_flows is not None
+            else None
         )
         csv_export_properties_json = (
             json.dumps(csv_export_properties)
@@ -182,16 +188,20 @@ class JobTemplateService:
             ip_mark_description=ip_mark_description,
             ip_remove_skip_assigned=ip_remove_skip_assigned,
             ip_remove_skip_reserved=ip_remove_skip_reserved,
+            csv_import_source=csv_import_source,
             csv_import_repo_id=csv_import_repo_id,
             csv_import_file_path=csv_import_file_path,
+            csv_import_agent_id=csv_import_agent_id,
+            csv_import_agent_flows=csv_import_agent_flows_json,
             csv_import_type=csv_import_type,
             csv_import_primary_key=csv_import_primary_key,
             csv_import_update_existing=csv_import_update_existing,
+            csv_import_import_unknown=csv_import_import_unknown,
             csv_import_delimiter=csv_import_delimiter,
             csv_import_quote_char=csv_import_quote_char,
             csv_import_column_mapping=csv_import_column_mapping_json,
             csv_import_file_filter=csv_import_file_filter,
-            csv_import_defaults=csv_import_defaults_json,
+            csv_import_profile_id=csv_import_profile_id,
             csv_import_format=csv_import_format,
             csv_import_add_prefixes=csv_import_add_prefixes,
             csv_import_default_prefix_length=csv_import_default_prefix_length,
@@ -304,16 +314,20 @@ class JobTemplateService:
         ip_mark_description: Optional[str] = None,
         ip_remove_skip_assigned: Optional[bool] = None,
         ip_remove_skip_reserved: Optional[bool] = None,
+        csv_import_source: Optional[str] = None,
         csv_import_repo_id: Optional[int] = None,
         csv_import_file_path: Optional[str] = None,
+        csv_import_agent_id: Optional[str] = None,
+        csv_import_agent_flows: Optional[List[str]] = None,
         csv_import_type: Optional[str] = None,
         csv_import_primary_key: Optional[str] = None,
         csv_import_update_existing: Optional[bool] = None,
+        csv_import_import_unknown: Optional[bool] = None,
         csv_import_delimiter: Optional[str] = None,
         csv_import_quote_char: Optional[str] = None,
         csv_import_column_mapping: Optional[Dict[str, Any]] = None,
         csv_import_file_filter: Optional[str] = None,
-        csv_import_defaults: Optional[Dict[str, Any]] = None,
+        csv_import_profile_id: Optional[int] = None,
         csv_import_format: Optional[str] = None,
         csv_import_add_prefixes: Optional[bool] = None,
         csv_import_default_prefix_length: Optional[str] = None,
@@ -443,16 +457,24 @@ class JobTemplateService:
             update_data["ip_remove_skip_assigned"] = ip_remove_skip_assigned
         if ip_remove_skip_reserved is not None:
             update_data["ip_remove_skip_reserved"] = ip_remove_skip_reserved
+        if csv_import_source is not None:
+            update_data["csv_import_source"] = csv_import_source
         if csv_import_repo_id is not None:
             update_data["csv_import_repo_id"] = csv_import_repo_id
         if csv_import_file_path is not None:
             update_data["csv_import_file_path"] = csv_import_file_path
+        if csv_import_agent_id is not None:
+            update_data["csv_import_agent_id"] = csv_import_agent_id
+        if csv_import_agent_flows is not None:
+            update_data["csv_import_agent_flows"] = json.dumps(csv_import_agent_flows)
         if csv_import_type is not None:
             update_data["csv_import_type"] = csv_import_type
         if csv_import_primary_key is not None:
             update_data["csv_import_primary_key"] = csv_import_primary_key
         if csv_import_update_existing is not None:
             update_data["csv_import_update_existing"] = csv_import_update_existing
+        if csv_import_import_unknown is not None:
+            update_data["csv_import_import_unknown"] = csv_import_import_unknown
         if csv_import_delimiter is not None:
             update_data["csv_import_delimiter"] = csv_import_delimiter
         if csv_import_quote_char is not None:
@@ -463,8 +485,8 @@ class JobTemplateService:
             )
         if csv_import_file_filter is not None:
             update_data["csv_import_file_filter"] = csv_import_file_filter
-        if csv_import_defaults is not None:
-            update_data["csv_import_defaults"] = json.dumps(csv_import_defaults)
+        if csv_import_profile_id is not None:
+            update_data["csv_import_profile_id"] = csv_import_profile_id
         if csv_import_format is not None:
             update_data["csv_import_format"] = csv_import_format
         if csv_import_add_prefixes is not None:
@@ -534,7 +556,7 @@ class JobTemplateService:
             "[CSV_DEBUG][STORE] template_id=%s incoming CSV args: "
             "repo_id=%r file_path=%r type=%r primary_key=%r "
             "delimiter=%r quote_char=%r update_existing=%r file_filter=%r "
-            "column_mapping=%r defaults=%r",
+            "column_mapping=%r profile_id=%r source=%r agent_id=%r",
             template_id,
             csv_import_repo_id,
             csv_import_file_path,
@@ -545,7 +567,9 @@ class JobTemplateService:
             csv_import_update_existing,
             csv_import_file_filter,
             csv_import_column_mapping,
-            csv_import_defaults,
+            csv_import_profile_id,
+            csv_import_source,
+            csv_import_agent_id,
         )
         logger.debug(
             "[CSV_DEBUG][STORE] CSV keys in update_data going to repo.update: %s",
@@ -653,7 +677,7 @@ class JobTemplateService:
             "[CSV_DEBUG][LOAD] template id=%s name=%r "
             "delimiter=%r quote_char=%r primary_key=%r "
             "repo_id=%r file_path=%r type=%r file_filter=%r "
-            "column_mapping=%r defaults=%r",
+            "column_mapping=%r profile_id=%r source=%r",
             template.id,
             template.name,
             template.csv_import_delimiter,
@@ -664,7 +688,8 @@ class JobTemplateService:
             template.csv_import_type,
             template.csv_import_file_filter,
             template.csv_import_column_mapping,
-            template.csv_import_defaults,
+            template.csv_import_profile_id,
+            template.csv_import_source,
         )
         return {
             "id": template.id,
@@ -721,11 +746,19 @@ class JobTemplateService:
             "ip_mark_description": template.ip_mark_description,
             "ip_remove_skip_assigned": template.ip_remove_skip_assigned,
             "ip_remove_skip_reserved": template.ip_remove_skip_reserved,
+            "csv_import_source": template.csv_import_source,
             "csv_import_repo_id": template.csv_import_repo_id,
             "csv_import_file_path": template.csv_import_file_path,
+            "csv_import_agent_id": template.csv_import_agent_id,
+            "csv_import_agent_flows": (
+                json.loads(template.csv_import_agent_flows)
+                if template.csv_import_agent_flows
+                else None
+            ),
             "csv_import_type": template.csv_import_type,
             "csv_import_primary_key": template.csv_import_primary_key,
             "csv_import_update_existing": template.csv_import_update_existing,
+            "csv_import_import_unknown": template.csv_import_import_unknown,
             "csv_import_delimiter": template.csv_import_delimiter,
             "csv_import_quote_char": template.csv_import_quote_char,
             "csv_import_column_mapping": (
@@ -734,11 +767,7 @@ class JobTemplateService:
                 else None
             ),
             "csv_import_file_filter": template.csv_import_file_filter,
-            "csv_import_defaults": (
-                json.loads(template.csv_import_defaults)
-                if template.csv_import_defaults
-                else None
-            ),
+            "csv_import_profile_id": template.csv_import_profile_id,
             "csv_import_format": template.csv_import_format,
             "csv_import_add_prefixes": template.csv_import_add_prefixes,
             "csv_import_default_prefix_length": template.csv_import_default_prefix_length,

@@ -257,6 +257,11 @@ class JobTemplateBase(BaseModel):
         description="When True, skip IPs with status 'Reserved' during removal (only applies when ip_action='remove')",
     )
     # CSV Import (csv_import type)
+    csv_import_source: Optional[str] = Field(
+        None,
+        max_length=10,
+        description="CSV data source at runtime: 'git' (repository) or 'agent' (Get Data agent)",
+    )
     csv_import_repo_id: Optional[int] = Field(
         None, description="Git repository ID for the CSV source (type=csv_imports)"
     )
@@ -264,6 +269,15 @@ class JobTemplateBase(BaseModel):
         None,
         max_length=500,
         description="Relative path of the CSV file in the repository",
+    )
+    csv_import_agent_id: Optional[str] = Field(
+        None,
+        max_length=255,
+        description="Get Data agent id used when csv_import_source='agent'",
+    )
+    csv_import_agent_flows: Optional[List[str]] = Field(
+        None,
+        description="Flow ids (command-chain keys) to fetch from the Get Data agent",
     )
     csv_import_type: Optional[str] = Field(
         None,
@@ -275,6 +289,10 @@ class JobTemplateBase(BaseModel):
     )
     csv_import_update_existing: bool = Field(
         True, description="When True, update existing objects; when False, skip them"
+    )
+    csv_import_import_unknown: bool = Field(
+        True,
+        description="When True, create objects not found in Nautobot; when False, skip them",
     )
     csv_import_delimiter: Optional[str] = Field(
         None,
@@ -295,9 +313,9 @@ class JobTemplateBase(BaseModel):
         max_length=255,
         description="Glob pattern to select CSV files at runtime (e.g. '*.csv')",
     )
-    csv_import_defaults: Optional[Dict[str, str]] = Field(
+    csv_import_profile_id: Optional[int] = Field(
         None,
-        description="Default values for mandatory fields when CSV rows are missing them (e.g. {'location': 'Amsterdam'})",
+        description="Profile id whose values fill fields the CSV leaves blank (updates and new objects)",
     )
     csv_import_format: Optional[str] = Field(
         None,
@@ -496,16 +514,20 @@ class JobTemplateUpdate(BaseModel):
     ip_remove_skip_assigned: Optional[bool] = None
     ip_remove_skip_reserved: Optional[bool] = None
     # CSV Import
+    csv_import_source: Optional[str] = Field(None, max_length=10)
     csv_import_repo_id: Optional[int] = None
     csv_import_file_path: Optional[str] = Field(None, max_length=500)
+    csv_import_agent_id: Optional[str] = Field(None, max_length=255)
+    csv_import_agent_flows: Optional[List[str]] = None
     csv_import_type: Optional[str] = Field(None, max_length=50)
     csv_import_primary_key: Optional[str] = Field(None, max_length=255)
     csv_import_update_existing: Optional[bool] = None
+    csv_import_import_unknown: Optional[bool] = None
     csv_import_delimiter: Optional[str] = Field(None, max_length=10)
     csv_import_quote_char: Optional[str] = Field(None, max_length=10)
     csv_import_column_mapping: Optional[Dict[str, Optional[str]]] = None
     csv_import_file_filter: Optional[str] = Field(None, max_length=255)
-    csv_import_defaults: Optional[Dict[str, str]] = None
+    csv_import_profile_id: Optional[int] = None
     csv_import_format: Optional[str] = Field(None, max_length=50)
     csv_import_add_prefixes: Optional[bool] = None
     csv_import_default_prefix_length: Optional[str] = Field(None, max_length=10)
