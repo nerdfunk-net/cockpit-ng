@@ -14,6 +14,7 @@ import {
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { useToast } from '@/hooks/use-toast'
 import { useApi } from '@/hooks/use-api'
+import { fetchBuiltInProfileFields } from '@/components/features/settings/defaults/profiles/utils/fetch-built-in-profile'
 
 // Shared form components from add-device
 import {
@@ -405,21 +406,9 @@ export function DeviceSyncDialog({
   // Load and apply default values from Nautobot settings
   const handleUseDefaultValues = useCallback(async () => {
     try {
-      const response = await apiCall<{
-        success: boolean
-        data: {
-          device_role?: string
-          device_status?: string
-          location?: string
-          platform?: string
-          interface_status?: string
-          namespace?: string
-        }
-      }>('settings/network/defaults')
+      const defaults = await fetchBuiltInProfileFields(apiCall, 'network')
 
-      if (response?.data) {
-        const defaults = response.data
-
+      if (defaults) {
         // Apply defaults to form
         if (defaults.device_role) {
           form.setValue('selectedRole', defaults.device_role)

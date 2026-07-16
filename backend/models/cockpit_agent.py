@@ -83,6 +83,31 @@ class AnsibleGetFactsRequest(BaseModel):
     timeout: int = Field(default=60, description="Seconds to wait for agent response")
 
 
+class AnsibleGetCiscoFactsRequest(BaseModel):
+    """Request to gather facts from a Cisco IOS/NX-OS device via an Ansible agent."""
+
+    agent_id: str = Field(..., description="Ansible agent ID")
+    ip_address: str = Field(..., description="Target hostname or IP address")
+    network_driver: str = Field(
+        ...,
+        description=(
+            "Nautobot platform.network_driver (e.g. cisco_ios, cisco_nxos). "
+            "Mapped server-side to ansible_network_os."
+        ),
+    )
+    ansible_user: Optional[str] = Field(
+        default=None,
+        description="SSH username — required when use_sshkey=True and credential_id is not set",
+    )
+    use_sshkey: bool = Field(default=True, description="Use SSH key authentication")
+    credential_id: Optional[int] = Field(
+        default=None,
+        description="Credential ID: SSH key passphrase (use_sshkey=True) or username/password (use_sshkey=False)",
+    )
+    ansible_port: int = Field(default=22, description="SSH port")
+    timeout: int = Field(default=60, description="Seconds to wait for agent response")
+
+
 class OpenPortsScanRequest(BaseModel):
     """Request to scan open TCP/UDP ports on a target host."""
 

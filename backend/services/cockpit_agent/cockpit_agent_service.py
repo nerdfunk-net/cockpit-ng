@@ -467,6 +467,7 @@ class CockpitAgentService:
         auth: ResolvedAnsibleAuth,
         *,
         ansible_port: int = 22,
+        extra_params: Optional[Dict] = None,
     ) -> Dict:
         """Resolve auth secrets server-side and build the agent command params.
 
@@ -480,6 +481,8 @@ class CockpitAgentService:
             "use_sshkey": auth.use_sshkey,
             "ansible_port": ansible_port,
         }
+        if extra_params:
+            params.update(extra_params)
 
         if auth.use_sshkey and auth.credential_id is None:
             if not auth.ansible_user:
@@ -522,11 +525,17 @@ class CockpitAgentService:
         *,
         ansible_port: int = 22,
         timeout: int = 60,
+        extra_params: Optional[Dict] = None,
     ) -> dict:
         if not self.check_agent_online(agent_id):
             return {"status": "error", "error": "Agent is offline or not responding"}
 
-        params = self._build_ansible_params(ip_address, auth, ansible_port=ansible_port)
+        params = self._build_ansible_params(
+            ip_address,
+            auth,
+            ansible_port=ansible_port,
+            extra_params=extra_params,
+        )
 
         return self.send_command_and_wait(
             agent_id=agent_id,
@@ -569,6 +578,44 @@ class CockpitAgentService:
             sent_by,
             ansible_port=ansible_port,
             timeout=timeout,
+        )
+
+    def send_ansible_get_cisco_facts(
+        self,
+        agent_id: str,
+        ip_address: str,
+        network_driver: str,
+        use_sshkey: bool,
+        sent_by: str,
+        *,
+        ansible_user: Optional[str] = None,
+        credential_id: Optional[int] = None,
+        ansible_port: int = 22,
+        timeout: int = 60,
+    ) -> dict:
+        """
+        Resolve auth + map platform.network_driver → ansible_network_os, then send
+        get_cisco_facts to an Ansible agent.
+
+        Same three auth modes as send_ansible_get_facts.
+        """
+        from services.cockpit_agent.ansible_network_os import resolve_ansible_network_os
+
+        ansible_network_os = resolve_ansible_network_os(network_driver)
+        auth = ResolvedAnsibleAuth(
+            use_sshkey=use_sshkey,
+            ansible_user=ansible_user,
+            credential_id=credential_id,
+        )
+        return self._send_ansible_command(
+            agent_id,
+            "get_cisco_facts",
+            ip_address,
+            auth,
+            sent_by,
+            ansible_port=ansible_port,
+            timeout=timeout,
+            extra_params={"ansible_network_os": ansible_network_os},
         )
 
     def send_open_ports_scan(

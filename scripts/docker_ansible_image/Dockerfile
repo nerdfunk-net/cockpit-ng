@@ -28,6 +28,17 @@ RUN if [ -n "$HTTP_PROXY" ] || [ -n "$HTTPS_PROXY" ]; then \
     && apt-get clean \
     && rm -f /etc/apt/apt.conf.d/01proxy || true
 
+# Install Ansible Galaxy collections (cisco.ios, ansible.netcommon, …).
+# Baked into the image at build time so air-gap hosts need no Galaxy access at runtime.
+COPY scripts/cockpit_agent_ansible/galaxy-requirements.yml /tmp/galaxy-requirements.yml
+ENV ANSIBLE_COLLECTIONS_PATH=/usr/share/ansible/collections
+RUN ansible-galaxy collection install \
+      -r /tmp/galaxy-requirements.yml \
+      -p "${ANSIBLE_COLLECTIONS_PATH}" \
+      --force \
+    && rm -f /tmp/galaxy-requirements.yml \
+    && ansible-galaxy collection list
+
 # ---------------------------------------------------------------------------
 # Stage 2: python-builder — pre-download all wheels into a wheelhouse
 # ---------------------------------------------------------------------------
@@ -62,6 +73,7 @@ COPY scripts/cockpit_agent_ansible/config.py .
 COPY scripts/cockpit_agent_ansible/executor.py .
 COPY scripts/cockpit_agent_ansible/heartbeat.py .
 COPY scripts/cockpit_agent_ansible/get_facts.yml .
+COPY scripts/cockpit_agent_ansible/get_cisco_facts.yml .
 COPY scripts/cockpit_agent_ansible/scan_open_ports.yml .
 
 LABEL org.opencontainers.image.title="Cockpit Ansible Agent"

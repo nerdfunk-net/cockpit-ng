@@ -348,10 +348,6 @@ export const queryKeys = {
   commonSettings: {
     all: ['commonSettings'] as const,
     snmpMapping: () => [...queryKeys.commonSettings.all, 'snmpMapping'] as const,
-    networkDefaults: () =>
-      [...queryKeys.commonSettings.all, 'networkDefaults'] as const,
-    serverDefaults: () =>
-      [...queryKeys.commonSettings.all, 'serverDefaults'] as const,
   },
 
   // Profiles (Settings / Defaults / Profiles)

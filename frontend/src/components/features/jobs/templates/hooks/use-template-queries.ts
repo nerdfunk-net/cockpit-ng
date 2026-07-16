@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
+import { useNetworkDefaultsQuery } from '@/components/features/settings/defaults/profiles/hooks/use-network-defaults-query'
 import type {
   JobTemplate,
   JobType,
@@ -11,7 +12,6 @@ import type {
   IpAddressStatus,
   IpAddressTag,
   CsvRepoFile,
-  NautobotDefaults,
 } from '../types'
 import {
   STALE_TIME,
@@ -357,19 +357,5 @@ export function useCsvExportRepos(options: UseQueryOptions = DEFAULT_OPTIONS) {
  * Used in CSV Import job template
  */
 export function useNautobotDefaults(options: UseQueryOptions = DEFAULT_OPTIONS) {
-  const { apiCall } = useApi()
-  const { enabled = true } = options
-
-  return useQuery({
-    queryKey: queryKeys.commonSettings.networkDefaults(),
-    queryFn: async () => {
-      const response = await apiCall<{ success: boolean; data: NautobotDefaults }>(
-        'settings/network/defaults',
-        { method: 'GET' }
-      )
-      return response?.data || null
-    },
-    enabled,
-    staleTime: STALE_TIME.NAUTOBOT_DEFAULTS,
-  })
+  return useNetworkDefaultsQuery(options)
 }

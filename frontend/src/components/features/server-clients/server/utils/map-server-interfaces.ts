@@ -1,4 +1,4 @@
-import type { DefaultsFields } from '@/components/features/settings/common/types/defaults-fields'
+import type { DefaultsFields } from '@/components/features/settings/defaults/profiles/types'
 import type { InterfaceData } from '@/components/features/nautobot/add-device/types'
 import type { SelectedInterface, ServerResponse } from '../types'
 import { formatInterfaceAddress, isPrimaryInterfaceAddress } from './format-interface-address'

@@ -1,4 +1,4 @@
-import type { DefaultsFields } from '@/components/features/settings/common/types/defaults-fields'
+import type { DefaultsFields } from './defaults-fields'
 
 export interface Profile extends DefaultsFields {
   id: number
@@ -18,3 +18,7 @@ export interface ProfileListApiResponse {
   data?: Profile[]
   message?: string
 }
+
+export type { DefaultsFields, DefaultsApiResponse } from './defaults-fields'
+export type { DefaultsFields as NetworkDefaults } from './defaults-fields'
+export type { DefaultsFields as ServerDefaults } from './defaults-fields'

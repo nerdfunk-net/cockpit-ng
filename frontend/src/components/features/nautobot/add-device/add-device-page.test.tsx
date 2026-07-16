@@ -50,8 +50,11 @@ describe('AddDevicePage', () => {
       // This allows Promise.all to resolve and loading state to clear
       if (url === 'nautobot/roles/devices')
         return Promise.resolve([{ id: 'role-1', name: 'Router' }])
-      if (url === 'settings/network/defaults')
-        return Promise.resolve({ success: true, data: {} })
+      if (url === 'settings/profiles')
+        return Promise.resolve({
+          success: true,
+          data: [{ id: 1, name: 'Network', built_in_key: 'network', is_built_in: true }],
+        })
       if (typeof url === 'string') return Promise.resolve([])
       return Promise.resolve([])
     })

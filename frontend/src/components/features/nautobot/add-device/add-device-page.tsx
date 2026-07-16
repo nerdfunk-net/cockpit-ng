@@ -180,7 +180,7 @@ export function AddDevicePage() {
   } = useVirtualChassisQuery()
   const { data: vcDetail } = useVirtualChassisDetailQuery(vcManager.selectedVcId)
   const propertiesModal = usePropertiesModal()
-  const ansibleFacts = useAnsibleFacts(form)
+  const ansibleFacts = useAnsibleFacts(form, dropdownData.platforms)
 
   // Keep selectedVirtualChassisId in form state so Zod can see it during validation.
   // When VC is selected, clear interfaces so the interfaceSchema field validations don't

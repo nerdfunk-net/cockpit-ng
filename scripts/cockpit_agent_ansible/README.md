@@ -5,6 +5,7 @@ Lightweight Python agent that runs on remote hosts to gather Ansible facts on be
 ## Features
 
 - **Ansible Facts Gathering**: Run `get_facts.yml` against any IP address without a pre-existing inventory file
+- **Cisco Network Facts**: Run `get_cisco_facts.yml` against Cisco IOS/NX-OS devices (`ansible_network_os` from platform network driver)
 - **Open Port Scanning**: Run `scan_open_ports.yml` to list a host's listening TCP/UDP ports
 - **Redis Pub/Sub**: Real-time command delivery via Redis
 - **Health Monitoring**: Automatic heartbeat every 30s
@@ -188,6 +189,62 @@ Specify the exact private key the agent should use:
 
 ---
 
+### `get_cisco_facts` — Gather Cisco IOS / NX-OS Facts
+
+Runs `get_cisco_facts.yml` against the specified IP using `ansible.netcommon.network_cli`. Requires `ansible_network_os` so the playbook can select `cisco.ios.ios_facts` or `cisco.nxos.nxos_facts`.
+
+The Cockpit backend maps Nautobot `platform.network_driver` → `ansible_network_os` before sending the command:
+
+| network_driver | ansible_network_os |
+|----------------|--------------------|
+| `cisco_ios`    | `cisco.ios.ios`    |
+| `cisco_nxos`   | `cisco.nxos.nxos`  |
+
+**Authentication is required** — same modes as `get_facts`.
+
+#### Parameters
+
+Same connection parameters as `get_facts`, plus:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `ansible_network_os` | string | required | `cisco.ios.ios` or `cisco.nxos.nxos` |
+
+#### Example — Cisco IOS (password auth)
+
+```json
+{
+  "command_id": "uuid-here",
+  "command": "get_cisco_facts",
+  "params": {
+    "ip_address": "192.168.1.1",
+    "ansible_user": "admin",
+    "ansible_password": "secret",
+    "ansible_network_os": "cisco.ios.ios",
+    "ansible_port": 22
+  }
+}
+```
+
+#### Example — Cisco NX-OS (SSH key)
+
+```json
+{
+  "command_id": "uuid-here",
+  "command": "get_cisco_facts",
+  "params": {
+    "ip_address": "192.168.1.2",
+    "ansible_user": "netops",
+    "use_sshkey": true,
+    "ansible_network_os": "cisco.nxos.nxos"
+  }
+}
+```
+
+**Response:** same shape as `get_facts`, with an extra `ansible_network_os` field in `output`. Hostname is resolved from `ansible_net_hostname` → `net_hostname` → `ansible_hostname` → `ip_address`.
+
+---
+
 ### `get_open_ports` — Scan Open TCP/UDP Ports
 
 Runs `scan_open_ports.yml` against the specified IP address using `ansible-playbook -i "IP,"` (no inventory file required). Returns each listening TCP/UDP port together with its bind address, discovered via `ss -tln`/`ss -uln` (no root required — no process/PID attribution). The bind address matters for security review: a port bound to `0.0.0.0`/`::`/`*` is reachable from any interface, while one bound to `127.0.0.1`/`::1` or a specific IP is not.
@@ -259,6 +316,10 @@ redis-cli -h cockpit.example.com -a your_password PUBLISH cockpit-agent:$(hostna
 # Send get_open_ports command (password auth)
 redis-cli -h cockpit.example.com -a your_password PUBLISH cockpit-agent:$(hostname) \
   '{"command_id":"4","command":"get_open_ports","params":{"ip_address":"192.168.1.1","ansible_user":"root","ansible_password":"secret"}}'
+
+# Send get_cisco_facts command (Cisco IOS, SSH key)
+redis-cli -h cockpit.example.com -a your_password PUBLISH cockpit-agent:$(hostname) \
+  '{"command_id":"5","command":"get_cisco_facts","params":{"ip_address":"192.168.1.1","ansible_user":"admin","use_sshkey":true,"ansible_network_os":"cisco.ios.ios"}}'
 ```
 
 ## Security

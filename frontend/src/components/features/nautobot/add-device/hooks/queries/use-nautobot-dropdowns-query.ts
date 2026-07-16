@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
+import { fetchBuiltInProfileFields } from '@/components/features/settings/defaults/profiles/utils/fetch-built-in-profile'
 import { QUERY_STALE_TIMES } from '../../constants'
 import type {
   NautobotDropdownsResponse,
@@ -10,7 +11,6 @@ import type {
   Platform,
   SoftwareVersion,
   InterfaceTypeOption,
-  NautobotDefaults,
 } from '../../types'
 
 interface UseNautobotDropdownsQueryOptions {
@@ -58,12 +58,7 @@ export function useNautobotDropdownsQuery(
         apiCall<DropdownOption[]>('nautobot/statuses/interface', { method: 'GET' }),
         apiCall<DropdownOption[]>('nautobot/namespaces', { method: 'GET' }),
         apiCall<DropdownOption[]>('nautobot/roles/ipaddress', { method: 'GET' }),
-        apiCall<{ success: boolean; data: NautobotDefaults }>(
-          'settings/network/defaults',
-          { method: 'GET' }
-        )
-          .then(res => (res.success && res.data ? res.data : null))
-          .catch(() => null),
+        fetchBuiltInProfileFields(apiCall, 'network'),
       ])
 
       return {

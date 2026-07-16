@@ -74,5 +74,6 @@ docker load -i cockpit-agent-ansible.tar
 ## Notes
 
 - **SSH keys**: Private keys on the host must have mode `0600`. The container mounts them read-only for key-based authentication to target hosts. `sshpass` is included for password-based Ansible connections when configured.
-- **Playbooks**: Agent playbooks (e.g. `get_facts.yml`) are baked into the image at `/app`.
+- **Playbooks**: Agent playbooks (e.g. `get_facts.yml`, `get_cisco_facts.yml`) are baked into the image at `/app`.
+- **Galaxy collections**: Cisco IOS/NX-OS support needs `cisco.ios`, `cisco.nxos`, and `ansible.netcommon`. They are declared in `scripts/cockpit_agent_ansible/galaxy-requirements.yml` and installed during the image build (`ansible-galaxy collection install`). Rebuild the image after changing that file. Verify inside a container with `ansible-galaxy collection list`.
 - **Agent registration**: Register the agent in Cockpit with type **Ansible** and the same `AGENT_ID` as in `.env`.

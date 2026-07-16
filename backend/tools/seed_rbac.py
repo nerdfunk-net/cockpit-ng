@@ -778,7 +778,12 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
     viewer_count = 0
     for perm_key, perm_id in perm_map.items():
         # Grant all read permissions, skip write/delete/execute
-        # Exclude sensitive permissions: users, settings.credentials, settings.defaults
+        # Exclude sensitive permissions: users, settings.credentials.
+        # settings.defaults:read is allowed (the 13 built-in Network/Server
+        # default values are not sensitive, and viewer already had equivalent
+        # visibility via settings.nautobot:read / settings.server:read before
+        # those consumers moved to the Profiles API); settings.defaults:write
+        # stays excluded like other write permissions.
         if (
             (
                 ":read" in perm_key
@@ -789,7 +794,7 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
                     and "users" not in perm_key
                 )
             )
-            and "settings.defaults" not in perm_key
+            and perm_key != "settings.defaults:write"
             and "settings.credentials" not in perm_key
         ):
             rbac.assign_permission_to_role(roles["viewer"]["id"], perm_id, granted=True)

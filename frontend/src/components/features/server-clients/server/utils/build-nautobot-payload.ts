@@ -1,4 +1,4 @@
-import type { DefaultsFields } from '@/components/features/settings/common/types/defaults-fields'
+import type { DefaultsFields } from '@/components/features/settings/defaults/profiles/types'
 import type { DeviceSubmissionData } from '@/components/features/nautobot/add-device/types'
 import type { VMFormValues } from '@/components/features/nautobot/add-vm/hooks/use-vm-form'
 import type { ServerResponse } from '../types'

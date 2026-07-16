@@ -7,9 +7,10 @@ Scope: Verifies that FastAPI router endpoints correctly enforce
 Requires: TEST_DATABASE_URL pointing at a dedicated test PostgreSQL instance.
           Skipped automatically when TEST_DATABASE_URL is not set.
 
-Probe endpoints: GET and POST /api/settings/network/defaults
-  Both catch all downstream exceptions and return HTTP 200 when auth passes,
-  so the probes are stable even with an otherwise-empty test database.
+Probe endpoints: GET /api/settings/profiles and PUT /api/settings/profiles/{id}
+  The write probe targets a non-existent profile id: ProfileUpdateRequest has
+  all-optional fields, so the empty body always passes validation, and a miss
+  (404) still lets the permission check be asserted independently of DB state.
 
 Scenarios covered:
   * Missing Authorization header                → 401
@@ -38,13 +39,14 @@ from core.database import Base
 from core.models import Permission, Role, RolePermission, User, UserPermission, UserRole
 
 # ---------------------------------------------------------------------------
-# Probe URLs — network/defaults endpoints catch all service exceptions so
-# status-code assertions are deterministic regardless of settings DB state.
+# Probe URLs — profiles endpoints gated by settings.defaults; the write probe
+# targets a non-existent id so status-code assertions are deterministic
+# regardless of settings DB state (a permission pass 404s, not 200).
 # ---------------------------------------------------------------------------
 
-_READ_URL = "/api/settings/network/defaults"
-_WRITE_URL = "/api/settings/network/defaults"
-_WRITE_BODY: dict = {}  # NetworkDefaultsRequest has all-optional fields
+_READ_URL = "/api/settings/profiles"
+_WRITE_URL = "/api/settings/profiles/999999999"
+_WRITE_BODY: dict = {}  # ProfileUpdateRequest has all-optional fields
 
 _RBAC_TABLES = [
     User.__table__,
@@ -228,7 +230,7 @@ class TestTokenEnforcement:
 class TestPermissionEnforcement:
     def test_user_with_no_roles_is_denied(self, app_client, db):
         user = _seed_user(db, "noroles")
-        _seed_permission(db, "settings.nautobot", "read")  # exists but never assigned
+        _seed_permission(db, "settings.defaults", "read")  # exists but never assigned
 
         resp = app_client.get(_READ_URL, headers=_bearer(user))
         assert resp.status_code == 403
@@ -236,7 +238,7 @@ class TestPermissionEnforcement:
     def test_reader_role_allows_read_endpoint(self, app_client, db):
         user = _seed_user(db, "reader")
         role = _seed_role(db, "viewer")
-        perm = _seed_permission(db, "settings.nautobot", "read")
+        perm = _seed_permission(db, "settings.defaults", "read")
         _grant_to_role(db, role, perm)
         _assign_role(db, user, role)
 
@@ -246,28 +248,28 @@ class TestPermissionEnforcement:
     def test_reader_role_blocks_write_endpoint(self, app_client, db):
         user = _seed_user(db, "reader")
         role = _seed_role(db, "viewer")
-        perm_read = _seed_permission(db, "settings.nautobot", "read")
-        _seed_permission(db, "settings.nautobot", "write")  # exists but unassigned
+        perm_read = _seed_permission(db, "settings.defaults", "read")
+        _seed_permission(db, "settings.defaults", "write")  # exists but unassigned
         _grant_to_role(db, role, perm_read)
         _assign_role(db, user, role)
 
-        resp = app_client.post(_WRITE_URL, json=_WRITE_BODY, headers=_bearer(user))
+        resp = app_client.put(_WRITE_URL, json=_WRITE_BODY, headers=_bearer(user))
         assert resp.status_code == 403
 
     def test_writer_role_allows_write_endpoint(self, app_client, db):
         user = _seed_user(db, "writer")
         role = _seed_role(db, "editor")
-        perm = _seed_permission(db, "settings.nautobot", "write")
+        perm = _seed_permission(db, "settings.defaults", "write")
         _grant_to_role(db, role, perm)
         _assign_role(db, user, role)
 
-        resp = app_client.post(_WRITE_URL, json=_WRITE_BODY, headers=_bearer(user))
+        resp = app_client.put(_WRITE_URL, json=_WRITE_BODY, headers=_bearer(user))
         assert resp.status_code not in {401, 403}
 
     def test_explicit_deny_override_trumps_role_grant(self, app_client, db):
         user = _seed_user(db, "denied")
         role = _seed_role(db, "viewer")
-        perm = _seed_permission(db, "settings.nautobot", "read")
+        perm = _seed_permission(db, "settings.defaults", "read")
         _grant_to_role(db, role, perm)  # role grants read
         _assign_role(db, user, role)
         _override(db, user, perm, granted=False)  # user-level deny wins
@@ -277,7 +279,7 @@ class TestPermissionEnforcement:
 
     def test_direct_user_grant_without_role_allows_access(self, app_client, db):
         user = _seed_user(db, "directgrant")
-        perm = _seed_permission(db, "settings.nautobot", "read")
+        perm = _seed_permission(db, "settings.defaults", "read")
         _override(db, user, perm, granted=True)  # no role assigned at all
 
         resp = app_client.get(_READ_URL, headers=_bearer(user))
@@ -287,8 +289,8 @@ class TestPermissionEnforcement:
         user = _seed_user(db, "multirole")
         role_r = _seed_role(db, "reader")
         role_w = _seed_role(db, "writer")
-        perm_r = _seed_permission(db, "settings.nautobot", "read")
-        perm_w = _seed_permission(db, "settings.nautobot", "write")
+        perm_r = _seed_permission(db, "settings.defaults", "read")
+        perm_w = _seed_permission(db, "settings.defaults", "write")
         _grant_to_role(db, role_r, perm_r)
         _grant_to_role(db, role_w, perm_w)
         _assign_role(db, user, role_r)
@@ -298,7 +300,7 @@ class TestPermissionEnforcement:
             401,
             403,
         }
-        assert app_client.post(
+        assert app_client.put(
             _WRITE_URL, json=_WRITE_BODY, headers=_bearer(user)
         ).status_code not in {401, 403}
 
@@ -311,5 +313,5 @@ class TestPermissionEnforcement:
 
         resp = app_client.get(
             _READ_URL, headers=_bearer(user)
-        )  # needs settings.nautobot:read
+        )  # needs settings.defaults:read
         assert resp.status_code == 403

@@ -1,7 +1,8 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
-import type { Device, DropdownOption, LocationItem, NautobotDefaults } from '../types'
+import { useNetworkDefaultsQuery } from '@/components/features/settings/defaults/profiles/hooks/use-network-defaults-query'
+import type { Device, DropdownOption, LocationItem } from '../types'
 
 // Devices query
 export function useDevicesQuery() {
@@ -61,21 +62,9 @@ export function useLocationsQuery() {
   })
 }
 
-// Nautobot defaults query
+// Nautobot defaults query (built-in Network profile)
 export function useNautobotDefaultsQuery() {
-  const { apiCall } = useApi()
-
-  return useQuery({
-    queryKey: queryKeys.commonSettings.networkDefaults(),
-    queryFn: async () => {
-      const response = await apiCall<{
-        success: boolean
-        data?: NautobotDefaults
-      }>('settings/network/defaults')
-      return response?.data ?? null
-    },
-    staleTime: 5 * 60 * 1000,
-  })
+  return useNetworkDefaultsQuery()
 }
 
 // Prefix statuses query

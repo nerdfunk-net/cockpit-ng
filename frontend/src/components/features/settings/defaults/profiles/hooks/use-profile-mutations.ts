@@ -3,8 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
-import type { DefaultsFields } from '@/components/features/settings/common/types/defaults-fields'
-import type { Profile, ProfileApiResponse } from '../types'
+import type { DefaultsFields, Profile, ProfileApiResponse } from '../types'
 
 interface CreateProfileInput {
   name: string

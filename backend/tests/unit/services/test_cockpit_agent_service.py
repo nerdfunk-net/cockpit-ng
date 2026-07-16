@@ -150,6 +150,81 @@ def test_wait_for_response_timeout(service: CockpitAgentService) -> None:
 
 
 @pytest.mark.unit
+def test_send_ansible_get_cisco_facts_maps_network_driver(
+    service: CockpitAgentService,
+) -> None:
+    with (
+        patch.object(service, "check_agent_online", return_value=True),
+        patch.object(
+            service,
+            "send_command_and_wait",
+            return_value={"status": "success", "output": {"facts": {}}},
+        ) as wait_mock,
+    ):
+        result = service.send_ansible_get_cisco_facts(
+            agent_id="ansible-1",
+            ip_address="10.0.0.1",
+            network_driver="cisco_ios",
+            use_sshkey=True,
+            sent_by="alice",
+            ansible_user="netops",
+            timeout=60,
+        )
+
+    assert result["status"] == "success"
+    wait_mock.assert_called_once()
+    call_kwargs = wait_mock.call_args.kwargs
+    assert call_kwargs["command"] == "get_cisco_facts"
+    assert call_kwargs["params"]["ansible_network_os"] == "cisco.ios.ios"
+    assert call_kwargs["params"]["ip_address"] == "10.0.0.1"
+    assert call_kwargs["params"]["ansible_user"] == "netops"
+
+
+@pytest.mark.unit
+def test_send_ansible_get_cisco_facts_nxos(
+    service: CockpitAgentService,
+) -> None:
+    with (
+        patch.object(service, "check_agent_online", return_value=True),
+        patch.object(
+            service,
+            "send_command_and_wait",
+            return_value={"status": "success", "output": {"facts": {}}},
+        ) as wait_mock,
+    ):
+        service.send_ansible_get_cisco_facts(
+            agent_id="ansible-1",
+            ip_address="10.0.0.2",
+            network_driver="cisco_nxos",
+            use_sshkey=True,
+            sent_by="alice",
+            ansible_user="admin",
+        )
+
+    assert wait_mock.call_args.kwargs["params"]["ansible_network_os"] == "cisco.nxos.nxos"
+
+
+@pytest.mark.unit
+def test_send_ansible_get_cisco_facts_unsupported_driver(
+    service: CockpitAgentService,
+) -> None:
+    from services.cockpit_agent.ansible_network_os import UnsupportedNetworkDriverError
+
+    with (
+        patch.object(service, "check_agent_online", return_value=True),
+        pytest.raises(UnsupportedNetworkDriverError),
+    ):
+        service.send_ansible_get_cisco_facts(
+            agent_id="ansible-1",
+            ip_address="10.0.0.1",
+            network_driver="juniper_junos",
+            use_sshkey=True,
+            sent_by="alice",
+            ansible_user="netops",
+        )
+
+
+@pytest.mark.unit
 def test_send_nmap_scan_offline_agent(service: CockpitAgentService) -> None:
     with patch.object(service, "check_agent_online", return_value=False):
         result = service.send_nmap_scan("nmap-1", "10.0.0.1", "alice", ports="22,80")

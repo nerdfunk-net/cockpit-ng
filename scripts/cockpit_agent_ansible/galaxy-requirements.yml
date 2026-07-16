@@ -1,0 +1,17 @@
+---
+# Ansible Galaxy collections required by the Cockpit Ansible Agent playbooks.
+# Installed into the Docker image at build time (see scripts/docker_ansible_image/Dockerfile).
+#
+# Install locally:
+#   ansible-galaxy collection install -r galaxy-requirements.yml
+
+collections:
+  # network_cli connection plugin (required by Cisco playbooks)
+  - name: ansible.netcommon
+    version: ">=6.0.0,<8.0.0"
+  # cisco.ios.ios_facts and related IOS/IOS-XE modules
+  - name: cisco.ios
+    version: ">=9.0.0,<11.0.0"
+  # cisco.nxos.nxos_facts and related NX-OS modules
+  - name: cisco.nxos
+    version: ">=9.0.0,<11.0.0"

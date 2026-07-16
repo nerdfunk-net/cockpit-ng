@@ -1,0 +1,44 @@
+---
+# get_cisco_facts.yml
+# Log into a Cisco IOS/IOS-XE or NX-OS device via network_cli, gather facts, and write JSON locally.
+# Usage:
+#   ansible-playbook get_cisco_facts.yml -i "<ip>," \
+#     -e "ansible_user=admin ansible_password=secret ansible_network_os=cisco.ios.ios facts_dest=/tmp/cisco_facts.json"
+#
+# Required:
+#   ansible_network_os   — cisco.ios.ios or cisco.nxos.nxos (from platform.network_driver)
+#
+# Optional:
+#   ansible_port         — default: 22
+#   ansible_become       — set true + ansible_become_password for enable mode
+
+- name: Gather and save Cisco device facts
+  hosts: all
+  gather_facts: false
+
+  vars:
+    ansible_connection: ansible.netcommon.network_cli
+
+  tasks:
+    - name: Require a supported ansible_network_os
+      ansible.builtin.fail:
+        msg: >-
+          Unsupported ansible_network_os '{{ ansible_network_os | default('') }}'.
+          Supported: cisco.ios.ios, cisco.nxos.nxos
+      when: ansible_network_os | default('') not in ['cisco.ios.ios', 'cisco.nxos.nxos']
+
+    - name: Gather facts from Cisco IOS/IOS-XE device
+      cisco.ios.ios_facts:
+        gather_subset: all
+      when: ansible_network_os == 'cisco.ios.ios'
+
+    - name: Gather facts from Cisco NX-OS device
+      cisco.nxos.nxos_facts:
+        gather_subset: all
+      when: ansible_network_os == 'cisco.nxos.nxos'
+
+    - name: Save facts to local file
+      delegate_to: localhost
+      ansible.builtin.copy:
+        content: "{{ ansible_facts | to_nice_json }}"
+        dest: "{{ facts_dest | default('cisco_facts.json') }}"

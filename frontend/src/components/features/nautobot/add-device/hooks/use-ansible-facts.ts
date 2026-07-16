@@ -6,6 +6,7 @@ import { useApi } from '@/hooks/use-api'
 import { useToast } from '@/hooks/use-toast'
 import type { Agent } from '@/components/features/settings/connections/agents/types'
 import type { DeviceFormValues } from '../utils/validation'
+import type { Platform } from '../types'
 
 interface AgentsSettingsResponse {
   success: boolean
@@ -33,8 +34,15 @@ export interface AnsibleFactsHook {
 }
 
 const EMPTY_AGENTS: Agent[] = []
+const EMPTY_PLATFORMS: Platform[] = []
 
-export function useAnsibleFacts(form: UseFormReturn<DeviceFormValues>): AnsibleFactsHook {
+/** Nautobot platform.network_driver values supported by get_cisco_facts */
+const SUPPORTED_NETWORK_DRIVERS = new Set(['cisco_ios', 'cisco_nxos'])
+
+export function useAnsibleFacts(
+  form: UseFormReturn<DeviceFormValues>,
+  platforms: Platform[] = EMPTY_PLATFORMS
+): AnsibleFactsHook {
   const { apiCall } = useApi()
   const { toast } = useToast()
 
@@ -44,6 +52,7 @@ export function useAnsibleFacts(form: UseFormReturn<DeviceFormValues>): AnsibleF
   const [isSendingCommand, setIsSendingCommand] = useState(false)
 
   const resolvedAddressRef = useRef<string>('')
+  const networkDriverRef = useRef<string>('')
 
   const resolveTargetAddress = useCallback((): string | null => {
     const interfaces = form.getValues('interfaces')
@@ -58,31 +67,38 @@ export function useAnsibleFacts(form: UseFormReturn<DeviceFormValues>): AnsibleF
     return deviceName || null
   }, [form])
 
+  const resolveNetworkDriver = useCallback((): string | null => {
+    const platformId = form.getValues('selectedPlatform')
+    if (!platformId) return null
+    const platform = platforms.find(p => p.id === platformId)
+    const driver = platform?.network_driver?.trim()
+    return driver || null
+  }, [form, platforms])
+
   const handleAgentSelected = useCallback(
     async (agentId: string, ansibleUser: string) => {
       setShowAgentModal(false)
       const target = resolvedAddressRef.current
-      if (!target) return
+      const networkDriver = networkDriverRef.current
+      if (!target || !networkDriver) return
 
       setIsSendingCommand(true)
       try {
-        const result = await apiCall<CommandResponse>('cockpit-agent/command', {
+        const result = await apiCall<CommandResponse>('cockpit-agent/ansible/get-cisco-facts', {
           method: 'POST',
           body: JSON.stringify({
             agent_id: agentId,
-            command: 'get_facts',
-            params: {
-              ip_address: target,
-              ansible_user: ansibleUser,
-              use_sshkey: true,
-            },
+            ip_address: target,
+            network_driver: networkDriver,
+            ansible_user: ansibleUser,
+            use_sshkey: true,
             timeout: 60,
           }),
         })
 
         if (result.status === 'success') {
           toast({
-            title: 'Facts gathered',
+            title: 'Cisco facts gathered',
             description: JSON.stringify(result.output, null, 2),
           })
         } else {
@@ -106,6 +122,24 @@ export function useAnsibleFacts(form: UseFormReturn<DeviceFormValues>): AnsibleF
   )
 
   const handleGatherFacts = useCallback(async () => {
+    const networkDriver = resolveNetworkDriver()
+    if (!networkDriver) {
+      toast({
+        title: 'Missing platform',
+        description: 'Select a platform with a network driver (e.g. Cisco IOS / NX-OS) first.',
+        variant: 'destructive',
+      })
+      return
+    }
+    if (!SUPPORTED_NETWORK_DRIVERS.has(networkDriver)) {
+      toast({
+        title: 'Unsupported platform',
+        description: `Network driver "${networkDriver}" is not supported. Use cisco_ios or cisco_nxos.`,
+        variant: 'destructive',
+      })
+      return
+    }
+
     const target = resolveTargetAddress()
     if (!target) {
       toast({
@@ -117,6 +151,7 @@ export function useAnsibleFacts(form: UseFormReturn<DeviceFormValues>): AnsibleF
     }
 
     resolvedAddressRef.current = target
+    networkDriverRef.current = networkDriver
     setIsLoadingAgents(true)
 
     try {
@@ -158,7 +193,7 @@ export function useAnsibleFacts(form: UseFormReturn<DeviceFormValues>): AnsibleF
     } finally {
       setIsLoadingAgents(false)
     }
-  }, [resolveTargetAddress, apiCall, toast, handleAgentSelected])
+  }, [resolveNetworkDriver, resolveTargetAddress, apiCall, toast, handleAgentSelected])
 
   const handleCloseModal = useCallback(() => {
     setShowAgentModal(false)

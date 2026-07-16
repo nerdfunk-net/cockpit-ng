@@ -4,7 +4,7 @@ import {
   mapServerInterfacesForDevice,
   resolveServerInterfaceSources,
 } from './map-server-interfaces'
-import type { DefaultsFields } from '@/components/features/settings/common/types/defaults-fields'
+import type { DefaultsFields } from '@/components/features/settings/defaults/profiles/types'
 import type { ServerResponse } from '../types'
 
 const DEFAULTS: DefaultsFields = {

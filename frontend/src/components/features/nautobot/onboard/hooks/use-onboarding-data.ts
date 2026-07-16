@@ -1,11 +1,8 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useApi } from '@/hooks/use-api'
-import type {
-  DropdownOption,
-  LocationItem,
-  NautobotDefaults,
-  OnboardFormData,
-} from '../types'
+import { fetchBuiltInProfileFields } from '@/components/features/settings/defaults/profiles/utils/fetch-built-in-profile'
+import type { DefaultsFields } from '@/components/features/settings/defaults/profiles/types'
+import type { DropdownOption, LocationItem, OnboardFormData } from '../types'
 import { buildLocationHierarchy, findDefaultOption } from '../utils/helpers'
 import { EMPTY_LOCATIONS, EMPTY_DROPDOWN_OPTIONS } from '../constants'
 
@@ -30,9 +27,7 @@ export function useOnboardingData() {
     useState<DropdownOption[]>(EMPTY_DROPDOWN_OPTIONS)
 
   // Default values from settings
-  const [nautobotDefaults, setNautobotDefaults] = useState<NautobotDefaults | null>(
-    null
-  )
+  const [nautobotDefaults, setNautobotDefaults] = useState<DefaultsFields | null>(null)
 
   // UI state
   const [isLoading, setIsLoading] = useState(true)
@@ -52,7 +47,7 @@ export function useOnboardingData() {
         ipAddressStatusesData,
         prefixStatusesData,
         secretGroupsData,
-        defaultsResponse,
+        defaults,
       ] = await Promise.all([
         apiCall<LocationItem[]>('nautobot/locations'),
         apiCall<DropdownOption[]>('nautobot/namespaces'),
@@ -63,9 +58,7 @@ export function useOnboardingData() {
         apiCall<DropdownOption[]>('nautobot/statuses/ipaddress'),
         apiCall<DropdownOption[]>('nautobot/statuses/prefix'),
         apiCall<DropdownOption[]>('nautobot/secret-groups'),
-        apiCall<{ success: boolean; data: NautobotDefaults }>(
-          'settings/network/defaults'
-        ),
+        fetchBuiltInProfileFields(apiCall, 'network'),
       ])
 
       // Build location hierarchy
@@ -82,7 +75,6 @@ export function useOnboardingData() {
       setSecretGroups(secretGroupsData)
 
       // Store defaults for future use
-      const defaults = defaultsResponse?.success ? defaultsResponse.data : null
       setNautobotDefaults(defaults)
 
       return { processedLocations, defaults }
@@ -95,7 +87,7 @@ export function useOnboardingData() {
   }, [apiCall])
 
   const getDefaultFormValues = useCallback(
-    (defaults: NautobotDefaults | null): Partial<OnboardFormData> => {
+    (defaults: DefaultsFields | null): Partial<OnboardFormData> => {
       if (!defaults) {
         // Fallback to hardcoded defaults if no settings defaults available
         return {
@@ -133,7 +125,7 @@ export function useOnboardingData() {
   )
 
   const getDefaultLocationDisplay = useCallback(
-    (defaults: NautobotDefaults | null): string => {
+    (defaults: DefaultsFields | null): string => {
       if (!defaults) return ''
       const defaultLocation = locations.find(loc => loc.id === defaults.location)
       return defaultLocation?.hierarchicalPath || defaultLocation?.name || ''

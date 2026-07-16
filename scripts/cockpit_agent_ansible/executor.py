@@ -45,6 +45,7 @@ class CommandExecutor:
         """Register default command handlers"""
         self.register("echo", self._execute_echo)
         self.register("get_facts", self._execute_get_facts)
+        self.register("get_cisco_facts", self._execute_get_cisco_facts)
         self.register("get_open_ports", self._execute_get_open_ports)
 
     def register(self, command_name: str, handler: Callable):
@@ -104,7 +105,7 @@ class CommandExecutor:
 
     async def _run_ansible_playbook(self, params: dict, playbook_filename: str) -> dict:
         """
-        Shared plumbing for Ansible-agent commands (get_facts, get_open_ports, ...):
+        Shared plumbing for Ansible-agent commands (get_facts, get_cisco_facts, ...):
         decrypt auth params, invoke `ansible-playbook -i "IP,"` against
         *playbook_filename*, and return the JSON the playbook wrote to facts_dest.
 
@@ -119,6 +120,8 @@ class CommandExecutor:
         Optional:
             ansible_ssh_private_key_file  — override default SSH identity file
             ansible_port                  — default 22
+            ansible_network_os            — e.g. cisco.ios.ios / cisco.nxos.nxos
+                                            (required by get_cisco_facts playbook)
 
         Returns {"status": "success", "data": <parsed json>, "ip_address": ip_address}
         or {"status": "error", "error": ..., "output": None}.
@@ -197,6 +200,9 @@ class CommandExecutor:
 
             if key_file := params.get("ansible_ssh_private_key_file"):
                 cmd += ["-e", f"ansible_ssh_private_key_file={key_file}"]
+
+            if network_os := params.get("ansible_network_os"):
+                cmd += ["-e", f"ansible_network_os={network_os}"]
 
             env = os.environ.copy()
             env["ANSIBLE_HOST_KEY_CHECKING"] = (
@@ -329,6 +335,53 @@ class CommandExecutor:
                 "facts": facts,
                 "ip_address": ip_address,
                 "hostname": hostname,
+            },
+            "error": None,
+        }
+
+    async def _execute_get_cisco_facts(
+        self, params: dict, publish_progress: Optional[Callable] = None
+    ) -> dict:
+        """
+        Gather facts from a Cisco IOS/NX-OS device via get_cisco_facts.yml.
+
+        Requires ansible_network_os (e.g. cisco.ios.ios, cisco.nxos.nxos) in addition
+        to the usual connection auth params — see _run_ansible_playbook.
+        """
+        ansible_network_os = params.get("ansible_network_os")
+        if not ansible_network_os:
+            return {
+                "status": "error",
+                "error": "ansible_network_os is required",
+                "output": None,
+            }
+
+        result = await self._run_ansible_playbook(params, "get_cisco_facts.yml")
+        if result["status"] != "success":
+            return result
+
+        facts = result["data"]
+        ip_address = result["ip_address"]
+        hostname = (
+            facts.get("ansible_net_hostname")
+            or facts.get("net_hostname")
+            or facts.get("ansible_hostname")
+            or ip_address
+        )
+        logger.info(
+            "Cisco facts gathered for %s (hostname=%s, network_os=%s)",
+            ip_address,
+            hostname,
+            ansible_network_os,
+        )
+
+        return {
+            "status": "success",
+            "output": {
+                "facts": facts,
+                "ip_address": ip_address,
+                "hostname": hostname,
+                "ansible_network_os": ansible_network_os,
             },
             "error": None,
         }

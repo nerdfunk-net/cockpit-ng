@@ -2,7 +2,7 @@
 
 import { useCallback } from 'react'
 import { useToast } from '@/hooks/use-toast'
-import { useServerDefaultsQuery } from '@/components/features/settings/common/hooks/use-server-defaults-query'
+import { useServerDefaultsQuery } from '@/components/features/settings/defaults/profiles/hooks/use-server-defaults-query'
 import { useVMMutations } from '@/components/features/nautobot/add-vm/hooks/queries/use-vm-mutations'
 import { useDeviceMutations } from '@/components/features/nautobot/add-device/hooks/queries/use-device-mutations'
 import { useNautobotDropdownsQuery } from '@/components/features/nautobot/add-device/hooks/queries/use-nautobot-dropdowns-query'

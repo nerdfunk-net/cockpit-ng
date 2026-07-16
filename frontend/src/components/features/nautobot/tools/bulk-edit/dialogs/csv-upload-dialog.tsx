@@ -24,6 +24,7 @@ import {
   Eye,
 } from 'lucide-react'
 import { useApi } from '@/hooks/use-api'
+import { fetchBuiltInProfileFields } from '@/components/features/settings/defaults/profiles/utils/fetch-built-in-profile'
 
 interface ParsedCSV {
   headers: string[]
@@ -61,22 +62,14 @@ export function BulkUpdateModal({ open, onClose }: BulkUpdateModalProps) {
   useEffect(() => {
     const loadDefaults = async () => {
       try {
-        const response = await apiCall<{
-          success: boolean
-          data: {
-            csv_delimiter?: string
-            csv_quote_char?: string
-          }
-        }>('settings/network/defaults', {
-          method: 'GET',
-        })
+        const defaults = await fetchBuiltInProfileFields(apiCall, 'network')
 
-        if (response.success && response.data) {
-          if (response.data.csv_delimiter) {
-            setCsvDelimiter(response.data.csv_delimiter)
+        if (defaults) {
+          if (defaults.csv_delimiter) {
+            setCsvDelimiter(defaults.csv_delimiter)
           }
-          if (response.data.csv_quote_char) {
-            setCsvQuoteChar(response.data.csv_quote_char)
+          if (defaults.csv_quote_char) {
+            setCsvQuoteChar(defaults.csv_quote_char)
           }
         }
       } catch (error) {
