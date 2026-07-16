@@ -237,9 +237,6 @@ export function CsvUpdateWizard() {
         columnMapping: columnMappingForBackend,
         selectedColumns,
         primaryKeyColumn,
-        matchingStrategy,
-        nameTransform,
-        rackLocationColumn,
       })
       setDryRunTaskId(response.task_id)
     } catch {
@@ -259,9 +256,6 @@ export function CsvUpdateWizard() {
     columnMappingForBackend,
     selectedColumns,
     primaryKeyColumn,
-    matchingStrategy,
-    nameTransform,
-    rackLocationColumn,
     setDryRunTaskId,
   ])
 
@@ -291,9 +285,6 @@ export function CsvUpdateWizard() {
         columnMapping: columnMappingForBackend,
         selectedColumns,
         primaryKeyColumn,
-        matchingStrategy,
-        nameTransform,
-        rackLocationColumn,
       })
       setTaskId(response.task_id)
       if (response.job_id) setJobId(parseInt(response.job_id, 10))
@@ -315,9 +306,6 @@ export function CsvUpdateWizard() {
     columnMappingForBackend,
     selectedColumns,
     primaryKeyColumn,
-    matchingStrategy,
-    nameTransform,
-    rackLocationColumn,
     setTaskId,
     setJobId,
     goToStep,

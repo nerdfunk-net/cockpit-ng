@@ -4,8 +4,16 @@ import { useToast } from '@/hooks/use-toast'
 import { queryKeys } from '@/lib/query-keys'
 import type { ObjectType } from '@/components/features/nautobot/tools/csv-updates/types'
 
+/**
+ * Object types this hook can submit. Devices are handled by
+ * `useDeviceUpdatesMutations` (JSON payload → `celery/tasks/update-devices`)
+ * and never flow through this hook — the wizard branches on `isDevices`
+ * before calling `processUpdates`.
+ */
+type CsvUpdatesObjectType = Exclude<ObjectType, 'devices'>
+
 interface ProcessCSVUpdatesInput {
-  objectType: ObjectType
+  objectType: CsvUpdatesObjectType
   csvData: {
     headers: string[]
     rows: string[][]
@@ -19,9 +27,6 @@ interface ProcessCSVUpdatesInput {
   columnMapping?: Record<string, string> // { csvColumn: nautobotField } — only mapped columns
   selectedColumns?: string[] // CSV columns included in the update (derived from columnMapping)
   primaryKeyColumn?: string // CSV column used to look up objects in Nautobot
-  matchingStrategy?: 'exact' | 'contains' | 'starts_with' // How to match objects by name
-  nameTransform?: { mode: string; pattern: string; replacement: string } | null // Transform CSV name before lookup
-  rackLocationColumn?: string | null // CSV column used as location filter when resolving rack UUIDs
 }
 
 interface CeleryTaskResponse {
@@ -68,12 +73,10 @@ function convertToCSVContent(
 /**
  * Get the API endpoint for the given object type
  */
-function getEndpointForObjectType(objectType: ObjectType): string {
+function getEndpointForObjectType(objectType: CsvUpdatesObjectType): string {
   switch (objectType) {
     case 'ip-prefixes':
       return 'celery/tasks/update-ip-prefixes-from-csv'
-    case 'devices':
-      return 'celery/tasks/update-devices-from-csv'
     case 'ip-addresses':
       return 'celery/tasks/update-ip-addresses-from-csv'
     case 'locations':
@@ -112,9 +115,6 @@ export function useCsvUpdatesMutations() {
           column_mapping: input.columnMapping, // Pass column mapping if provided
           selected_columns: input.selectedColumns, // Pass selected columns if provided
           primary_key_column: input.primaryKeyColumn, // Column used to look up objects
-          matching_strategy: input.matchingStrategy || 'exact', // How to match by name
-          name_transform: input.nameTransform ?? null, // Optional name transform before lookup
-          rack_location_column: input.rackLocationColumn ?? null, // Location column for rack disambiguation
         }),
       })
 
@@ -123,9 +123,6 @@ export function useCsvUpdatesMutations() {
     onSuccess: (data, variables) => {
       // Invalidate relevant caches based on object type
       switch (variables.objectType) {
-        case 'devices':
-          queryClient.invalidateQueries({ queryKey: queryKeys.nautobot.devices() })
-          break
         case 'ip-prefixes':
         case 'ip-addresses':
           // Would invalidate IP-related queries if they existed

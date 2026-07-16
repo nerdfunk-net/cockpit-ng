@@ -1,6 +1,3 @@
-export { PropertiesPanel } from './properties-panel'
-export { MappingPanel } from './mapping-panel'
-export { LegacyMappingPanel } from './legacy-mapping-panel'
 export { CsvUpdateWizard } from './csv-update-wizard'
 export { CsvSourceStep } from './csv-source-step'
 export { CsvConfigureStep } from './csv-configure-step'
