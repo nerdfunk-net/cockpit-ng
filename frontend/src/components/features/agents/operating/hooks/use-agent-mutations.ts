@@ -21,8 +21,9 @@ export function useAgentMutations() {
 
   const gitPull = useMutation({
     mutationFn: async (input: GitPullInput): Promise<CommandResult> => {
-      return apiCall<CommandResult>(`cockpit-agent/${input.agent_id}/git-pull`, {
+      return apiCall<CommandResult>('cockpit-agent/git/git-pull', {
         method: 'POST',
+        body: JSON.stringify({ agent_id: input.agent_id }),
       })
     },
     onSuccess: (data, variables) => {
@@ -46,8 +47,9 @@ export function useAgentMutations() {
 
   const dockerRestart = useMutation({
     mutationFn: async (input: DockerRestartInput): Promise<CommandResult> => {
-      return apiCall<CommandResult>(`cockpit-agent/${input.agent_id}/docker-restart`, {
+      return apiCall<CommandResult>('cockpit-agent/git/docker-restart', {
         method: 'POST',
+        body: JSON.stringify({ agent_id: input.agent_id }),
       })
     },
     onSuccess: (data, variables) => {

@@ -99,14 +99,15 @@ export function useDeployExecution() {
     async (config: DeployConfig) => {
       setIsActivating(true)
       try {
-        // API call: POST /api/cockpit-agent/{agent_id}/docker-restart
+        // API call: POST /api/cockpit-agent/git/docker-restart
         const agentId = config.agentId
         const response = await apiCall<{
           status: string
           output: string
           error: string | null
-        }>(`cockpit-agent/${agentId}/docker-restart`, {
+        }>('cockpit-agent/git/docker-restart', {
           method: 'POST',
+          body: JSON.stringify({ agent_id: agentId }),
         })
 
         if (response.status === 'error') {

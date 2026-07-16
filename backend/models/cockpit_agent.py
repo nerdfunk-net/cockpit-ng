@@ -52,17 +52,25 @@ class CommandResponse(BaseModel):
 
 
 class GitPullRequest(BaseModel):
-    """Convenience model for git pull command"""
+    """Request to run git pull on a git-based cockpit agent.
 
-    agent_id: str
-    repository_path: str
-    branch: str = "main"
+    repository_path/branch are currently unused by the agent, which pulls
+    the repository path and branch configured locally via its own .env.
+    """
+
+    agent_id: str = Field(..., description="Git-based agent ID")
+    repository_path: str = Field(
+        default="", description="Reserved — agent uses its own .env configuration"
+    )
+    branch: str = Field(
+        default="", description="Reserved — agent uses its own .env configuration"
+    )
 
 
 class DockerRestartRequest(BaseModel):
-    """Convenience model for docker restart command"""
+    """Request to restart the docker container on a git-based cockpit agent."""
 
-    agent_id: str
+    agent_id: str = Field(..., description="Git-based agent ID")
 
 
 class AnsibleGetFactsRequest(BaseModel):

@@ -25,7 +25,9 @@ from models.cockpit_agent import (
     CommandHistoryResponse,
     CommandRequest,
     CommandResponse,
+    DockerRestartRequest,
     GetDataRequest,
+    GitPullRequest,
     NmapScanRequest,
     NmapScanResponse,
     OpenPortsScanRequest,
@@ -501,12 +503,12 @@ def nmap_scan_ports(
 
 
 @router.post(
-    "/{agent_id}/git-pull",
+    "/git/git-pull",
     response_model=CommandResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
 )
 def git_pull(
-    agent_id: str,
+    request: GitPullRequest,
     user: dict = Depends(verify_token),
     db: Session = Depends(get_db),
 ):
@@ -520,20 +522,24 @@ def git_pull(
         service = CockpitAgentService(db)
 
         response = service.send_git_pull(
-            agent_id=agent_id,
-            repository_path="",
-            branch="",
+            agent_id=request.agent_id,
+            repository_path=request.repository_path,
+            branch=request.branch,
             sent_by=user.get("sub", "system"),
             timeout=30,
         )
 
         if response["status"] == "error":
-            logger.error("Agent %s git-pull error: %s", agent_id, response.get("error"))
+            logger.error(
+                "Agent %s git-pull error: %s", request.agent_id, response.get("error")
+            )
             raise_internal_server_error(logger, "Agent returned an error response")
 
         if response["status"] == "timeout":
             logger.warning(
-                "Agent %s git-pull timed out: %s", agent_id, response.get("error")
+                "Agent %s git-pull timed out: %s",
+                request.agent_id,
+                response.get("error"),
             )
             raise HTTPException(
                 status_code=504,
@@ -549,12 +555,12 @@ def git_pull(
 
 
 @router.post(
-    "/{agent_id}/docker-restart",
+    "/git/docker-restart",
     response_model=CommandResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
 )
 def docker_restart(
-    agent_id: str,
+    request: DockerRestartRequest,
     user: dict = Depends(verify_token),
     db: Session = Depends(get_db),
 ):
@@ -568,20 +574,24 @@ def docker_restart(
         service = CockpitAgentService(db)
 
         response = service.send_docker_restart(
-            agent_id=agent_id,
+            agent_id=request.agent_id,
             sent_by=user.get("sub", "system"),
             timeout=60,
         )
 
         if response["status"] == "error":
             logger.error(
-                "Agent %s docker-restart error: %s", agent_id, response.get("error")
+                "Agent %s docker-restart error: %s",
+                request.agent_id,
+                response.get("error"),
             )
             raise_internal_server_error(logger, "Agent returned an error response")
 
         if response["status"] == "timeout":
             logger.warning(
-                "Agent %s docker-restart timed out: %s", agent_id, response.get("error")
+                "Agent %s docker-restart timed out: %s",
+                request.agent_id,
+                response.get("error"),
             )
             raise HTTPException(
                 status_code=504,
