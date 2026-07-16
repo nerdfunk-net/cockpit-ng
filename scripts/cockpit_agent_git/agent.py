@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Cockpit Agent - Remote command executor for Cockpit
+Cockpit Git Agent - Remote git/docker command executor for Cockpit
 Listens for commands via Redis Pub/Sub and executes them locally
 """
 
@@ -96,7 +96,7 @@ class CockpitAgent:
                 "last_heartbeat": now,
                 "version": config.agent_version,
                 "agent_id": config.agent_id,
-                "capabilities": "echo,git_pull,git_status,docker_restart",
+                "capabilities": ",".join(self.executor.handlers.keys()),
                 "started_at": now,
                 "commands_executed": 0,
             }
@@ -114,7 +114,8 @@ class CockpitAgent:
             return
 
         try:
-            self.heartbeat_thread = HeartbeatThread(self.redis_client)
+            capabilities = ",".join(self.executor.handlers.keys())
+            self.heartbeat_thread = HeartbeatThread(self.redis_client, capabilities)
             self.heartbeat_thread.start()
             logger.info("Heartbeat thread started")
         except Exception as e:

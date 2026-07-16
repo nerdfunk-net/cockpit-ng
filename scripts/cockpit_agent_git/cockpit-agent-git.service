@@ -1,20 +1,20 @@
 [Unit]
-Description=Cockpit Agent for Cockpit
+Description=Git Agent for Cockpit
 After=network.target
 
 [Service]
 Type=simple
 User=cockpit-agent
 Group=docker
-WorkingDirectory=/opt/cockpit-agent
-ExecStart=/opt/cockpit-agent/venv/bin/python agent.py
+WorkingDirectory=/opt/cockpit-agent-git
+ExecStart=/opt/cockpit-agent-git/venv/bin/python agent.py
 Restart=always
 RestartSec=10
 StandardOutput=journal
 StandardError=journal
 
 # Environment
-EnvironmentFile=/opt/cockpit-agent/.env
+EnvironmentFile=/opt/cockpit-agent-git/.env
 
 # Security
 NoNewPrivileges=true

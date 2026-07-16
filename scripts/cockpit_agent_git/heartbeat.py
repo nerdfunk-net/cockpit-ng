@@ -16,9 +16,10 @@ logger = logging.getLogger(__name__)
 class HeartbeatThread(threading.Thread):
     """Background thread that updates agent status in Redis"""
 
-    def __init__(self, redis_client: redis.Redis):
+    def __init__(self, redis_client: redis.Redis, capabilities: str = ""):
         super().__init__(daemon=True)
         self.redis_client = redis_client
+        self.capabilities = capabilities
         self._stop_event = threading.Event()
         self.commands_executed = 0
         self.started_at = int(time.time())
@@ -50,7 +51,7 @@ class HeartbeatThread(threading.Thread):
             "last_heartbeat": now,
             "version": config.agent_version,
             "agent_id": config.agent_id,
-            "capabilities": "git_pull,docker_restart,echo",
+            "capabilities": self.capabilities,
             "started_at": self.started_at,
             "commands_executed": self.commands_executed,
         }

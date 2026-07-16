@@ -1,6 +1,6 @@
 """
-Command executor for Cockpit Agent
-Handles execution of git, docker, and other commands
+Command executor for Cockpit Git Agent
+Handles execution of git pull/status, docker restart, and echo commands
 """
 
 import asyncio

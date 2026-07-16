@@ -1,5 +1,5 @@
 """
-Configuration management for Cockpit Agent
+Configuration management for Cockpit Git Agent
 """
 
 import base64
