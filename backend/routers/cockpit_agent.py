@@ -285,7 +285,7 @@ def ansible_get_cisco_facts(
 
 
 @router.post(
-    "/open-ports-scan",
+    "/ansible/get-open-ports",
     response_model=CommandResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
 )
@@ -366,7 +366,7 @@ def open_ports_scan(
 
 
 @router.post(
-    "/get-data",
+    "/get-data/get-data",
     response_model=CommandResponse,
     dependencies=[Depends(require_permission("cockpit_agents", "execute"))],
 )

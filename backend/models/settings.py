@@ -93,9 +93,7 @@ class Agent(BaseModel):
     agent_id: Optional[str] = None
     name: str
     description: str
-    type: Literal["generic", "git-based", "ansible", "netmiko", "nmap", "get_data"] = (
-        "generic"
-    )
+    type: Literal["git-based", "ansible", "netmiko", "nmap", "get_data"]
     git_repository_id: Optional[int] = None
     shared_secret: Optional[str] = None
 

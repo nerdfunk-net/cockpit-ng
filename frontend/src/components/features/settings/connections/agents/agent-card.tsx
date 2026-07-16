@@ -10,7 +10,6 @@ const TYPE_BADGE_CLASS =
   'bg-panel-header-foreground/20 text-panel-header-foreground border-panel-header-foreground/30'
 
 const TYPE_LABELS: Record<AgentType, string> = {
-  generic: 'Generic',
   'git-based': 'Git-based',
   ansible: 'Ansible',
   netmiko: 'Netmiko',
@@ -32,7 +31,7 @@ export function AgentCard({
   onRemove,
 }: AgentCardProps) {
   const gitRepo = gitRepositories.find(repo => repo.id === agent.git_repository_id)
-  const agentType = agent.type ?? 'generic'
+  const agentType = agent.type
 
   return (
     <div className="border-0 bg-card rounded-lg shadow-sm">
@@ -41,7 +40,7 @@ export function AgentCard({
           <div className="flex items-center gap-2 flex-1">
             <span className="text-sm font-medium">{agent.name}</span>
             <Badge variant="outline" className={`text-xs px-1.5 py-0 ${TYPE_BADGE_CLASS}`}>
-              {TYPE_LABELS[agentType]}
+              {TYPE_LABELS[agentType] ?? 'Unknown'}
             </Badge>
           </div>
         </div>

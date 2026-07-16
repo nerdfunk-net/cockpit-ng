@@ -123,7 +123,7 @@ export function useAgentMutations() {
 
   const getData = useMutation({
     mutationFn: async (input: GetDataInput): Promise<GetDataResult> => {
-      return apiCall<GetDataResult>('cockpit-agent/get-data', {
+      return apiCall<GetDataResult>('cockpit-agent/get-data/get-data', {
         method: 'POST',
         body: JSON.stringify({
           agent_id: input.agent_id,

@@ -21,13 +21,14 @@ import { Eye, EyeOff, Loader2, RefreshCw } from 'lucide-react'
 import type { Agent, AgentType, GitRepository } from './types'
 
 const AGENT_TYPE_LABELS: Record<AgentType, string> = {
-  generic: 'Generic',
   'git-based': 'Git-based',
   ansible: 'Ansible',
   netmiko: 'Netmiko',
   nmap: 'Nmap',
   get_data: 'Get Data',
 }
+
+type AgentFormState = Omit<Agent, 'type'> & { type: AgentType | '' }
 
 interface AgentModalProps {
   isOpen: boolean
@@ -38,12 +39,12 @@ interface AgentModalProps {
   onCancel: () => void
 }
 
-const EMPTY_FORM: Agent = {
+const EMPTY_FORM: AgentFormState = {
   id: '',
   agent_id: '',
   name: '',
   description: '',
-  type: 'generic',
+  type: '',
   git_repository_id: null,
   shared_secret: '',
 }
@@ -64,7 +65,7 @@ export function AgentModal({
   onSave,
   onCancel,
 }: AgentModalProps) {
-  const [formData, setFormData] = useState<Agent>(EMPTY_FORM)
+  const [formData, setFormData] = useState<AgentFormState>(EMPTY_FORM)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [showSecret, setShowSecret] = useState(false)
 
@@ -73,7 +74,7 @@ export function AgentModal({
       setFormData({
         ...agent,
         agent_id: agent.agent_id || '',
-        type: agent.type ?? 'generic',
+        type: agent.type,
         shared_secret: agent.shared_secret || '',
       })
     } else {
@@ -98,6 +99,10 @@ export function AgentModal({
 
     if (!formData.name.trim()) {
       newErrors.name = 'Name is required'
+    }
+
+    if (!formData.type) {
+      newErrors.type = 'Agent type is required'
     }
 
     if (isGitRepoRequired && !formData.git_repository_id) {
@@ -133,8 +138,8 @@ export function AgentModal({
   }, [errors.shared_secret])
 
   const handleSave = () => {
-    if (validateForm()) {
-      onSave(formData)
+    if (validateForm() && formData.type) {
+      onSave({ ...formData, type: formData.type })
     }
   }
 
@@ -209,7 +214,7 @@ export function AgentModal({
               Agent Type <span className="text-destructive">*</span>
             </Label>
             <Select value={formData.type} onValueChange={handleTypeChange}>
-              <SelectTrigger id="agent-type">
+              <SelectTrigger id="agent-type" className={errors.type ? 'border-destructive' : ''}>
                 <SelectValue placeholder="Select agent type" />
               </SelectTrigger>
               <SelectContent>
@@ -220,6 +225,7 @@ export function AgentModal({
                 ))}
               </SelectContent>
             </Select>
+            {errors.type && <p className="text-xs text-destructive">{errors.type}</p>}
             <p className="text-xs text-muted-foreground">
               {formData.type === 'git-based'
                 ? 'Git-based agents deploy configuration from a Git repository (required).'
@@ -231,7 +237,7 @@ export function AgentModal({
                       ? 'Get Data agents run a fixed SSH/SFTP pipeline from config.yaml on the agent host.'
                       : formData.type === 'netmiko'
                         ? 'Netmiko agents connect directly to network devices via SSH from an isolated network segment.'
-                        : 'Generic agents can optionally use a Git repository for configuration.'}
+                        : 'Choose the agent type to see its configuration requirements.'}
             </p>
           </div>
 
