@@ -18,6 +18,7 @@ def update_ip_prefixes_from_csv_task(
     tags_mode: str = "replace",
     column_mapping: Optional[Dict[str, str]] = None,
     selected_columns: Optional[list] = None,
+    primary_key_column: Optional[str] = None,
 ) -> dict:
     """Celery task wrapper — delegates to PrefixUpdateService."""
     return _prefix_update_service.run_update(
@@ -29,4 +30,5 @@ def update_ip_prefixes_from_csv_task(
         tags_mode=tags_mode,
         column_mapping=column_mapping,
         selected_columns=selected_columns,
+        primary_key_column=primary_key_column,
     )

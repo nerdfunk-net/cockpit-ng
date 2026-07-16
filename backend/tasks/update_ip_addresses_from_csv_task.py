@@ -43,6 +43,7 @@ def update_ip_addresses_from_csv_task(
     tags_mode: str = "replace",
     column_mapping: Optional[Dict[str, str]] = None,
     selected_columns: Optional[list[str]] = None,
+    primary_key_column: Optional[str] = None,
 ) -> dict:
     """
     Task: Update Nautobot IP addresses from CSV data.
@@ -53,8 +54,11 @@ def update_ip_addresses_from_csv_task(
         dry_run: If True, validate without making changes
         ignore_uuid: If True, use address+namespace lookup; if False, use UUID from CSV
         tags_mode: How to handle tags - "replace" or "merge"
-        column_mapping: Maps lookup field names to CSV column names
+        column_mapping: Maps CSV column names to Nautobot field names (same
+            convention as update_devices_from_csv_task). Example:
+            {"IP Address": "address", "Comments": "comments"}
         selected_columns: List of CSV column names that should be updated
+        primary_key_column: CSV column used to look up IP addresses (default: "address")
 
     Returns:
         dict: Update results including success/failure counts and details
@@ -68,6 +72,7 @@ def update_ip_addresses_from_csv_task(
         logger.info("Tags mode: %s", tags_mode)
         logger.info("Column mapping: %s", column_mapping)
         logger.info("Selected columns for update: %s", selected_columns)
+        logger.info("Primary key column: %s", primary_key_column)
 
         self.update_state(
             state="PROGRESS",
@@ -121,12 +126,20 @@ def update_ip_addresses_from_csv_task(
 
         mapping = column_mapping or {}
 
-        def get_csv_column(lookup_field: str) -> str:
-            return mapping.get(lookup_field, lookup_field)
+        def csv_column_for_field(lookup_field: str) -> Optional[str]:
+            """Reverse-lookup the CSV column mapped to a Nautobot field name."""
+            for csv_col, nb_field in mapping.items():
+                if nb_field == lookup_field:
+                    return csv_col
+            return None
 
-        address_col = get_csv_column("address")
-        namespace_col = get_csv_column("parent__namespace__name")
-        id_col = get_csv_column("id") if not ignore_uuid else None
+        address_col = primary_key_column or csv_column_for_field("address") or "address"
+        namespace_col = (
+            csv_column_for_field("namespace")
+            or csv_column_for_field("parent__namespace__name")
+            or "parent__namespace__name"
+        )
+        id_col = (csv_column_for_field("id") or "id") if not ignore_uuid else None
 
         logger.info("Column name mapping:")
         logger.info("  - Lookup field 'address' → CSV column '%s'", address_col)
@@ -288,11 +301,22 @@ def update_ip_addresses_from_csv_task(
                         continue
 
                 # Step 2: Prepare update data
+                notes_holder: Dict[str, str] = {}
                 update_data = _prepare_ip_address_update_data(
-                    row, headers, existing_ip_address, tags_mode, selected_columns
+                    row,
+                    headers,
+                    existing_ip_address,
+                    tags_mode,
+                    selected_columns,
+                    column_mapping=mapping,
+                    address_col=address_col,
+                    namespace_col=namespace_col,
+                    id_col=id_col,
+                    notes_out=notes_holder,
                 )
+                note_text = notes_holder.get("value")
 
-                if not update_data:
+                if not update_data and not note_text:
                     logger.info(
                         "No update data for IP address %s, skipping", identifier
                     )
@@ -310,11 +334,17 @@ def update_ip_addresses_from_csv_task(
                 logger.info("Update data prepared for IP address %s:", identifier)
                 logger.info("  - Fields to update: %s", list(update_data.keys()))
                 logger.info("  - Complete update payload: %s", update_data)
+                if note_text:
+                    logger.info("  - Note to add: %s", note_text)
 
                 # Step 3: Update the IP address
                 if dry_run:
+                    preview_updates = dict(update_data)
+                    if note_text:
+                        preview_updates["notes"] = note_text
+
                     logger.info("[DRY RUN] Would update IP address %s", identifier)
-                    logger.info("  Update data: %s", update_data)
+                    logger.info("  Update data: %s", preview_updates)
 
                     successes.append(
                         {
@@ -322,48 +352,98 @@ def update_ip_addresses_from_csv_task(
                             "address": address_value,
                             "namespace": namespace_value,
                             "uuid": ip_address_uuid,
-                            "updates": update_data,
+                            "updates": preview_updates,
                             "dry_run": True,
                         }
                     )
                 else:
-                    logger.info("Updating IP address %s", identifier)
-                    logger.info("  - Endpoint: ipam/ip-addresses/%s/", ip_address_uuid)
-                    logger.info("  - Method: PATCH")
-                    logger.info("  - Payload: %s", update_data)
+                    updated_fields: list[str] = []
 
-                    result = asyncio.run(
-                        _update_ip_address(
-                            nautobot_service, ip_address_uuid, update_data
-                        )
-                    )
-
-                    if result["success"]:
-                        successes.append(
-                            {
-                                "row": idx,
-                                "address": address_value,
-                                "namespace": namespace_value,
-                                "uuid": ip_address_uuid,
-                                "updated_fields": list(update_data.keys()),
-                            }
-                        )
+                    if update_data:
+                        logger.info("Updating IP address %s", identifier)
                         logger.info(
-                            "✓ Successfully updated IP address %s: %s fields",
-                            identifier,
-                            len(update_data),
+                            "  - Endpoint: ipam/ip-addresses/%s/", ip_address_uuid
                         )
-                    else:
-                        failures.append(
-                            {
-                                "row": idx,
-                                "address": address_value,
-                                "namespace": namespace_value,
-                                "uuid": ip_address_uuid,
-                                "error": result["error"],
-                            }
+                        logger.info("  - Method: PATCH")
+                        logger.info("  - Payload: %s", update_data)
+
+                        result = asyncio.run(
+                            _update_ip_address(
+                                nautobot_service, ip_address_uuid, update_data
+                            )
                         )
-                        logger.error("Failed to update IP address: %s", result["error"])
+
+                        if not result["success"]:
+                            failures.append(
+                                {
+                                    "row": idx,
+                                    "address": address_value,
+                                    "namespace": namespace_value,
+                                    "uuid": ip_address_uuid,
+                                    "error": result["error"],
+                                }
+                            )
+                            logger.error(
+                                "Failed to update IP address: %s", result["error"]
+                            )
+                            continue
+
+                        updated_fields.extend(update_data.keys())
+
+                    warnings: list[str] = []
+
+                    if note_text:
+                        note_result = asyncio.run(
+                            _add_ip_address_note(
+                                nautobot_service, ip_address_uuid, note_text
+                            )
+                        )
+                        if note_result["success"]:
+                            if note_result["created"]:
+                                updated_fields.append("notes")
+                            else:
+                                warnings.append(
+                                    "Note not created: an identical note already exists"
+                                )
+                        else:
+                            if not update_data:
+                                # Notes was the only mapped field for this row —
+                                # nothing succeeded, so this is a failure, not a
+                                # partial success.
+                                failures.append(
+                                    {
+                                        "row": idx,
+                                        "address": address_value,
+                                        "namespace": namespace_value,
+                                        "uuid": ip_address_uuid,
+                                        "error": f"Note creation failed: {note_result['error']}",
+                                    }
+                                )
+                                logger.error(
+                                    "Failed to create note for IP address %s: %s",
+                                    identifier,
+                                    note_result["error"],
+                                )
+                                continue
+                            warnings.append(
+                                f"Note creation failed: {note_result['error']}"
+                            )
+
+                    success_entry = {
+                        "row": idx,
+                        "address": address_value,
+                        "namespace": namespace_value,
+                        "uuid": ip_address_uuid,
+                        "updated_fields": updated_fields,
+                    }
+                    if warnings:
+                        success_entry["warnings"] = warnings
+                    successes.append(success_entry)
+                    logger.info(
+                        "✓ Successfully updated IP address %s: %s fields",
+                        identifier,
+                        len(updated_fields),
+                    )
 
             except Exception as e:
                 error_msg = str(e)
@@ -591,12 +671,57 @@ async def _update_ip_address(
         return {"success": False, "error": error_msg}
 
 
+async def _add_ip_address_note(
+    nautobot_service: NautobotService, ip_address_uuid: str, note_text: str
+) -> Dict[str, Any]:
+    """
+    Add a markdown note to an IP address via its notes sub-resource.
+
+    Nautobot's notes endpoint (POST /api/ipam/ip-addresses/{id}/notes/) is
+    append-only — there is no "update an existing note" operation. To avoid
+    creating duplicate notes on repeated CSV runs of the same file, this GETs
+    the existing notes first and skips creation if the most recently created
+    note's text is identical to `note_text`.
+
+    Returns:
+        {"success": True, "created": bool} or {"success": False, "error": str}
+    """
+    endpoint = f"ipam/ip-addresses/{ip_address_uuid}/notes/?format=json"
+    try:
+        existing = await nautobot_service.rest_request(endpoint, method="GET")
+        if existing and existing.get("count", 0) > 0:
+            most_recent_text = existing["results"][0].get("note", "")
+            if most_recent_text == note_text:
+                logger.info(
+                    "Skipping duplicate note for IP address %s (matches most recent note)",
+                    ip_address_uuid,
+                )
+                return {"success": True, "created": False}
+
+        await nautobot_service.rest_request(
+            endpoint, method="POST", data={"note": note_text}
+        )
+        return {"success": True, "created": True}
+
+    except Exception as e:
+        error_msg = str(e)
+        logger.error(
+            "Failed to add note to IP address %s: %s", ip_address_uuid, error_msg
+        )
+        return {"success": False, "error": error_msg}
+
+
 def _prepare_ip_address_update_data(
     row: Dict[str, str],
     headers: list,
     existing_ip_address: Dict[str, Any],
     tags_mode: str = "replace",
     selected_columns: Optional[list[str]] = None,
+    column_mapping: Optional[Dict[str, str]] = None,
+    address_col: str = "address",
+    namespace_col: str = "parent__namespace__name",
+    id_col: Optional[str] = None,
+    notes_out: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """
     Prepare update data for an IP address from CSV row.
@@ -606,22 +731,37 @@ def _prepare_ip_address_update_data(
     - address (primary key, should not change)
     - parent__namespace__name (used for lookup, should not change)
     - Read-only fields (display, object_type, created, etc.)
+    - notes (not a PATCH-able field — routed to `notes_out` for a separate
+      notes sub-resource call; see `_add_ip_address_note`)
 
     Args:
         row: CSV row as dictionary
         headers: List of column headers
         existing_ip_address: Existing IP address data from Nautobot
         tags_mode: How to handle tags - "replace" or "merge"
-        selected_columns: List of column names to update
+        selected_columns: List of CSV column names to update
+        column_mapping: Maps CSV column names to Nautobot field names
+        address_col: CSV column used for the address lookup (excluded from updates)
+        namespace_col: CSV column used for the namespace lookup (excluded from updates)
+        id_col: CSV column used for the UUID lookup, if any (excluded from updates)
+        notes_out: If provided, a mapped "notes" column's raw (uncoerced) value is
+            written to notes_out["value"] instead of being included in the returned
+            update data
 
     Returns:
         Dictionary of fields to update
     """
-    # Fields to exclude from updates
+    mapping = column_mapping or {}
+    lookup_csv_cols = {address_col, namespace_col}
+    if id_col:
+        lookup_csv_cols.add(id_col)
+
+    # Nautobot field names to exclude from updates (read-only / lookup-only fields)
     excluded_fields = {
         "id",
         "address",
         "parent__namespace__name",
+        "namespace",
         "parent__network",
         "parent__prefix_length",
         "parent__prefix",
@@ -664,11 +804,28 @@ def _prepare_ip_address_update_data(
         "[_prepare_ip_address_update_data] Columns to process: %s", columns_to_process
     )
 
-    for field in columns_to_process:
+    def nautobot_field(csv_col: str) -> str:
+        """Return the Nautobot field name for a CSV column (using mapping if provided)."""
+        return mapping.get(csv_col, csv_col)
+
+    for csv_col in columns_to_process:
+        if csv_col in lookup_csv_cols:
+            continue
+
+        field = nautobot_field(csv_col)
+
         if field in excluded_fields:
             continue
 
-        value = row.get(field, "").strip()
+        value = row.get(csv_col, "").strip()
+
+        # Handle notes field — routed to a separate notes sub-resource call,
+        # not a PATCH-able field on the IP address itself. Kept ahead of the
+        # NULL/boolean coercion below so note text isn't mangled.
+        if field == "notes":
+            if notes_out is not None and value:
+                notes_out["value"] = value
+            continue
 
         # Handle tags field
         if field == "tags":
@@ -707,7 +864,7 @@ def _prepare_ip_address_update_data(
         if not value:
             continue
 
-        # Handle custom fields (fields starting with "cf_")
+        # Handle custom fields (Nautobot field names starting with "cf_")
         if field.startswith("cf_"):
             custom_field_name = field[3:]
 

@@ -218,10 +218,13 @@ class UpdateIPPrefixesRequest(BaseModel):
     ignore_uuid: bool = True  # Default: use prefix+namespace lookup instead of UUID
     tags_mode: str = "replace"  # How to handle tags: "replace" or "merge"
     column_mapping: Optional[Dict[str, str]] = (
-        None  # Maps lookup fields to CSV column names
+        None  # Maps CSV column names to Nautobot field names
     )
     selected_columns: Optional[List[str]] = (
         None  # List of CSV columns to update (if None, all non-excluded columns are updated)
+    )
+    primary_key_column: Optional[str] = (
+        None  # CSV column used to look up prefixes (default: "prefix")
     )
 
 
@@ -234,10 +237,13 @@ class UpdateIPAddressesRequest(BaseModel):
     ignore_uuid: bool = True  # Default: use address+namespace lookup instead of UUID
     tags_mode: str = "replace"  # How to handle tags: "replace" or "merge"
     column_mapping: Optional[Dict[str, str]] = (
-        None  # Maps lookup fields to CSV column names
+        None  # Maps CSV column names to Nautobot field names
     )
     selected_columns: Optional[List[str]] = (
         None  # List of CSV columns to update (if None, all non-excluded columns are updated)
+    )
+    primary_key_column: Optional[str] = (
+        None  # CSV column used to look up IP addresses (default: "address")
     )
 
 

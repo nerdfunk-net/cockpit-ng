@@ -97,6 +97,7 @@ async def trigger_update_ip_prefixes_from_csv(
     logger.info("  - tags_mode: %s", request.tags_mode)
     logger.info("  - column_mapping: %s", request.column_mapping)
     logger.info("  - selected_columns: %s", request.selected_columns)
+    logger.info("  - primary_key_column: %s", request.primary_key_column)
     logger.info("  - csv_options: %s", request.csv_options)
 
     if not request.csv_content:
@@ -120,6 +121,7 @@ async def trigger_update_ip_prefixes_from_csv(
         tags_mode=request.tags_mode,
         column_mapping=request.column_mapping,
         selected_columns=request.selected_columns,
+        primary_key_column=request.primary_key_column,
     )
 
     job_name = f"Update IP Prefixes from CSV{' (DRY RUN)' if request.dry_run else ''}"
@@ -158,6 +160,7 @@ async def trigger_update_ip_addresses_from_csv(
     logger.info("  - tags_mode: %s", request.tags_mode)
     logger.info("  - column_mapping: %s", request.column_mapping)
     logger.info("  - selected_columns: %s", request.selected_columns)
+    logger.info("  - primary_key_column: %s", request.primary_key_column)
 
     if not request.csv_content:
         raise HTTPException(
@@ -180,6 +183,7 @@ async def trigger_update_ip_addresses_from_csv(
         tags_mode=request.tags_mode,
         column_mapping=request.column_mapping,
         selected_columns=request.selected_columns,
+        primary_key_column=request.primary_key_column,
     )
 
     job_name = f"Update IP Addresses from CSV{' (DRY RUN)' if request.dry_run else ''}"

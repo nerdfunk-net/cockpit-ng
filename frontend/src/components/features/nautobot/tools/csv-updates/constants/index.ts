@@ -61,6 +61,7 @@ export const NAUTOBOT_UPDATE_FIELDS: Record<
     { key: 'vlan', label: 'VLAN' },
     { key: 'tenant', label: 'Tenant' },
     { key: 'comments', label: 'Comments' },
+    { key: 'notes', label: 'Notes' },
     { key: 'tags', label: 'Tags' },
   ],
   'ip-addresses': [
@@ -73,6 +74,7 @@ export const NAUTOBOT_UPDATE_FIELDS: Record<
     { key: 'description', label: 'Description' },
     { key: 'tenant', label: 'Tenant' },
     { key: 'comments', label: 'Comments' },
+    { key: 'notes', label: 'Notes' },
     { key: 'tags', label: 'Tags' },
   ],
   locations: [

@@ -27,6 +27,7 @@ class PrefixUpdateService:
         tags_mode: str = "replace",
         column_mapping: Optional[Dict[str, str]] = None,
         selected_columns: Optional[list[str]] = None,
+        primary_key_column: Optional[str] = None,
     ) -> dict:
         """Update Nautobot IP prefixes from CSV data."""
         try:
@@ -90,12 +91,18 @@ class PrefixUpdateService:
 
             mapping = column_mapping or {}
 
-            def get_csv_column(lookup_field: str) -> str:
-                return mapping.get(lookup_field, lookup_field)
+            def csv_column_for_field(lookup_field: str) -> Optional[str]:
+                """Reverse-lookup the CSV column mapped to a Nautobot field name."""
+                for csv_col, nb_field in mapping.items():
+                    if nb_field == lookup_field:
+                        return csv_col
+                return None
 
-            prefix_col = get_csv_column("prefix")
-            namespace_col = get_csv_column("namespace")
-            id_col = get_csv_column("id") if not ignore_uuid else None
+            prefix_col = (
+                primary_key_column or csv_column_for_field("prefix") or "prefix"
+            )
+            namespace_col = csv_column_for_field("namespace") or "namespace"
+            id_col = (csv_column_for_field("id") or "id") if not ignore_uuid else None
 
             logger.info("Column name mapping:")
             logger.info("  - Lookup field 'prefix' → CSV column '%s'", prefix_col)
@@ -270,11 +277,22 @@ class PrefixUpdateService:
                             )
                             continue
 
+                    notes_holder: Dict[str, str] = {}
                     update_data = self._prepare_prefix_update_data(
-                        row, headers, existing_prefix, tags_mode, selected_columns
+                        row,
+                        headers,
+                        existing_prefix,
+                        tags_mode,
+                        selected_columns,
+                        column_mapping=mapping,
+                        prefix_col=prefix_col,
+                        namespace_col=namespace_col,
+                        id_col=id_col,
+                        notes_out=notes_holder,
                     )
+                    note_text = notes_holder.get("value")
 
-                    if not update_data:
+                    if not update_data and not note_text:
                         logger.info(
                             "No update data for prefix %s, skipping", identifier
                         )
@@ -345,54 +363,105 @@ class PrefixUpdateService:
 
                         logger.info("  Summary: %s", comparison["summary"])
 
+                        preview_updates = dict(update_data)
+                        if note_text:
+                            preview_updates["notes"] = note_text
+
                         successes.append(
                             {
                                 "row": idx,
                                 "prefix": prefix_value,
                                 "namespace": namespace_value,
                                 "uuid": prefix_uuid,
-                                "updates": update_data,
+                                "updates": preview_updates,
                                 "comparison": comparison,
                                 "dry_run": True,
                             }
                         )
                     else:
-                        logger.info("Updating prefix %s", identifier)
-                        logger.info("  - Sending to Nautobot API:")
-                        logger.info("    Endpoint: ipam/prefixes/%s/", prefix_uuid)
-                        logger.info("    Method: PATCH")
-                        logger.info("    Payload: %s", update_data)
+                        updated_fields: list = []
 
-                        result = self._update_prefix(
-                            nautobot_client, prefix_uuid, update_data
+                        if update_data:
+                            logger.info("Updating prefix %s", identifier)
+                            logger.info("  - Sending to Nautobot API:")
+                            logger.info("    Endpoint: ipam/prefixes/%s/", prefix_uuid)
+                            logger.info("    Method: PATCH")
+                            logger.info("    Payload: %s", update_data)
+
+                            result = self._update_prefix(
+                                nautobot_client, prefix_uuid, update_data
+                            )
+
+                            if not result["success"]:
+                                failures.append(
+                                    {
+                                        "row": idx,
+                                        "prefix": prefix_value,
+                                        "namespace": namespace_value,
+                                        "uuid": prefix_uuid,
+                                        "error": result["error"],
+                                    }
+                                )
+                                logger.error(
+                                    "Failed to update prefix: %s", result["error"]
+                                )
+                                continue
+
+                            updated_fields.extend(update_data.keys())
+
+                        warnings: list = []
+
+                        if note_text:
+                            note_result = self._add_prefix_note(
+                                nautobot_client, prefix_uuid, note_text
+                            )
+                            if note_result["success"]:
+                                if note_result["created"]:
+                                    updated_fields.append("notes")
+                                else:
+                                    warnings.append(
+                                        "Note not created: an identical note already exists"
+                                    )
+                            else:
+                                if not update_data:
+                                    # Notes was the only mapped field for this
+                                    # row — nothing succeeded, so this is a
+                                    # failure, not a partial success.
+                                    failures.append(
+                                        {
+                                            "row": idx,
+                                            "prefix": prefix_value,
+                                            "namespace": namespace_value,
+                                            "uuid": prefix_uuid,
+                                            "error": "Note creation failed: %s"
+                                            % note_result["error"],
+                                        }
+                                    )
+                                    logger.error(
+                                        "Failed to create note for prefix %s: %s",
+                                        identifier,
+                                        note_result["error"],
+                                    )
+                                    continue
+                                warnings.append(
+                                    "Note creation failed: %s" % note_result["error"]
+                                )
+
+                        success_entry = {
+                            "row": idx,
+                            "prefix": prefix_value,
+                            "namespace": namespace_value,
+                            "uuid": prefix_uuid,
+                            "updated_fields": updated_fields,
+                        }
+                        if warnings:
+                            success_entry["warnings"] = warnings
+                        successes.append(success_entry)
+                        logger.info(
+                            "✓ Successfully updated prefix %s: %s fields",
+                            identifier,
+                            len(updated_fields),
                         )
-
-                        if result["success"]:
-                            successes.append(
-                                {
-                                    "row": idx,
-                                    "prefix": prefix_value,
-                                    "namespace": namespace_value,
-                                    "uuid": prefix_uuid,
-                                    "updated_fields": list(update_data.keys()),
-                                }
-                            )
-                            logger.info(
-                                "✓ Successfully updated prefix %s: %s fields",
-                                identifier,
-                                len(update_data),
-                            )
-                        else:
-                            failures.append(
-                                {
-                                    "row": idx,
-                                    "prefix": prefix_value,
-                                    "namespace": namespace_value,
-                                    "uuid": prefix_uuid,
-                                    "error": result["error"],
-                                }
-                            )
-                            logger.error("Failed to update prefix: %s", result["error"])
 
                 except Exception as e:
                     error_msg = str(e)
@@ -596,6 +665,45 @@ class PrefixUpdateService:
             )
             return {"success": False, "error": error_msg}
 
+    def _add_prefix_note(
+        self, nautobot_client, prefix_uuid: str, note_text: str
+    ) -> Dict[str, Any]:
+        """
+        Add a markdown note to a prefix via its notes sub-resource.
+
+        Nautobot's notes endpoint (POST /api/ipam/prefixes/{id}/notes/) is
+        append-only — there is no "update an existing note" operation. To avoid
+        creating duplicate notes on repeated CSV runs of the same file, this GETs
+        the existing notes first and skips creation if the most recently created
+        note's text is identical to `note_text`.
+
+        Returns:
+            {"success": True, "created": bool} or {"success": False, "error": str}
+        """
+        endpoint = "ipam/prefixes/%s/notes/?format=json" % prefix_uuid
+        try:
+            existing = asyncio.run(nautobot_client.rest_request(endpoint, method="GET"))
+            if existing and existing.get("count", 0) > 0:
+                most_recent_text = existing["results"][0].get("note", "")
+                if most_recent_text == note_text:
+                    logger.info(
+                        "Skipping duplicate note for prefix %s (matches most recent note)",
+                        prefix_uuid,
+                    )
+                    return {"success": True, "created": False}
+
+            asyncio.run(
+                nautobot_client.rest_request(
+                    endpoint, method="POST", data={"note": note_text}
+                )
+            )
+            return {"success": True, "created": True}
+
+        except Exception as e:
+            error_msg = str(e)
+            logger.error("Failed to add note to prefix %s: %s", prefix_uuid, error_msg)
+            return {"success": False, "error": error_msg}
+
     @staticmethod
     def _prepare_prefix_update_data(
         row: Dict[str, str],
@@ -603,8 +711,24 @@ class PrefixUpdateService:
         existing_prefix: Dict[str, Any],
         tags_mode: str = "replace",
         selected_columns: Optional[list[str]] = None,
+        column_mapping: Optional[Dict[str, str]] = None,
+        prefix_col: str = "prefix",
+        namespace_col: str = "namespace",
+        id_col: Optional[str] = None,
+        notes_out: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
-        """Build the PATCH payload from a CSV row and the existing Nautobot object."""
+        """Build the PATCH payload from a CSV row and the existing Nautobot object.
+
+        A CSV column mapped to Nautobot field "notes" is excluded from the
+        returned payload and instead written to `notes_out["value"]` (if
+        provided and non-empty) — notes are not a PATCH-able prefix field, they
+        require a separate notes sub-resource call (see `_add_prefix_note`).
+        """
+        mapping = column_mapping or {}
+        lookup_csv_cols = {prefix_col, namespace_col}
+        if id_col:
+            lookup_csv_cols.add(id_col)
+
         excluded_fields = {
             "id",
             "prefix",
@@ -640,11 +764,25 @@ class PrefixUpdateService:
             columns_to_process,
         )
 
-        for field in columns_to_process:
+        def nautobot_field(csv_col: str) -> str:
+            """Return the Nautobot field name for a CSV column (using mapping if provided)."""
+            return mapping.get(csv_col, csv_col)
+
+        for csv_col in columns_to_process:
+            if csv_col in lookup_csv_cols:
+                continue
+
+            field = nautobot_field(csv_col)
+
             if field in excluded_fields:
                 continue
 
-            value = row.get(field, "").strip()
+            value = row.get(csv_col, "").strip()
+
+            if field == "notes":
+                if notes_out is not None and value:
+                    notes_out["value"] = value
+                continue
 
             if field == "tags":
                 if not value:
