@@ -34,6 +34,7 @@ const collapsibleMenuItems = [
   'Network-Configs',
   'Network-Automation',
   'Network-Tools',
+  'Settings-Defaults',
   'Settings-Connections',
   'Settings-Templates',
 ]
