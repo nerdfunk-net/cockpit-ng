@@ -37,6 +37,7 @@ if TYPE_CHECKING:
     from services.nautobot.devices.query import DeviceQueryService
     from services.nautobot.metadata_service import NautobotMetadataService
     from services.nautobot.offboarding.service import OffboardingService
+    from services.servers.saved_search_service import SavedSearchService
 
 
 def get_nautobot_service(request: Request) -> NautobotService:
@@ -349,3 +350,8 @@ def get_servers_service():
 def get_server_ansible_ops_service(db: Session = Depends(get_db)):
     """Provide a ServerAnsibleOperationsService instance."""
     return service_factory.build_server_ansible_ops_service(db)
+
+
+def get_saved_search_service() -> SavedSearchService:
+    """Provide a new SavedSearchService instance (PostgreSQL CRUD)."""
+    return service_factory.build_saved_search_service()

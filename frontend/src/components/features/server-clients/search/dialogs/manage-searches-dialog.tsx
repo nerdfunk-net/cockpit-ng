@@ -1,0 +1,568 @@
+'use client'
+
+import { useState, useMemo, useCallback } from 'react'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import {
+  Pencil,
+  Trash2,
+  X,
+  Check,
+  ChevronsUpDown,
+  Loader2,
+  FileText,
+  ChevronDown,
+  ChevronRight,
+} from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { GroupTreePanel } from '@/components/shared/device-selector-components/group-tree-panel'
+import { useRenameSearchGroupMutation } from '@/hooks/queries/use-saved-searches-queries'
+import { generateSearchGroupAscii } from '../utils/search-group-ascii'
+import { fromApiSearchGroup, type ApiSearchGroup } from '../types'
+
+interface SavedSearchFull {
+  id: number
+  name: string
+  description?: string
+  query: Record<string, unknown>
+  scope: string
+  group_path?: string | null
+  created_by: string
+  created_at?: string
+}
+
+interface ManageSearchesDialogProps {
+  isOpen: boolean
+  onClose: () => void
+  savedSearches: SavedSearchFull[]
+  isLoading: boolean
+  onUpdate: (
+    id: number,
+    name: string,
+    description: string,
+    scope: string,
+    group_path?: string | null
+  ) => Promise<void>
+  onDelete: (id: number) => Promise<void>
+}
+
+export function ManageSearchesDialog({
+  isOpen,
+  onClose,
+  savedSearches,
+  isLoading,
+  onUpdate,
+  onDelete,
+}: ManageSearchesDialogProps) {
+  const [selectedGroup, setSelectedGroup] = useState<string | null>(null)
+  const [localGroupPaths, setLocalGroupPaths] = useState<string[]>([])
+  const [selectedSearchId, setSelectedSearchId] = useState<number | null>(null)
+  const [showTree, setShowTree] = useState(false)
+
+  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
+  const [editScope, setEditScope] = useState<string>('global')
+  const [editGroup, setEditGroup] = useState<string>('')
+  const [groupPopoverOpen, setGroupPopoverOpen] = useState(false)
+  const [groupFilter, setGroupFilter] = useState('')
+
+  const allGroupPaths = useMemo(() => {
+    const paths = new Set<string>()
+    savedSearches.forEach(s => {
+      if (s.group_path) paths.add(s.group_path)
+    })
+    localGroupPaths.forEach(p => paths.add(p))
+    return [...paths].sort()
+  }, [savedSearches, localGroupPaths])
+
+  const [isDeleting, setIsDeleting] = useState<number | null>(null)
+  const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null)
+
+  const searchesInGroup = useMemo(
+    () =>
+      savedSearches.filter(s => (s.group_path ?? '') === (selectedGroup ?? '')),
+    [savedSearches, selectedGroup]
+  )
+
+  const selectedSearch = useMemo(
+    () => savedSearches.find(s => s.id === selectedSearchId) ?? null,
+    [savedSearches, selectedSearchId]
+  )
+
+  const treeAscii = useMemo(() => {
+    if (!selectedSearch) return ''
+    try {
+      return generateSearchGroupAscii(
+        fromApiSearchGroup(selectedSearch.query as unknown as ApiSearchGroup)
+      )
+    } catch {
+      return ''
+    }
+  }, [selectedSearch])
+
+  const startEdit = (s: SavedSearchFull) => {
+    setEditingId(s.id)
+    setEditName(s.name)
+    setEditDescription(s.description ?? '')
+    setEditScope(s.scope)
+    setEditGroup(s.group_path ?? '')
+    setDeleteConfirmId(null)
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+  }
+
+  const handleCreateGroup = useCallback(
+    (parentPath: string | null, groupName: string) => {
+      const newPath = parentPath ? `${parentPath}/${groupName}` : groupName
+      setLocalGroupPaths(prev => [...prev, newPath])
+      setSelectedGroup(newPath)
+    },
+    []
+  )
+
+  const renameGroupMutation = useRenameSearchGroupMutation()
+
+  const handleRenameGroup = useCallback(
+    async (oldPath: string, newName: string) => {
+      const result = await renameGroupMutation.mutateAsync({
+        old_path: oldPath,
+        new_name: newName,
+      })
+      if (selectedGroup === oldPath) {
+        setSelectedGroup(result.new_path)
+      } else if (selectedGroup?.startsWith(oldPath + '/')) {
+        setSelectedGroup(result.new_path + selectedGroup.slice(oldPath.length))
+      }
+      setLocalGroupPaths(prev =>
+        prev.map(p => {
+          if (p === oldPath) return result.new_path
+          if (p.startsWith(oldPath + '/'))
+            return result.new_path + p.slice(oldPath.length)
+          return p
+        })
+      )
+    },
+    [renameGroupMutation, selectedGroup]
+  )
+
+  const saveEdit = async (id: number) => {
+    if (!editName.trim()) return
+    const groupPath = editGroup.trim() || null
+    await onUpdate(id, editName.trim(), editDescription, editScope, groupPath)
+    setEditingId(null)
+  }
+
+  const handleDeleteClick = (id: number) => {
+    if (deleteConfirmId === id) {
+      confirmDelete(id)
+    } else {
+      setDeleteConfirmId(id)
+      setEditingId(null)
+    }
+  }
+
+  const confirmDelete = async (id: number) => {
+    const s = savedSearches.find(i => i.id === id)
+    if (!s) return
+    setIsDeleting(id)
+    try {
+      await onDelete(id)
+      if (selectedSearchId === id) {
+        setSelectedSearchId(null)
+        setShowTree(false)
+      }
+    } finally {
+      setIsDeleting(null)
+      setDeleteConfirmId(null)
+    }
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={open => !open && onClose()}>
+      <DialogContent className="max-w-5xl sm:max-w-5xl max-h-[88vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-6 pt-6 pb-4 border-b">
+          <DialogTitle>Manage Searches</DialogTitle>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+            <span className="ml-2 text-sm text-muted-foreground">
+              Loading searches...
+            </span>
+          </div>
+        ) : savedSearches.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center py-16">
+            <p className="text-muted-foreground text-sm">No saved searches found.</p>
+          </div>
+        ) : (
+          <>
+            {/* Main area: group tree (left) + files (right) */}
+            <div
+              className="flex flex-1 min-h-0"
+              style={{ minHeight: '280px', maxHeight: '380px' }}
+            >
+              {/* Left: Group tree */}
+              <div className="w-56 flex-shrink-0 border-r p-3 overflow-y-auto">
+                <GroupTreePanel
+                  inventories={savedSearches}
+                  selectedGroup={selectedGroup}
+                  onSelectGroup={group => {
+                    setSelectedGroup(group)
+                    setSelectedSearchId(null)
+                    setEditingId(null)
+                    setShowTree(false)
+                  }}
+                  allowContextCreate
+                  onCreateGroup={handleCreateGroup}
+                  onRenameGroup={handleRenameGroup}
+                  extraPaths={localGroupPaths}
+                />
+              </div>
+
+              {/* Right: saved search files */}
+              <div className="flex-1 overflow-y-auto p-3">
+                <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Searches in{' '}
+                  <span className="text-blue-600">{selectedGroup ?? 'Root'}</span>
+                </div>
+                {searchesInGroup.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-4 text-center">
+                    No searches in this group
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {searchesInGroup.map(s => {
+                      const isSelected = selectedSearchId === s.id
+                      const isEditing = editingId === s.id
+
+                      return (
+                        <div
+                          key={s.id}
+                          className={`border rounded-lg transition-colors ${
+                            isSelected && !isEditing
+                              ? 'border-blue-200 bg-blue-50'
+                              : 'border-gray-200 bg-white'
+                          }`}
+                        >
+                          {isEditing ? (
+                            <div className="p-3 space-y-3">
+                              <div className="grid grid-cols-2 gap-3">
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Name</Label>
+                                  <Input
+                                    value={editName}
+                                    onChange={e => setEditName(e.target.value)}
+                                    className="h-7 text-sm"
+                                  />
+                                </div>
+                                <div className="space-y-1">
+                                  <Label className="text-xs">Scope</Label>
+                                  <Select value={editScope} onValueChange={setEditScope}>
+                                    <SelectTrigger className="h-7 text-sm">
+                                      <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem value="global">Global</SelectItem>
+                                      <SelectItem value="private">Private</SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Description</Label>
+                                <Textarea
+                                  value={editDescription}
+                                  onChange={e => setEditDescription(e.target.value)}
+                                  rows={1}
+                                  className="min-h-[36px] text-sm resize-none"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-xs">Group</Label>
+                                <Popover
+                                  open={groupPopoverOpen}
+                                  onOpenChange={open => {
+                                    setGroupPopoverOpen(open)
+                                    if (!open) setGroupFilter('')
+                                  }}
+                                >
+                                  <PopoverTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      role="combobox"
+                                      aria-expanded={groupPopoverOpen}
+                                      className="h-7 text-sm w-full justify-between font-normal px-2"
+                                    >
+                                      <span
+                                        className={cn(
+                                          'truncate',
+                                          !editGroup && 'text-muted-foreground'
+                                        )}
+                                      >
+                                        {editGroup || 'Root (no group)'}
+                                      </span>
+                                      <ChevronsUpDown className="h-3 w-3 opacity-50 flex-shrink-0 ml-1" />
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="p-0 w-[280px]" align="start">
+                                    <Command>
+                                      <CommandInput
+                                        placeholder="Filter groups…"
+                                        value={groupFilter}
+                                        onValueChange={setGroupFilter}
+                                      />
+                                      <CommandList>
+                                        <CommandEmpty>No matching groups</CommandEmpty>
+                                        <CommandGroup>
+                                          <CommandItem
+                                            value="Root (no group)"
+                                            onSelect={() => {
+                                              setEditGroup('')
+                                              setGroupPopoverOpen(false)
+                                              setGroupFilter('')
+                                            }}
+                                          >
+                                            <Check
+                                              className={cn(
+                                                'h-3 w-3 mr-2 flex-shrink-0',
+                                                editGroup === ''
+                                                  ? 'opacity-100'
+                                                  : 'opacity-0'
+                                              )}
+                                            />
+                                            Root (no group)
+                                          </CommandItem>
+                                          {allGroupPaths.map(path => (
+                                            <CommandItem
+                                              key={path}
+                                              value={path}
+                                              onSelect={() => {
+                                                setEditGroup(path)
+                                                setGroupPopoverOpen(false)
+                                                setGroupFilter('')
+                                              }}
+                                            >
+                                              <Check
+                                                className={cn(
+                                                  'h-3 w-3 mr-2 flex-shrink-0',
+                                                  editGroup === path
+                                                    ? 'opacity-100'
+                                                    : 'opacity-0'
+                                                )}
+                                              />
+                                              {path}
+                                            </CommandItem>
+                                          ))}
+                                        </CommandGroup>
+                                      </CommandList>
+                                    </Command>
+                                  </PopoverContent>
+                                </Popover>
+                              </div>
+                              <div className="flex justify-end gap-2">
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={cancelEdit}
+                                  className="h-7 text-xs"
+                                >
+                                  <X className="h-3 w-3 mr-1" /> Cancel
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => saveEdit(s.id)}
+                                  className="h-7 text-xs"
+                                >
+                                  <Check className="h-3 w-3 mr-1" /> Save
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              className="flex items-center gap-2 px-3 py-2 cursor-pointer"
+                              onClick={() => {
+                                setSelectedSearchId(s.id)
+                                setShowTree(false)
+                              }}
+                            >
+                              <FileText
+                                className={`h-4 w-4 flex-shrink-0 ${isSelected ? 'text-blue-500' : 'text-gray-400'}`}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-medium truncate">
+                                    {s.name}
+                                  </span>
+                                  <Badge variant="secondary" className="text-xs flex-shrink-0">
+                                    {s.scope}
+                                  </Badge>
+                                </div>
+                                <div className="text-xs text-gray-400">
+                                  {s.created_by}
+                                  {s.created_at && (
+                                    <>
+                                      {' '}
+                                      &bull;{' '}
+                                      {new Date(s.created_at).toLocaleDateString()}
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Action buttons */}
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                {deleteConfirmId === s.id ? (
+                                  <div className="flex items-center gap-1 bg-red-50 px-2 py-1 rounded border border-red-200">
+                                    <span className="text-xs text-red-600 font-medium">
+                                      Sure?
+                                    </span>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      className="h-6 px-2 text-xs"
+                                      onClick={e => {
+                                        e.stopPropagation()
+                                        confirmDelete(s.id)
+                                      }}
+                                      disabled={isDeleting === s.id}
+                                    >
+                                      {isDeleting === s.id ? (
+                                        <Loader2 className="h-3 w-3 animate-spin" />
+                                      ) : (
+                                        'Yes'
+                                      )}
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0"
+                                      onClick={e => {
+                                        e.stopPropagation()
+                                        setDeleteConfirmId(null)
+                                      }}
+                                    >
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0 hover:bg-gray-100"
+                                      title="Edit"
+                                      onClick={e => {
+                                        e.stopPropagation()
+                                        startEdit(s)
+                                      }}
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-7 w-7 p-0 text-red-600 hover:bg-red-50"
+                                      title="Delete"
+                                      onClick={e => {
+                                        e.stopPropagation()
+                                        handleDeleteClick(s.id)
+                                      }}
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* General panel — fixed height per state so clicking a search never shifts the layout */}
+            <div
+              className="border-t p-4 space-y-2 overflow-y-auto flex-shrink-0"
+              style={{ height: showTree ? '260px' : '110px' }}
+            >
+              <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                General
+              </div>
+              {selectedSearch ? (
+                <>
+                  {selectedSearch.description ? (
+                    <p className="text-sm text-gray-700">{selectedSearch.description}</p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground italic">
+                      No description
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700 font-medium"
+                    onClick={() => setShowTree(v => !v)}
+                  >
+                    {showTree ? (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    )}
+                    {showTree ? 'Hide' : 'Show'} query tree
+                  </button>
+                  {showTree && (
+                    <div className="bg-slate-900 text-slate-50 p-3 rounded-md overflow-x-auto font-mono text-xs whitespace-pre max-h-36 overflow-y-auto">
+                      {treeAscii}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground italic">
+                  Select a search to see its details
+                </p>
+              )}
+            </div>
+          </>
+        )}
+
+        <DialogFooter className="px-6 py-4 border-t">
+          <Button variant="outline" onClick={onClose}>
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

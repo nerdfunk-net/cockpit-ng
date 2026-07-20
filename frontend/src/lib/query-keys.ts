@@ -480,6 +480,14 @@ export const queryKeys = {
     searchFacets: () => [...queryKeys.servers.all, 'search', 'facets'] as const,
   },
 
+  // Saved server searches
+  savedSearches: {
+    all: ['savedSearches'] as const,
+    list: () => [...queryKeys.savedSearches.all, 'list'] as const,
+    detail: (id: number) => [...queryKeys.savedSearches.all, 'detail', id] as const,
+    groups: () => [...queryKeys.savedSearches.all, 'groups'] as const,
+  },
+
   // Agents settings
   agents: {
     all: ['agents'] as const,

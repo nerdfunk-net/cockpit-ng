@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from services.nautobot.devices.query import DeviceQueryService
     from services.nautobot.metadata_service import NautobotMetadataService
     from services.nautobot.offboarding.service import OffboardingService
+    from services.servers.saved_search_service import SavedSearchService
     from services.templates.template_service import TemplateService
 
 
@@ -88,6 +89,14 @@ def build_servers_service():
         history_repository=ServerFactsHistoryRepository(),
         open_ports_history_repository=ServerOpenPortsHistoryRepository(),
     )
+
+
+def build_saved_search_service() -> SavedSearchService:
+    """Create a new SavedSearchService instance (PostgreSQL CRUD)."""
+    from repositories.servers.saved_search_repository import SavedSearchRepository
+    from services.servers.saved_search_service import SavedSearchService
+
+    return SavedSearchService(repository=SavedSearchRepository())
 
 
 def build_server_ansible_ops_service(db):

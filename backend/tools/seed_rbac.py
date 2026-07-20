@@ -91,6 +91,16 @@ DEFAULT_PERMISSIONS = [
         "read",
         "Search/filter managed servers and view search facets",
     ),
+    (
+        "server_clients.search",
+        "write",
+        "Save and update saved server searches",
+    ),
+    (
+        "server_clients.search",
+        "delete",
+        "Delete saved server searches",
+    ),
     # Git permissions
     ("git.repositories", "read", "View git repositories"),
     ("git.repositories", "write", "Create/modify git repositories"),
@@ -802,6 +812,8 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "server_clients.server:write",
         "server_clients.clients:read",
         "server_clients.search:read",
+        "server_clients.search:write",
+        "server_clients.search:delete",
         # Scan & Add
         "nautobot.scan_and_add:execute",
         "nautobot.onboard:execute",
@@ -875,6 +887,8 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "server_clients.server:delete",
         "server_clients.clients:read",
         "server_clients.search:read",
+        "server_clients.search:write",
+        "server_clients.search:delete",
         # Git
         "git.repositories:read",
         "git.operations:execute",

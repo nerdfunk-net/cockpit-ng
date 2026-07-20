@@ -104,7 +104,7 @@ from routers.network.snapshots import (
 )
 
 # Servers router
-from routers.servers import servers_router
+from routers.servers import saved_searches_router, servers_router
 from routers.settings import (
     agents_settings_router,
     cache_router,
@@ -285,6 +285,7 @@ app.include_router(cockpit_agent_router)
 app.include_router(agents_deploy_router)
 app.include_router(clients_router)
 app.include_router(servers_router)
+app.include_router(saved_searches_router)
 app.include_router(logs_router)
 app.include_router(health_router)
 app.include_router(user_field_mappings_router)

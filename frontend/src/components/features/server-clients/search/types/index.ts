@@ -122,3 +122,38 @@ export function toApiSearchGroup(group: SearchGroup): {
     }),
   }
 }
+
+export interface ApiSearchRule {
+  field: SearchFieldName
+  op: SearchOp
+  value: SearchRule['value']
+}
+
+export interface ApiSearchGroup {
+  combinator: SearchCombinator
+  not?: boolean
+  rules: Array<ApiSearchRule | ApiSearchGroup>
+}
+
+function isApiSearchGroup(
+  item: ApiSearchRule | ApiSearchGroup
+): item is ApiSearchGroup {
+  return 'combinator' in item && 'rules' in item
+}
+
+/** Convert an API query (memtotal_mb, no ids) back to a UI query (RAM in GB, local ids). */
+export function fromApiSearchGroup(group: ApiSearchGroup): SearchGroup {
+  return {
+    id: newId(),
+    combinator: group.combinator,
+    not: group.not ?? false,
+    rules: group.rules.map((item) => {
+      if (isApiSearchGroup(item)) return fromApiSearchGroup(item)
+      const value =
+        item.field === 'memtotal_mb' && typeof item.value === 'number'
+          ? item.value / 1024
+          : item.value
+      return { id: newId(), field: item.field, op: item.op, value }
+    }),
+  }
+}
