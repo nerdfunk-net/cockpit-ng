@@ -209,7 +209,7 @@ general.logs:read
 
 ## Default System Roles
 
-Four system roles are created at startup. System roles (`is_system=True`) cannot be deleted.
+Five system roles are created at startup. System roles (`is_system=True`) cannot be deleted.
 
 ### `admin`
 - Full access to ALL permissions
@@ -224,6 +224,11 @@ Four system roles are created at startup. System roles (`is_system=True`) cannot
 - Full network operations access
 - Read-only for system settings
 - Includes: netmiko execute, git operations, onboarding, offboarding, configs search
+
+### `server_clients`
+- Full access (read/write/delete) to every `server_clients.*` permission — managed servers, client data, and search
+- Scoped to that one domain only; no access to anything outside `server_clients.*`
+- Grants every action on every `server_clients.*` resource automatically, including any added in the future (see `assign_permissions_to_roles` in `seed_rbac.py`)
 
 ### `viewer`
 - Read-only access to most resources
@@ -701,7 +706,7 @@ POST /auth/oidc/{provider_id}/callback    Handle OIDC callback, issue JWT
 3. Create default `admin` user if no users exist
 4. Run RBAC seeding if admin role doesn't exist:
    - Create all ~45 default permissions
-   - Create 4 system roles
+   - Create 5 system roles
    - Assign permissions to roles
    - Assign `admin` role to `admin` user
 5. Export SSH keys to filesystem

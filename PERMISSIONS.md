@@ -211,7 +211,7 @@ Every permission follows the pattern:
 
 ## Built-in Roles
 
-Four system roles are created on first startup. System roles **cannot be deleted** but can be used as a base that you extend with custom roles.
+Five system roles are created on first startup. System roles **cannot be deleted** but can be used as a base that you extend with custom roles.
 
 ### `admin` — Full System Administrator
 
@@ -230,6 +230,12 @@ Settings access: read-only (`settings.nautobot:read`, `settings.checkmk:read`, `
 Full access to all network tooling (templates, Netmiko, snapshots, Git). Read-only for system settings.
 
 Key additions over `operator`: `network.templates:*`, `network.netmiko:execute`, `network.ping:execute`, `network.scan:execute`, `network.snapshots:delete`, `git.*`, `general.inventory:delete`, `nautobot.csv_updates:write`, `server_clients.server:delete`
+
+### `server_clients` — Server & Client Data Admin
+
+Full access (read/write/delete) to every `server_clients.*` permission: managed servers, collected client data (ARP/MAC/hostname), and server search. Scoped to that one domain only — no access to anything outside `server_clients.*`.
+
+Key permissions: `server_clients.server:*`, `server_clients.clients:read`, `server_clients.search:read` — and automatically any future `server_clients.*` permission, since the role is assigned by resource prefix rather than a fixed list.
 
 ### `viewer` — Read-Only
 

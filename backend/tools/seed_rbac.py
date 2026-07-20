@@ -2,7 +2,7 @@
 
 This script initializes the RBAC system with:
 - Default permissions for all resources
-- System roles (admin, operator, network_engineer, viewer)
+- System roles (admin, operator, network_engineer, server_clients, viewer)
 - Permission assignments to roles
 """
 
@@ -709,6 +709,11 @@ def seed_roles(verbose: bool = True):
             "Full access to network tools, read-only for settings",
             True,
         ),
+        (
+            "server_clients",
+            "Full access to managed servers and client data (server_clients.*)",
+            True,
+        ),
         ("viewer", "Read-only access to all resources", True),
     ]
 
@@ -901,6 +906,23 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
             network_count += 1
     if verbose:
         print(f"    ✓ Assigned {network_count} permissions")
+
+    # Server & Clients: Full access (read/write/delete/execute) to everything
+    # under the server_clients.* domain — servers, client data, search. This
+    # role is intentionally scoped to that one domain and grants every action
+    # on every server_clients.* resource, including any added in the future.
+    if verbose:
+        print("\n  Assigning permissions to 'server_clients' role...")
+    server_clients_count = 0
+    for perm_key, perm_id in perm_map.items():
+        resource = perm_key.split(":", 1)[0]
+        if resource == "server_clients" or resource.startswith("server_clients."):
+            rbac.assign_permission_to_role(
+                roles["server_clients"]["id"], perm_id, granted=True
+            )
+            server_clients_count += 1
+    if verbose:
+        print(f"    ✓ Assigned {server_clients_count} permissions")
 
     # Viewer: Read-only access to everything except user management and sensitive settings
     if verbose:

@@ -157,6 +157,74 @@ class TestMigrateRenamedResourcePermissions:
         mock_rbac.get_role_permissions.assert_not_called()
 
 
+class TestSeedRoles:
+    def test_creates_server_clients_role(self, mock_rbac):
+        mock_rbac.create_role.side_effect = lambda name, description, is_system: {
+            "id": name,
+            "name": name,
+            "is_system": is_system,
+        }
+
+        roles = seed_rbac.seed_roles(verbose=False)
+
+        assert "server_clients" in roles
+        assert roles["server_clients"]["is_system"] is True
+
+
+class TestAssignPermissionsToRolesServerClients:
+    def test_server_clients_role_gets_every_server_clients_permission(self, mock_rbac):
+        mock_rbac.list_permissions.return_value = [
+            {"id": 1, "resource": "server_clients.server", "action": "read"},
+            {"id": 2, "resource": "server_clients.server", "action": "write"},
+            {"id": 3, "resource": "server_clients.server", "action": "delete"},
+            {"id": 4, "resource": "server_clients.clients", "action": "read"},
+            {"id": 5, "resource": "server_clients.search", "action": "read"},
+            {"id": 6, "resource": "nautobot.devices", "action": "read"},
+        ]
+        roles = {
+            name: {"id": idx}
+            for idx, name in enumerate(
+                ["admin", "operator", "network_engineer", "server_clients", "viewer"],
+                start=1,
+            )
+        }
+
+        seed_rbac.assign_permissions_to_roles(roles, verbose=False)
+
+        server_clients_role_id = roles["server_clients"]["id"]
+        assigned_perm_ids = {
+            call.args[1]
+            for call in mock_rbac.assign_permission_to_role.call_args_list
+            if call.args[0] == server_clients_role_id
+        }
+        # Every server_clients.* permission is granted; unrelated
+        # permissions (e.g. nautobot.devices) are not.
+        assert assigned_perm_ids == {1, 2, 3, 4, 5}
+
+    def test_server_clients_role_picks_up_future_permissions_automatically(
+        self, mock_rbac
+    ):
+        """A new server_clients.* permission added later should be granted
+        without any code change to the role assignment list, since the role
+        is assigned by resource prefix rather than a fixed permission list."""
+        mock_rbac.list_permissions.return_value = [
+            {"id": 7, "resource": "server_clients.brand_new", "action": "execute"},
+        ]
+        roles = {
+            name: {"id": idx}
+            for idx, name in enumerate(
+                ["admin", "operator", "network_engineer", "server_clients", "viewer"],
+                start=1,
+            )
+        }
+
+        seed_rbac.assign_permissions_to_roles(roles, verbose=False)
+
+        mock_rbac.assign_permission_to_role.assert_any_call(
+            roles["server_clients"]["id"], 7, granted=True
+        )
+
+
 class TestReportUnknownPermissions:
     def test_flags_permissions_not_in_canonical_list(self, mock_rbac):
         mock_rbac.list_permissions.return_value = [
