@@ -2,7 +2,6 @@
 Configuration management for Cockpit Nmap Agent
 """
 
-import hashlib
 import logging
 import os
 import shutil

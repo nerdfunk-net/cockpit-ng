@@ -42,7 +42,9 @@ class CommandExecutor:
         self.handlers[command_name] = handler
         logger.info(f"Registered command handler: {command_name}")
 
-    async def execute(self, command: str, params: dict, publish_progress: Optional[Callable] = None) -> dict:
+    async def execute(
+        self, command: str, params: dict, publish_progress: Optional[Callable] = None
+    ) -> dict:
         """
         Execute a command by name.
 
@@ -89,7 +91,9 @@ class CommandExecutor:
         logger.info(f"Echo command: {message}")
         return {"status": "success", "output": message, "error": None}
 
-    async def _execute_ping(self, params: dict, publish_progress: Optional[Callable] = None) -> dict:
+    async def _execute_ping(
+        self, params: dict, publish_progress: Optional[Callable] = None
+    ) -> dict:
         """
         Ping a list of devices and return reachability results.
 
@@ -146,7 +150,9 @@ class CommandExecutor:
                     ip_uuid = None
                 clean_ip = _strip_cidr(ip_str)
                 if clean_ip is None:
-                    logger.warning(f"Invalid IP address '{ip_str}' for device '{device_name}', skipping")
+                    logger.warning(
+                        f"Invalid IP address '{ip_str}' for device '{device_name}', skipping"
+                    )
                     continue
                 tasks.append((idx, device, clean_ip, ip_uuid))
 
@@ -156,14 +162,21 @@ class CommandExecutor:
         semaphore = asyncio.Semaphore(config.ping_max_concurrency)
         total_ips = len(tasks)
 
-        async def bounded_ping_tracked(task_tuple: Tuple[int, dict, str, Optional[str]]) -> Tuple:
+        async def bounded_ping_tracked(
+            task_tuple: Tuple[int, dict, str, Optional[str]],
+        ) -> Tuple:
             idx, device, ip, ip_uuid = task_tuple
             try:
                 async with semaphore:
                     result = await _ping_one(ip, count, timeout)
             except Exception as e:
                 logger.error(f"Unexpected error pinging {ip}: {e}")
-                result = {"ip_address": ip, "reachable": False, "latency_ms": None, "packet_loss_percent": 100}
+                result = {
+                    "ip_address": ip,
+                    "reachable": False,
+                    "latency_ms": None,
+                    "packet_loss_percent": 100,
+                }
             if ip_uuid is not None:
                 result["uuid"] = ip_uuid
             return task_tuple, result
@@ -180,18 +193,22 @@ class CommandExecutor:
             completed_ips += 1
 
             if publish_progress and completed_ips % _PROGRESS_EVERY_N_IPS == 0:
-                publish_progress({
-                    "completed_ips": completed_ips,
-                    "total_ips": total_ips,
-                })
+                publish_progress(
+                    {
+                        "completed_ips": completed_ips,
+                        "total_ips": total_ips,
+                    }
+                )
 
         results = []
         for idx, device in enumerate(devices):
-            results.append({
-                "device_name": device.get("device_name", f"device-{idx}"),
-                "device_id": device.get("device_id"),
-                "ip_results": device_ip_results[idx],
-            })
+            results.append(
+                {
+                    "device_name": device.get("device_name", f"device-{idx}"),
+                    "device_id": device.get("device_id"),
+                    "ip_results": device_ip_results[idx],
+                }
+            )
 
         reachable_ips = sum(
             1 for dev in results for r in dev["ip_results"] if r["reachable"]
@@ -216,6 +233,7 @@ class CommandExecutor:
 # ------------------------------------------------------------------
 # Helpers
 # ------------------------------------------------------------------
+
 
 def _strip_cidr(raw_ip: str) -> Optional[str]:
     """
@@ -253,8 +271,10 @@ async def _ping_one(ip: str, count: int, timeout: int) -> dict:
     try:
         process = await asyncio.create_subprocess_exec(
             "ping",
-            "-c", str(count),
-            "-W", wait_arg,
+            "-c",
+            str(count),
+            "-W",
+            wait_arg,
             ip,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,

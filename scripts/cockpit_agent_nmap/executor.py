@@ -103,7 +103,9 @@ class CommandExecutor:
                 "output": None,
             }
 
-        scan_type = str(params.get("scan_type") or config.nmap_default_scan_type).lower()
+        scan_type = str(
+            params.get("scan_type") or config.nmap_default_scan_type
+        ).lower()
         if scan_type not in _VALID_SCAN_TYPES:
             return {
                 "status": "error",
@@ -203,10 +205,14 @@ def _run_nmap_scan(target: str, arguments: str, timeout: int) -> dict[str, Any]:
     host_key = _resolve_host_key(scanner, target)
     host_info = scanner[host_key] if host_key else {}
     hostname = (
-        host_info.get("hostnames", [{}])[0].get("name")
-        if host_info.get("hostnames")
-        else None
-    ) or host_key or target
+        (
+            host_info.get("hostnames", [{}])[0].get("name")
+            if host_info.get("hostnames")
+            else None
+        )
+        or host_key
+        or target
+    )
 
     tcp_ports = _extract_port_bindings(host_info.get("tcp", {}))
     udp_ports = _extract_port_bindings(host_info.get("udp", {}))

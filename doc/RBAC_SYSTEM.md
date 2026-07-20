@@ -156,7 +156,6 @@ settings.compliance:{read, write}
 compliance.check:execute
 
 # Configs
-configs:read
 configs.backup:execute
 configs.compare:execute
 configs.search:execute
@@ -168,16 +167,19 @@ network.templates:{read, write, delete}
 network.netmiko:execute
 network.ping:execute
 network.scan:execute
+network.snapshots:{read, write, delete}
 
-# Snapshots
-snapshots:{read, write, delete}
+# Server & Clients
+server_clients.server:{read, write, delete}
+server_clients.clients:read
+server_clients.search:read
 
 # Git
 git.repositories:{read, write, delete}
 git.operations:execute
 
 # Devices
-scan:execute
+nautobot.scan_and_add:execute
 nautobot.onboard:execute
 nautobot.offboard:execute
 

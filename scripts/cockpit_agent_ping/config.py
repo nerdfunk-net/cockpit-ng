@@ -28,7 +28,11 @@ class AgentConfig:
         self.redis_password = os.getenv("REDIS_PASSWORD")
         self.redis_db = int(os.getenv("REDIS_DB", "0"))
         self.redis_ssl = os.getenv("REDIS_SSL", "false").lower() in ("true", "1", "yes")
-        self.redis_tls_verify = os.getenv("REDIS_TLS_VERIFY", "true").lower() in ("true", "1", "yes")
+        self.redis_tls_verify = os.getenv("REDIS_TLS_VERIFY", "true").lower() in (
+            "true",
+            "1",
+            "yes",
+        )
         self.redis_tls_ca_cert = os.getenv("REDIS_TLS_CA_CERT", "")
         self.redis_tls_cert = os.getenv("REDIS_TLS_CERT", "")
         self.redis_tls_key = os.getenv("REDIS_TLS_KEY", "")

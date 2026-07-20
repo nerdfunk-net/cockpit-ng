@@ -172,7 +172,9 @@ class CockpitAgent:
         publish_progress = self._make_progress_publisher(command_id)
 
         # Execute command
-        result = await self.executor.execute(command, params, publish_progress=publish_progress)
+        result = await self.executor.execute(
+            command, params, publish_progress=publish_progress
+        )
 
         # Increment counter
         if self.heartbeat_thread:

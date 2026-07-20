@@ -48,7 +48,6 @@ DEFAULT_PERMISSIONS = [
     ("settings.compliance", "write", "Modify compliance settings"),
     ("compliance.check", "execute", "Execute compliance checks"),
     # Config permissions
-    ("configs", "read", "View device configurations"),
     ("configs.backup", "execute", "Execute configuration backups"),
     ("configs.compare", "execute", "Compare configurations"),
     ("configs.search", "execute", "Search configuration file content"),
@@ -70,22 +69,39 @@ DEFAULT_PERMISSIONS = [
         "execute",
         "Execute network port scan operations (nmap, prefix scan)",
     ),
-    ("network.clients", "read", "View collected client data (ARP/MAC/hostname)"),
-    # Server & Clients permissions
-    ("servers", "read", "View managed servers and their Ansible facts"),
-    ("servers", "write", "Create/update managed servers"),
-    ("servers", "delete", "Delete managed servers"),
     # Snapshot permissions
-    ("snapshots", "read", "View network snapshots"),
-    ("snapshots", "write", "Create/execute network snapshots"),
-    ("snapshots", "delete", "Delete network snapshots"),
+    ("network.snapshots", "read", "View network snapshots"),
+    ("network.snapshots", "write", "Create/execute network snapshots"),
+    ("network.snapshots", "delete", "Delete network snapshots"),
+    # Server & Clients permissions
+    (
+        "server_clients.server",
+        "read",
+        "View managed servers and their Ansible facts",
+    ),
+    ("server_clients.server", "write", "Create/update managed servers"),
+    ("server_clients.server", "delete", "Delete managed servers"),
+    (
+        "server_clients.clients",
+        "read",
+        "View collected client data (ARP/MAC/hostname)",
+    ),
+    (
+        "server_clients.search",
+        "read",
+        "Search/filter managed servers and view search facets",
+    ),
     # Git permissions
     ("git.repositories", "read", "View git repositories"),
     ("git.repositories", "write", "Create/modify git repositories"),
     ("git.repositories", "delete", "Delete git repositories"),
     ("git.operations", "execute", "Execute git operations (commit, push, pull)"),
     # Scan & Add permissions
-    ("scan", "execute", "Execute network scans"),
+    (
+        "nautobot.scan_and_add",
+        "execute",
+        "Scan a network range and onboard discovered devices into Nautobot",
+    ),
     ("nautobot.onboard", "execute", "Onboard new devices"),
     ("nautobot.offboard", "execute", "Offboard devices"),
     # Settings permissions
@@ -143,11 +159,28 @@ DEFAULT_PERMISSIONS = [
 #   nautobot.onboard / nautobot.offboard
 # - settings.common: renamed to settings.defaults (assignments migrated first
 #   by migrate_common_settings_permissions)
+# - configs: bare "configs:read" was never enforced by any endpoint (only
+#   configs.backup / configs.compare / configs.search are checked); removed
+#   as dead weight, no replacement.
+# - servers: renamed to server_clients.server to match the server-clients
+#   frontend feature grouping (migrated first by
+#   migrate_renamed_resource_permissions)
+# - network.clients: renamed to server_clients.clients for the same reason
+# - snapshots: renamed to network.snapshots — it already lives under the
+#   network domain (routers/network/snapshots, frontend network/snapshots)
+# - scan: renamed to nautobot.scan_and_add to stop colliding with the
+#   unrelated network.scan (nmap/prefix scan) permission; this one covers
+#   the "scan a range and onboard into Nautobot" flow from nautobot/tools
 OBSOLETE_RESOURCES = [
     "network.inventory",
     "devices.onboard",
     "devices.offboard",
     "settings.common",
+    "configs",
+    "servers",
+    "network.clients",
+    "snapshots",
+    "scan",
 ]
 
 
@@ -303,6 +336,104 @@ def migrate_common_settings_permissions(verbose: bool = True):
                         print(
                             f"  ✓ Migrated settings.common:{override['action']} -> "
                             f"settings.defaults:{override['action']} for user "
+                            f"'{user.get('username', user['id'])}'"
+                        )
+                except Exception as e:
+                    if verbose:
+                        print(
+                            f"  ✗ Error migrating permission for user "
+                            f"'{user.get('username', user['id'])}': {e}"
+                        )
+
+    if verbose:
+        if migrated_count > 0:
+            print(f"\n  ✅ Migrated {migrated_count} permission assignments")
+        else:
+            print("  - No permissions needed migration")
+
+
+def migrate_renamed_resource_permissions(
+    old_resource: str, new_resource: str, verbose: bool = True
+):
+    """Migrate role and user-level permission assignments from an old resource
+    name to its renamed replacement (same action, different resource string).
+
+    Used for straight resource renames such as "servers" ->
+    "server_clients.server" — every action under old_resource must already
+    have a matching (new_resource, action) permission in DEFAULT_PERMISSIONS.
+    The old resource is expected to be listed in OBSOLETE_RESOURCES so
+    cleanup_obsolete_permissions() removes the stale rows once migration
+    completes.
+    """
+    if verbose:
+        print(f"\nMigrating permissions from {old_resource} to {new_resource}...")
+
+    all_permissions = rbac.list_permissions()
+    old_perms = {p["id"]: p for p in all_permissions if p["resource"] == old_resource}
+
+    if not old_perms:
+        if verbose:
+            print(f"  - No {old_resource} permissions found to migrate")
+        return
+
+    def _new_perm_id(action):
+        for p in all_permissions:
+            if p["resource"] == new_resource and p["action"] == action:
+                return p["id"]
+        return None
+
+    migrated_count = 0
+
+    # Roles
+    for role in rbac.list_roles():
+        role_perms = rbac.get_role_permissions(role["id"])
+        for old_perm_id, old_perm in old_perms.items():
+            if any(p["id"] == old_perm_id for p in role_perms):
+                new_perm_id = _new_perm_id(old_perm["action"])
+                if new_perm_id:
+                    try:
+                        rbac.assign_permission_to_role(
+                            role["id"], new_perm_id, granted=True
+                        )
+                        migrated_count += 1
+                        if verbose:
+                            print(
+                                f"  ✓ Migrated {old_resource}:{old_perm['action']} -> "
+                                f"{new_resource}:{old_perm['action']} for role '{role['name']}'"
+                            )
+                    except Exception as e:
+                        if verbose:
+                            print(
+                                f"  ✗ Error migrating permission for role '{role['name']}': {e}"
+                            )
+
+    # Direct user-level permission overrides (both grants and denies)
+    for user in user_db.get_all_users():
+        try:
+            overrides = rbac.get_user_permission_overrides(user["id"])
+        except Exception as e:
+            if verbose:
+                print(
+                    f"  ✗ Error reading permission overrides for user '{user.get('username', user['id'])}': {e}"
+                )
+            continue
+
+        for override in overrides:
+            if override["resource"] != old_resource:
+                continue
+            new_perm_id = _new_perm_id(override["action"])
+            if new_perm_id:
+                try:
+                    rbac.assign_permission_to_user(
+                        user["id"],
+                        new_perm_id,
+                        granted=override.get("granted", True),
+                    )
+                    migrated_count += 1
+                    if verbose:
+                        print(
+                            f"  ✓ Migrated {old_resource}:{override['action']} -> "
+                            f"{new_resource}:{override['action']} for user "
                             f"'{user.get('username', user['id'])}'"
                         )
                 except Exception as e:
@@ -649,7 +780,6 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "settings.compliance:write",
         "compliance.check:execute",
         # Configs
-        "configs:read",
         "configs.backup:execute",
         "configs.compare:execute",
         # Network Backup
@@ -660,15 +790,15 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "general.inventory:write",
         # Network
         "network.templates:read",
-        "network.clients:read",
-        # Servers
-        "servers:read",
-        "servers:write",
-        # Snapshots
-        "snapshots:read",
-        "snapshots:write",
+        "network.snapshots:read",
+        "network.snapshots:write",
+        # Server & Clients
+        "server_clients.server:read",
+        "server_clients.server:write",
+        "server_clients.clients:read",
+        "server_clients.search:read",
         # Scan & Add
-        "scan:execute",
+        "nautobot.scan_and_add:execute",
         "nautobot.onboard:execute",
         "nautobot.offboard:execute",
         # Settings (read-only)
@@ -713,7 +843,6 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "settings.compliance:read",
         "compliance.check:execute",
         # Configs (full access)
-        "configs:read",
         "configs.backup:execute",
         "configs.compare:execute",
         "configs.search:execute",
@@ -731,20 +860,21 @@ def assign_permissions_to_roles(roles, verbose: bool = True):
         "network.netmiko:execute",
         "network.ping:execute",
         "network.scan:execute",
-        "network.clients:read",
-        # Servers
-        "servers:read",
-        "servers:write",
-        "servers:delete",
         # Snapshots (full access)
-        "snapshots:read",
-        "snapshots:write",
-        "snapshots:delete",
+        "network.snapshots:read",
+        "network.snapshots:write",
+        "network.snapshots:delete",
+        # Server & Clients (full access)
+        "server_clients.server:read",
+        "server_clients.server:write",
+        "server_clients.server:delete",
+        "server_clients.clients:read",
+        "server_clients.search:read",
         # Git
         "git.repositories:read",
         "git.operations:execute",
         # Scan & Add
-        "scan:execute",
+        "nautobot.scan_and_add:execute",
         "nautobot.onboard:execute",
         "nautobot.offboard:execute",
         # Settings (read-only)
@@ -877,6 +1007,18 @@ def main(verbose: bool = True, remove_existing: bool = False):
     if not remove_existing:
         migrate_inventory_permissions(verbose=verbose)
         migrate_common_settings_permissions(verbose=verbose)
+        migrate_renamed_resource_permissions(
+            "servers", "server_clients.server", verbose=verbose
+        )
+        migrate_renamed_resource_permissions(
+            "network.clients", "server_clients.clients", verbose=verbose
+        )
+        migrate_renamed_resource_permissions(
+            "snapshots", "network.snapshots", verbose=verbose
+        )
+        migrate_renamed_resource_permissions(
+            "scan", "nautobot.scan_and_add", verbose=verbose
+        )
 
         # Cleanup obsolete permissions (after migration is complete)
         cleanup_obsolete_permissions(verbose=verbose)

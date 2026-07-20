@@ -2,7 +2,6 @@
 Configuration management for Cockpit Get Data Agent
 """
 
-import hashlib
 import logging
 import os
 import socket

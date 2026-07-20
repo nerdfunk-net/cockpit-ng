@@ -67,7 +67,7 @@ def list_servers(
         None,
         description="Deprecated: grouping is handled client-side",
     ),
-    _: dict = Depends(require_permission("servers", "read")),
+    _: dict = Depends(require_permission("server_clients.server", "read")),
     service: ServersService = Depends(get_servers_service),
 ) -> ListServersResponse:
     """Return server summaries for inventory lists (excludes ansible_facts)."""
@@ -92,7 +92,7 @@ def list_servers(
 @router.post("/search", response_model=ServerSearchResponse)
 def search_servers(
     request: ServerSearchRequest,
-    _: dict = Depends(require_permission("servers", "read")),
+    _: dict = Depends(require_permission("server_clients.search", "read")),
     service: ServersService = Depends(get_servers_service),
 ) -> ServerSearchResponse:
     """Run a nested boolean search over server HW/OS columns."""
@@ -112,7 +112,7 @@ def search_servers(
 
 @router.get("/search/facets", response_model=ServerSearchFacetsResponse)
 def get_server_search_facets(
-    _: dict = Depends(require_permission("servers", "read")),
+    _: dict = Depends(require_permission("server_clients.search", "read")),
     service: ServersService = Depends(get_servers_service),
 ) -> ServerSearchFacetsResponse:
     """Return distinct OS/distribution values for search dropdowns."""
@@ -126,7 +126,7 @@ def get_server_search_facets(
 @router.get("/{server_id}", response_model=ServerResponse)
 def get_server(
     server_id: int,
-    _: dict = Depends(require_permission("servers", "read")),
+    _: dict = Depends(require_permission("server_clients.server", "read")),
     service: ServersService = Depends(get_servers_service),
 ) -> ServerResponse:
     """Return a single server by ID."""
@@ -144,7 +144,7 @@ def get_server(
 @router.post("", response_model=ServerResponse, status_code=201)
 def create_server(
     request: CreateServerRequest,
-    _: dict = Depends(require_permission("servers", "write")),
+    _: dict = Depends(require_permission("server_clients.server", "write")),
     service: ServersService = Depends(get_servers_service),
 ) -> ServerResponse:
     """Create a new server record."""
@@ -165,7 +165,7 @@ def create_server(
 def update_server(
     server_id: int,
     request: UpdateServerRequest,
-    _: dict = Depends(require_permission("servers", "write")),
+    _: dict = Depends(require_permission("server_clients.server", "write")),
     service: ServersService = Depends(get_servers_service),
 ) -> ServerResponse:
     """Update an existing server record."""
@@ -194,7 +194,7 @@ def update_server(
 @router.post("/{server_id}/refresh-facts", response_model=ServerResponse)
 def refresh_server_facts(
     server_id: int,
-    user: dict = Depends(require_permission("servers", "write")),
+    user: dict = Depends(require_permission("server_clients.server", "write")),
     ops_service: ServerAnsibleOperationsService = Depends(
         get_server_ansible_ops_service
     ),
@@ -219,7 +219,7 @@ def refresh_server_facts(
 @router.post("/{server_id}/refresh-open-ports", response_model=ServerResponse)
 def refresh_server_open_ports(
     server_id: int,
-    user: dict = Depends(require_permission("servers", "write")),
+    user: dict = Depends(require_permission("server_clients.server", "write")),
     ops_service: ServerAnsibleOperationsService = Depends(
         get_server_ansible_ops_service
     ),
@@ -244,7 +244,7 @@ def refresh_server_open_ports(
 @router.get("/{server_id}/facts/history", response_model=ServerFactsHistoryListResponse)
 def get_server_facts_history(
     server_id: int,
-    _: dict = Depends(require_permission("servers", "read")),
+    _: dict = Depends(require_permission("server_clients.server", "read")),
     service: ServersService = Depends(get_servers_service),
 ) -> ServerFactsHistoryListResponse:
     """Return the Ansible facts history for a server, newest first."""
@@ -269,7 +269,7 @@ def get_server_facts_history(
 def get_server_facts_history_entry(
     server_id: int,
     history_id: int,
-    _: dict = Depends(require_permission("servers", "read")),
+    _: dict = Depends(require_permission("server_clients.server", "read")),
     service: ServersService = Depends(get_servers_service),
 ) -> ServerFactsHistoryDetail:
     """Return a single historical Ansible facts snapshot."""
@@ -292,7 +292,7 @@ def get_server_facts_history_entry(
 )
 def get_server_open_ports_history(
     server_id: int,
-    _: dict = Depends(require_permission("servers", "read")),
+    _: dict = Depends(require_permission("server_clients.server", "read")),
     service: ServersService = Depends(get_servers_service),
 ) -> ServerOpenPortsHistoryListResponse:
     """Return the open-ports history for a server, newest first."""
@@ -319,7 +319,7 @@ def get_server_open_ports_history(
 def get_server_open_ports_history_entry(
     server_id: int,
     history_id: int,
-    _: dict = Depends(require_permission("servers", "read")),
+    _: dict = Depends(require_permission("server_clients.server", "read")),
     service: ServersService = Depends(get_servers_service),
 ) -> ServerOpenPortsHistoryDetail:
     """Return a single historical open-ports snapshot."""
@@ -339,7 +339,7 @@ def get_server_open_ports_history_entry(
 @router.delete("/{server_id}", status_code=204)
 def delete_server(
     server_id: int,
-    _: dict = Depends(require_permission("servers", "delete")),
+    _: dict = Depends(require_permission("server_clients.server", "delete")),
     service: ServersService = Depends(get_servers_service),
 ) -> None:
     """Delete a server record."""

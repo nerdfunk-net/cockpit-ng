@@ -33,7 +33,7 @@ router = APIRouter(prefix="/api/network/snapshots", tags=["snapshots"])
 )
 async def execute_snapshot(
     request: SnapshotExecuteRequest,
-    current_user: dict = Depends(require_permission("snapshots", "write")),
+    current_user: dict = Depends(require_permission("network.snapshots", "write")),
 ):
     """
     Execute a snapshot on multiple devices.
@@ -56,7 +56,7 @@ async def execute_snapshot(
 @router.get("", response_model=List[SnapshotListResponse])
 async def list_snapshots(
     limit: int = 100,
-    current_user: dict = Depends(require_permission("snapshots", "read")),
+    current_user: dict = Depends(require_permission("network.snapshots", "read")),
 ):
     """
     List all snapshots (most recent first).
@@ -70,7 +70,7 @@ async def list_snapshots(
 @router.get("/{snapshot_id}", response_model=SnapshotResponse)
 async def get_snapshot(
     snapshot_id: int,
-    current_user: dict = Depends(require_permission("snapshots", "read")),
+    current_user: dict = Depends(require_permission("network.snapshots", "read")),
 ):
     """
     Get a specific snapshot by ID with all results.
@@ -87,7 +87,7 @@ async def get_snapshot(
 @router.post("/compare", response_model=SnapshotCompareResponse)
 async def compare_snapshots(
     request: SnapshotCompareRequest,
-    current_user: dict = Depends(require_permission("snapshots", "read")),
+    current_user: dict = Depends(require_permission("network.snapshots", "read")),
 ):
     """
     Compare two snapshots to identify differences.
@@ -109,7 +109,7 @@ async def compare_snapshots(
 @router.delete("/{snapshot_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_snapshot_db_only(
     snapshot_id: int,
-    current_user: dict = Depends(require_permission("snapshots", "delete")),
+    current_user: dict = Depends(require_permission("network.snapshots", "delete")),
 ):
     """
     Delete snapshot from database only (files remain in Git).
@@ -125,7 +125,7 @@ async def delete_snapshot_db_only(
 @router.delete("/{snapshot_id}/files", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_snapshot_with_files(
     snapshot_id: int,
-    current_user: dict = Depends(require_permission("snapshots", "delete")),
+    current_user: dict = Depends(require_permission("network.snapshots", "delete")),
 ):
     """
     Delete snapshot from database AND remove all files from Git repository.

@@ -92,9 +92,7 @@ def _parse_command_list(step: dict, context: str) -> List[str]:
     parsed: List[str] = []
     for index, command in enumerate(commands):
         if not isinstance(command, str) or not command.strip():
-            raise ValueError(
-                f"{context}: command[{index}] must be a non-empty string"
-            )
+            raise ValueError(f"{context}: command[{index}] must be a non-empty string")
         parsed.append(command.strip())
     return parsed
 
@@ -207,7 +205,9 @@ def _parse_flow(flow_id: str, steps_raw: object) -> FlowDefinition:
         context = f"commands.{flow_id}[{index}]"
         if isinstance(step, dict) and "result" in step and "type" not in step:
             if result_file is not None:
-                raise ValueError(f"commands.{flow_id}: only one result entry is allowed")
+                raise ValueError(
+                    f"commands.{flow_id}: only one result entry is allowed"
+                )
             result_file = _parse_result_entry(step, context)
             continue
 
@@ -220,10 +220,7 @@ def _parse_flow(flow_id: str, steps_raw: object) -> FlowDefinition:
 
     # Result entry must be last in the YAML list.
     last_step = steps_raw[-1]
-    if not (
-        isinstance(last_step, dict)
-        and list(last_step.keys()) == ["result"]
-    ):
+    if not (isinstance(last_step, dict) and list(last_step.keys()) == ["result"]):
         raise ValueError(
             f"commands.{flow_id}: result entry must be the last item in the flow"
         )

@@ -172,7 +172,9 @@ class CockpitAgent:
         publish_progress = self._make_progress_publisher(command_id)
 
         # Execute command
-        result = await self.executor.execute(command, params, publish_progress=publish_progress)
+        result = await self.executor.execute(
+            command, params, publish_progress=publish_progress
+        )
 
         # Increment counter
         if self.heartbeat_thread:
@@ -237,7 +239,10 @@ class CockpitAgent:
         ).hexdigest()
 
         if not hmac.compare_digest(expected, signature):
-            logger.warning("Rejected message: HMAC signature mismatch (command_id=%s)", command_data.get("command_id"))
+            logger.warning(
+                "Rejected message: HMAC signature mismatch (command_id=%s)",
+                command_data.get("command_id"),
+            )
             return False
 
         return True

@@ -26,7 +26,7 @@ router = APIRouter(prefix="/api/network/snapshots/templates", tags=["snapshots"]
 )
 async def create_template(
     template: SnapshotCommandTemplateCreate,
-    current_user: dict = Depends(require_permission("snapshots", "write")),
+    current_user: dict = Depends(require_permission("network.snapshots", "write")),
 ):
     """
     Create a new snapshot command template.
@@ -45,7 +45,7 @@ async def create_template(
 
 @router.get("", response_model=List[SnapshotCommandTemplateResponse])
 async def list_templates(
-    current_user: dict = Depends(require_permission("snapshots", "read")),
+    current_user: dict = Depends(require_permission("network.snapshots", "read")),
 ):
     """
     List all snapshot command templates accessible by current user.
@@ -60,7 +60,7 @@ async def list_templates(
 @router.get("/{template_id}", response_model=SnapshotCommandTemplateResponse)
 async def get_template(
     template_id: int,
-    current_user: dict = Depends(require_permission("snapshots", "read")),
+    current_user: dict = Depends(require_permission("network.snapshots", "read")),
 ):
     """
     Get a specific snapshot command template by ID.
@@ -78,7 +78,7 @@ async def get_template(
 async def update_template(
     template_id: int,
     template: SnapshotCommandTemplateUpdate,
-    current_user: dict = Depends(require_permission("snapshots", "write")),
+    current_user: dict = Depends(require_permission("network.snapshots", "write")),
 ):
     """
     Update a snapshot command template.
@@ -102,7 +102,7 @@ async def update_template(
 @router.delete("/{template_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_template(
     template_id: int,
-    current_user: dict = Depends(require_permission("snapshots", "delete")),
+    current_user: dict = Depends(require_permission("network.snapshots", "delete")),
 ):
     """
     Delete a snapshot command template (soft delete).

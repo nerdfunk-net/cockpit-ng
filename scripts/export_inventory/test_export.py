@@ -34,6 +34,7 @@ def test_imports():
         from repositories.inventory.inventory_repository import InventoryRepository
         from core.database import get_db_session
         from inventory_manager import inventory_manager
+
         print("✓ All imports successful")
         return True
     except ImportError as e:
@@ -46,6 +47,7 @@ def test_database_connection():
     print("\nTesting database connection...")
     try:
         from core.database import get_db_session
+
         db = get_db_session()
         try:
             # Simple query to test connection
@@ -65,18 +67,18 @@ def test_inventory_retrieval():
     try:
         from repositories.inventory.inventory_repository import InventoryRepository
         from core.database import get_db_session
-        
+
         repo = InventoryRepository()
         db = get_db_session()
         try:
             inventories = db.query(repo.model).all()
             count = len(inventories)
             print(f"✓ Retrieved {count} inventories from database")
-            
+
             if count > 0:
                 # Show details of first inventory
                 first = inventories[0]
-                print(f"\n  Sample inventory:")
+                print("\n  Sample inventory:")
                 print(f"    ID: {first.id}")
                 print(f"    Name: {first.name}")
                 print(f"    Scope: {first.scope}")
@@ -85,7 +87,7 @@ def test_inventory_retrieval():
             else:
                 print("\n  Note: No inventories found in database")
                 print("  This is normal for a new installation")
-            
+
             return True
         finally:
             db.close()
@@ -101,43 +103,46 @@ def test_export_format():
         from inventory_manager import inventory_manager
         from repositories.inventory.inventory_repository import InventoryRepository
         from core.database import get_db_session
-        import json
-        
+
         repo = InventoryRepository()
         db = get_db_session()
         try:
             inventories = db.query(repo.model).limit(1).all()
-            
+
             if not inventories:
                 print("  Skipping (no inventories to test with)")
                 return True
-            
+
             # Convert to dict
             inventory_dict = inventory_manager._model_to_dict(inventories[0])
-            
+
             # Test export format
             from export_all_inventories import create_export_data
+
             export_data = create_export_data(inventory_dict)
-            
+
             # Validate structure
             assert "version" in export_data, "Missing version"
             assert export_data["version"] == 2, "Wrong version"
             assert "metadata" in export_data, "Missing metadata"
             assert "conditionTree" in export_data, "Missing conditionTree"
             assert "name" in export_data["metadata"], "Missing name in metadata"
-            
+
             print("✓ Export format is valid")
-            print(f"\n  Export structure:")
+            print("\n  Export structure:")
             print(f"    Version: {export_data['version']}")
             print(f"    Name: {export_data['metadata']['name']}")
-            print(f"    Conditions: {len(export_data['conditionTree'].get('items', []))} items")
-            
+            print(
+                f"    Conditions: {len(export_data['conditionTree'].get('items', []))} items"
+            )
+
             return True
         finally:
             db.close()
     except Exception as e:
         print(f"✗ Export format error: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -147,16 +152,16 @@ def main():
     print("=" * 60)
     print("Inventory Export Test Suite")
     print("=" * 60)
-    
+
     _prepend_backend_to_path()
-    
+
     tests = [
         ("Imports", test_imports),
         ("Database Connection", test_database_connection),
         ("Inventory Retrieval", test_inventory_retrieval),
         ("Export Format", test_export_format),
     ]
-    
+
     results = []
     for name, test_func in tests:
         try:
@@ -165,21 +170,21 @@ def main():
         except Exception as e:
             print(f"✗ Test '{name}' crashed: {e}")
             results.append((name, False))
-    
+
     # Summary
     print("\n" + "=" * 60)
     print("Test Summary")
     print("=" * 60)
-    
+
     passed = sum(1 for _, result in results if result)
     total = len(results)
-    
+
     for name, result in results:
         status = "✓ PASS" if result else "✗ FAIL"
         print(f"{status}: {name}")
-    
+
     print(f"\nTotal: {passed}/{total} tests passed")
-    
+
     if passed == total:
         print("\n✓ All tests passed! Export script is ready to use.")
         sys.exit(0)

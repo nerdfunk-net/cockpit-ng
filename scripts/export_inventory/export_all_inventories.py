@@ -83,7 +83,9 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def convert_conditions_to_tree(conditions: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
+def convert_conditions_to_tree(
+    conditions: List[Dict[str, Any]],
+) -> Optional[Dict[str, Any]]:
     """
     Convert conditions to condition tree format.
 
@@ -99,16 +101,16 @@ def convert_conditions_to_tree(conditions: List[Dict[str, Any]]) -> Optional[Dic
     # Check if it's already in tree format (Version 2)
     if len(conditions) > 0:
         first_item = conditions[0]
-        if isinstance(first_item, dict) and "version" in first_item and first_item["version"] == 2:
+        if (
+            isinstance(first_item, dict)
+            and "version" in first_item
+            and first_item["version"] == 2
+        ):
             return first_item.get("tree")
 
     # Legacy flat format - convert to tree
     # This should rarely happen with new data, but good for backwards compatibility
-    tree = {
-        "type": "root",
-        "internalLogic": "AND",
-        "items": []
-    }
+    tree = {"type": "root", "internalLogic": "AND", "items": []}
 
     for condition in conditions:
         if isinstance(condition, dict):
@@ -117,7 +119,7 @@ def convert_conditions_to_tree(conditions: List[Dict[str, Any]]) -> Optional[Dic
                 "id": f"item-{len(tree['items']) + 1}",
                 "field": condition.get("field", ""),
                 "operator": condition.get("operator", ""),
-                "value": condition.get("value", "")
+                "value": condition.get("value", ""),
             }
             tree["items"].append(item)
 
@@ -139,11 +141,7 @@ def create_export_data(inventory: Dict[str, Any]) -> Dict[str, Any]:
 
     if not condition_tree:
         # If no valid conditions, create an empty tree
-        condition_tree = {
-            "type": "root",
-            "internalLogic": "AND",
-            "items": []
-        }
+        condition_tree = {"type": "root", "internalLogic": "AND", "items": []}
 
     # Create export data
     export_data = {
@@ -254,7 +252,9 @@ def export_inventories(
             # Convert to dictionaries using inventory_manager
             from inventory_manager import inventory_manager
 
-            inventory_dicts = [inventory_manager._model_to_dict(inv) for inv in inventories]
+            inventory_dicts = [
+                inventory_manager._model_to_dict(inv) for inv in inventories
+            ]
 
         finally:
             db.close()
@@ -307,12 +307,14 @@ def export_inventories(
                 success_count += 1
 
             except Exception as e:
-                print(f"✗ Error exporting inventory '{inventory.get('name', 'unknown')}': {e}")
+                print(
+                    f"✗ Error exporting inventory '{inventory.get('name', 'unknown')}': {e}"
+                )
                 error_count += 1
 
         # Summary
         print("-" * 60)
-        print(f"Export complete!")
+        print("Export complete!")
         print(f"  Success: {success_count}")
         print(f"  Errors: {error_count}")
         print(f"  Output directory: {output_path.absolute()}")
@@ -339,6 +341,7 @@ def main() -> None:
     except Exception as e:
         print(f"\n\nFatal error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 

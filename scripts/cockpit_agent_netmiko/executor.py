@@ -22,7 +22,9 @@ def _decrypt_password(encrypted: str) -> str:
         f = Fernet(config.fernet_key)
         return f.decrypt(encrypted.encode()).decode()
     except InvalidToken as e:
-        raise ValueError("Failed to decrypt password — shared secret mismatch or tampered data") from e
+        raise ValueError(
+            "Failed to decrypt password — shared secret mismatch or tampered data"
+        ) from e
 
 
 def _run_netmiko(
@@ -74,7 +76,9 @@ def _run_netmiko(
                 try:
                     conn.enable()
                 except Exception as exc:
-                    logger.warning("Could not enter privileged mode on %s: %s", host_ip, exc)
+                    logger.warning(
+                        "Could not enter privileged mode on %s: %s", host_ip, exc
+                    )
 
             command_outputs: Dict[str, Any] = {}
             output = ""
@@ -83,7 +87,13 @@ def _run_netmiko(
                 output = conn.send_config_set(commands)
             else:
                 for idx, cmd in enumerate(commands, 1):
-                    logger.info("Executing command %d/%d on %s: %s", idx, len(commands), host_ip, cmd)
+                    logger.info(
+                        "Executing command %d/%d on %s: %s",
+                        idx,
+                        len(commands),
+                        host_ip,
+                        cmd,
+                    )
                     raw = conn.send_command(cmd, use_textfsm=False, read_timeout=30)
 
                     if output:
@@ -94,10 +104,14 @@ def _run_netmiko(
                         try:
                             from netmiko.utilities import get_structured_data  # type: ignore[import]
 
-                            parsed = get_structured_data(raw, platform=device_type, command=cmd)
+                            parsed = get_structured_data(
+                                raw, platform=device_type, command=cmd
+                            )
                             command_outputs[cmd] = parsed if parsed else raw
                         except Exception as parse_err:
-                            logger.warning("TextFSM parse failed for '%s': %s", cmd, parse_err)
+                            logger.warning(
+                                "TextFSM parse failed for '%s': %s", cmd, parse_err
+                            )
                             command_outputs[cmd] = raw
                     else:
                         command_outputs[cmd] = raw
@@ -109,11 +123,15 @@ def _run_netmiko(
                         expect_string=r"Destination filename",
                         read_timeout=30,
                     )
-                    save_out += conn.send_command("\n", expect_string=None, read_timeout=30)
+                    save_out += conn.send_command(
+                        "\n", expect_string=None, read_timeout=30
+                    )
                     command_outputs["write_config"] = save_out
                     output += f"\n{save_out}"
                 except Exception as save_err:
-                    logger.warning("Failed to write config on %s: %s", host_ip, save_err)
+                    logger.warning(
+                        "Failed to write config on %s: %s", host_ip, save_err
+                    )
                     command_outputs["write_config_error"] = str(save_err)
 
             result["success"] = True
@@ -269,7 +287,11 @@ class CommandExecutor:
 
         commands = params.get("commands")
         if not commands or not isinstance(commands, list):
-            return {"status": "error", "error": "commands must be a non-empty list", "output": None}
+            return {
+                "status": "error",
+                "error": "commands must be a non-empty list",
+                "output": None,
+            }
 
         result = _run_netmiko(
             ip_address=params["ip_address"],
@@ -289,6 +311,7 @@ class CommandExecutor:
 # ------------------------------------------------------------------
 # Private helpers
 # ------------------------------------------------------------------
+
 
 def _validate_device_params(params: dict) -> Optional[str]:
     """Return an error string if required device params are missing, else None."""

@@ -24,7 +24,9 @@ router = APIRouter(prefix="/api/scan", tags=["scan"])
 @router.post("/start", response_model=ScanStartResponse)
 async def start_scan(
     request: ScanStartRequest,
-    current_user: dict = Depends(require_permission("scan", "execute")),
+    current_user: dict = Depends(
+        require_permission("nautobot.scan_and_add", "execute")
+    ),
     scan_service=Depends(get_scan_service),
 ):
     """Start a new network scan job."""
@@ -67,7 +69,9 @@ async def start_scan(
 @router.get("/{job_id}/status", response_model=ScanStatusResponse)
 async def get_scan_status(
     job_id: str,
-    current_user: dict = Depends(require_permission("scan", "execute")),
+    current_user: dict = Depends(
+        require_permission("nautobot.scan_and_add", "execute")
+    ),
     scan_service=Depends(get_scan_service),
 ):
     """Get status and results of a scan job."""
@@ -107,7 +111,9 @@ async def get_scan_status(
 @router.delete("/{job_id}")
 async def delete_scan_job(
     job_id: str,
-    current_user: dict = Depends(require_permission("scan", "execute")),
+    current_user: dict = Depends(
+        require_permission("nautobot.scan_and_add", "execute")
+    ),
     scan_service=Depends(get_scan_service),
 ):
     """Delete a scan job (cleanup endpoint)."""
@@ -126,7 +132,9 @@ async def delete_scan_job(
 
 @router.get("/jobs")
 async def list_scan_jobs(
-    current_user: dict = Depends(require_permission("scan", "execute")),
+    current_user: dict = Depends(
+        require_permission("nautobot.scan_and_add", "execute")
+    ),
     scan_service=Depends(get_scan_service),
 ):
     """List all active scan jobs."""

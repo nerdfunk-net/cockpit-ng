@@ -90,9 +90,9 @@ Every permission follows the pattern:
 
 | Permission | Description |
 |------------|-------------|
-| `configs:read` | View device configurations |
 | `configs.backup:execute` | Trigger configuration backups |
 | `configs.compare:execute` | Run configuration diff/compare |
+| `configs.search:execute` | Search configuration file content |
 | `network.backup:read` | View device backup status and history |
 | `network.backup:write` | Execute device configuration backups |
 
@@ -119,9 +119,19 @@ Every permission follows the pattern:
 
 | Permission | Description |
 |------------|-------------|
-| `snapshots:read` | View network snapshots |
-| `snapshots:write` | Create/execute network snapshots |
-| `snapshots:delete` | Delete network snapshots |
+| `network.snapshots:read` | View network snapshots |
+| `network.snapshots:write` | Create/execute network snapshots |
+| `network.snapshots:delete` | Delete network snapshots |
+
+### Servers & Clients
+
+| Permission | Description |
+|------------|-------------|
+| `server_clients.server:read` | View managed servers and their Ansible facts |
+| `server_clients.server:write` | Create/update managed servers |
+| `server_clients.server:delete` | Delete managed servers |
+| `server_clients.clients:read` | View collected client data (ARP/MAC/hostname) |
+| `server_clients.search:read` | Search/filter managed servers and view search facets |
 
 ### Git Repositories
 
@@ -136,7 +146,7 @@ Every permission follows the pattern:
 
 | Permission | Description |
 |------------|-------------|
-| `scan:execute` | Run network scans |
+| `nautobot.scan_and_add:execute` | Scan a network range and onboard discovered devices into Nautobot |
 | `nautobot.onboard:execute` | Onboard new devices |
 | `nautobot.offboard:execute` | Offboard devices |
 
@@ -211,7 +221,7 @@ Has every permission. Intended for system administrators only.
 
 Can manage devices, configurations, and scheduled jobs. Cannot modify system settings or user accounts.
 
-Key permissions: `nautobot.devices:*`, `checkmk.devices:*`, `configs:read`, `configs.backup:execute`, `network.backup:*`, `jobs:*`, `scan:execute`, `nautobot.onboard:execute`
+Key permissions: `nautobot.devices:*`, `checkmk.devices:*`, `configs.backup:execute`, `network.backup:*`, `jobs:*`, `nautobot.scan_and_add:execute`, `nautobot.onboard:execute`
 
 Settings access: read-only (`settings.nautobot:read`, `settings.checkmk:read`, `settings.cache:read`)
 
@@ -219,7 +229,7 @@ Settings access: read-only (`settings.nautobot:read`, `settings.checkmk:read`, `
 
 Full access to all network tooling (templates, Netmiko, snapshots, Git). Read-only for system settings.
 
-Key additions over `operator`: `network.templates:*`, `network.netmiko:execute`, `network.ping:execute`, `network.scan:execute`, `snapshots:delete`, `git.*`, `general.inventory:delete`, `nautobot.csv_updates:write`
+Key additions over `operator`: `network.templates:*`, `network.netmiko:execute`, `network.ping:execute`, `network.scan:execute`, `network.snapshots:delete`, `git.*`, `general.inventory:delete`, `nautobot.csv_updates:write`, `server_clients.server:delete`
 
 ### `viewer` — Read-Only
 
