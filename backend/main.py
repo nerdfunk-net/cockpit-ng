@@ -284,8 +284,12 @@ app.include_router(tools_router)
 app.include_router(cockpit_agent_router)
 app.include_router(agents_deploy_router)
 app.include_router(clients_router)
-app.include_router(servers_router)
+# saved_searches_router must be registered before servers_router — its literal
+# "saved-searches" segment would otherwise be captured by servers_router's
+# GET/PUT/DELETE /{server_id} (unannotated path params match any string, not
+# just digits, so route order decides which one wins).
 app.include_router(saved_searches_router)
+app.include_router(servers_router)
 app.include_router(logs_router)
 app.include_router(health_router)
 app.include_router(user_field_mappings_router)
