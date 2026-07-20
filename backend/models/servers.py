@@ -1,7 +1,7 @@
 import json
 import re
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 from pydantic.networks import IPvAnyAddress
@@ -108,6 +108,34 @@ class ServerSummaryResponse(BaseModel):
     hostname: str
     location: Optional[ServerLocation] = None
     cluster: Optional[ServerCluster] = None
+    distribution: Optional[str] = None
+    distribution_release: Optional[str] = None
+    distribution_version: Optional[str] = None
+    contact: Optional[List[ServerContact]] = None
+    is_virtual: bool = False
+
+    @field_validator("contact", mode="before")
+    @classmethod
+    def normalize_contact_field(cls, v: Any) -> Any:
+        return normalize_contacts(v)
+
+    model_config = {"from_attributes": True}
+
+
+class ServerSearchHitResponse(BaseModel):
+    """Server row returned by advanced search (HW/OS fields, no large JSON blobs)."""
+
+    id: int
+    hostname: str
+    location: Optional[ServerLocation] = None
+    cluster: Optional[ServerCluster] = None
+    os_family: Optional[str] = None
+    processor_count: Optional[int] = None
+    memtotal_mb: Optional[int] = None
+    disk_count: Optional[int] = None
+    disk_total_gb: Optional[int] = None
+    disk_usage_pct: Optional[int] = None
+    distribution: Optional[str] = None
     distribution_release: Optional[str] = None
     distribution_version: Optional[str] = None
     contact: Optional[List[ServerContact]] = None
@@ -132,7 +160,10 @@ class ServerResponse(BaseModel):
     processor_count: Optional[int] = None
     memtotal_mb: Optional[int] = None
     disk_count: Optional[int] = None
+    disk_total_gb: Optional[int] = None
+    disk_usage_pct: Optional[int] = None
     architecture: Optional[str] = None
+    distribution: Optional[str] = None
     distribution_release: Optional[str] = None
     distribution_version: Optional[str] = None
     contact: Optional[List[ServerContact]] = None
@@ -162,7 +193,10 @@ class CreateServerRequest(BaseModel):
     processor_count: Optional[int] = None
     memtotal_mb: Optional[int] = None
     disk_count: Optional[int] = None
+    disk_total_gb: Optional[int] = None
+    disk_usage_pct: Optional[int] = None
     architecture: Optional[str] = Field(None, max_length=100)
+    distribution: Optional[str] = Field(None, max_length=100)
     distribution_release: Optional[str] = Field(None, max_length=100)
     distribution_version: Optional[str] = Field(None, max_length=100)
     contact: Optional[List[ServerContact]] = None
@@ -247,7 +281,10 @@ class UpdateServerRequest(BaseModel):
     processor_count: Optional[int] = None
     memtotal_mb: Optional[int] = None
     disk_count: Optional[int] = None
+    disk_total_gb: Optional[int] = None
+    disk_usage_pct: Optional[int] = None
     architecture: Optional[str] = Field(None, max_length=100)
+    distribution: Optional[str] = Field(None, max_length=100)
     distribution_release: Optional[str] = Field(None, max_length=100)
     distribution_version: Optional[str] = Field(None, max_length=100)
     contact: Optional[List[ServerContact]] = None
@@ -319,6 +356,124 @@ class ListServersResponse(BaseModel):
     servers: List[ServerSummaryResponse]
     total: int
     total_all: int
+
+
+# ── Advanced search ────────────────────────────────────────────────────────────
+
+_SEARCH_MAX_DEPTH = 5
+_SEARCH_MAX_RULES = 50
+
+SearchFieldName = Literal[
+    "memtotal_mb",
+    "processor_count",
+    "disk_count",
+    "disk_total_gb",
+    "disk_usage_pct",
+    "os_family",
+    "distribution",
+    "distribution_version",
+    "is_virtual",
+]
+SearchOp = Literal["gt", "lt", "eq", "in"]
+
+_NUMERIC_FIELDS = frozenset(
+    {
+        "memtotal_mb",
+        "processor_count",
+        "disk_count",
+        "disk_total_gb",
+        "disk_usage_pct",
+    }
+)
+_STRING_FIELDS = frozenset({"os_family", "distribution", "distribution_version"})
+_BOOL_FIELDS = frozenset({"is_virtual"})
+_COMPARISON_OPS = frozenset({"gt", "lt", "eq"})
+_EQ_OPS = frozenset({"eq", "in"})
+
+
+class SearchRule(BaseModel):
+    field: SearchFieldName
+    op: SearchOp
+    value: Any
+
+    @model_validator(mode="after")
+    def validate_rule(self) -> "SearchRule":
+        field = self.field
+        op = self.op
+        value = self.value
+
+        if field in _NUMERIC_FIELDS:
+            if op not in _COMPARISON_OPS:
+                raise ValueError(f"field {field!r} only supports gt, lt, eq")
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                raise ValueError(f"field {field!r} requires a numeric value")
+        elif field in _STRING_FIELDS:
+            if op not in _EQ_OPS:
+                raise ValueError(f"field {field!r} only supports eq, in")
+            if op == "eq":
+                if not isinstance(value, str) or not value:
+                    raise ValueError(f"field {field!r} eq requires a non-empty string")
+            else:
+                if not isinstance(value, list) or not value:
+                    raise ValueError(f"field {field!r} in requires a non-empty list")
+                if not all(isinstance(v, str) and v for v in value):
+                    raise ValueError(f"field {field!r} in requires non-empty strings")
+        elif field in _BOOL_FIELDS:
+            if op != "eq":
+                raise ValueError(f"field {field!r} only supports eq")
+            if not isinstance(value, bool):
+                raise ValueError(f"field {field!r} requires a boolean value")
+        return self
+
+
+class SearchGroup(BaseModel):
+    combinator: Literal["and", "or"] = "and"
+    not_: bool = Field(False, alias="not")
+    rules: List[Union[SearchRule, "SearchGroup"]] = Field(default_factory=list)
+
+    model_config = {"populate_by_name": True}
+
+    @model_validator(mode="after")
+    def validate_tree_limits(self) -> "SearchGroup":
+        def walk(node: "SearchGroup", depth: int) -> int:
+            if depth > _SEARCH_MAX_DEPTH:
+                raise ValueError(
+                    f"search query exceeds maximum nesting depth of {_SEARCH_MAX_DEPTH}"
+                )
+            count = 0
+            for item in node.rules:
+                if isinstance(item, SearchGroup):
+                    count += walk(item, depth + 1)
+                else:
+                    count += 1
+            return count
+
+        total = walk(self, 1)
+        if total > _SEARCH_MAX_RULES:
+            raise ValueError(
+                f"search query exceeds maximum of {_SEARCH_MAX_RULES} rules"
+            )
+        if total < 1:
+            raise ValueError("search query must contain at least one rule")
+        return self
+
+
+SearchGroup.model_rebuild()
+
+
+class ServerSearchRequest(BaseModel):
+    query: SearchGroup
+
+
+class ServerSearchResponse(BaseModel):
+    servers: List[ServerSearchHitResponse]
+    total: int
+
+
+class ServerSearchFacetsResponse(BaseModel):
+    os_family: List[str]
+    distribution: List[str]
+    distribution_version: List[str]
 
 
 class ServerFactsHistoryEntry(BaseModel):

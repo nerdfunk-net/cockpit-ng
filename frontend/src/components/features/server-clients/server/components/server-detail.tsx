@@ -256,7 +256,11 @@ export function ServerDetail({
     [server]
   )
 
-  const distribution = [server.distribution_release, server.distribution_version]
+  const distribution = [
+    server.distribution,
+    server.distribution_release,
+    server.distribution_version,
+  ]
     .filter(Boolean)
     .join(' / ')
 
@@ -302,6 +306,16 @@ export function ServerDetail({
           <FactRow label="CPUs" value={server.processor_count} />
           <FactRow label="RAM" value={server.memtotal_mb != null ? `${server.memtotal_mb} MB` : null} />
           <FactRow label="Disks" value={server.disk_count} />
+          <FactRow
+            label="Disk size"
+            value={server.disk_total_gb != null ? `${server.disk_total_gb} GB` : null}
+          />
+          <FactRow
+            label="Disk usage"
+            value={
+              server.disk_usage_pct != null ? `${server.disk_usage_pct}%` : null
+            }
+          />
           <LocationRow server={server} />
           <NautobotUuidRow server={server} />
         </div>

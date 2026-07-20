@@ -475,6 +475,9 @@ export const queryKeys = {
       [...queryKeys.servers.all, 'detail', id, 'open-ports-history'] as const,
     openPortsHistoryDetail: (id: number, historyId: number) =>
       [...queryKeys.servers.openPortsHistory(id), historyId] as const,
+    search: (query: unknown) =>
+      [...queryKeys.servers.all, 'search', query] as const,
+    searchFacets: () => [...queryKeys.servers.all, 'search', 'facets'] as const,
   },
 
   // Agents settings

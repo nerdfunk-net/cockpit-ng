@@ -3,6 +3,8 @@ Router for server management.
 
 Endpoints:
   GET    /api/servers                              – list all servers (optional ?group_by=<field>)
+  POST   /api/servers/search                       – advanced nested boolean search
+  GET    /api/servers/search/facets                – distinct values for search dropdowns
   GET    /api/servers/{id}                          – single server
   POST   /api/servers                               – create server
   PUT    /api/servers/{id}                          – update server
@@ -19,6 +21,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import ValidationError
 
 from core.auth import require_permission
 from core.db_errors import (
@@ -37,6 +40,10 @@ from models.servers import (
     ServerOpenPortsHistoryEntry,
     ServerOpenPortsHistoryListResponse,
     ServerResponse,
+    ServerSearchFacetsResponse,
+    ServerSearchHitResponse,
+    ServerSearchRequest,
+    ServerSearchResponse,
     ServerSummaryResponse,
     UpdateServerRequest,
 )
@@ -80,6 +87,40 @@ def list_servers(
         )
     except Exception as exc:
         raise_internal_server_error(logger, "Failed to list servers", exc)
+
+
+@router.post("/search", response_model=ServerSearchResponse)
+def search_servers(
+    request: ServerSearchRequest,
+    _: dict = Depends(require_permission("servers", "read")),
+    service: ServersService = Depends(get_servers_service),
+) -> ServerSearchResponse:
+    """Run a nested boolean search over server HW/OS columns."""
+    try:
+        servers = service.search(request.query)
+        return ServerSearchResponse(
+            servers=[ServerSearchHitResponse.model_validate(s) for s in servers],
+            total=len(servers),
+        )
+    except ValidationError as exc:
+        raise HTTPException(status_code=400, detail=exc.errors()) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise_internal_server_error(logger, "Failed to search servers", exc)
+
+
+@router.get("/search/facets", response_model=ServerSearchFacetsResponse)
+def get_server_search_facets(
+    _: dict = Depends(require_permission("servers", "read")),
+    service: ServersService = Depends(get_servers_service),
+) -> ServerSearchFacetsResponse:
+    """Return distinct OS/distribution values for search dropdowns."""
+    try:
+        facets = service.get_search_facets()
+        return ServerSearchFacetsResponse(**facets)
+    except Exception as exc:
+        raise_internal_server_error(logger, "Failed to get server search facets", exc)
 
 
 @router.get("/{server_id}", response_model=ServerResponse)

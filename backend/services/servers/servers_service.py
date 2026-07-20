@@ -3,6 +3,7 @@ import json
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from core.models.servers import Server, ServerFactsHistory, ServerOpenPortsHistory
+from models.servers import SearchGroup
 from repositories.servers.server_facts_history_repository import (
     ServerFactsHistoryRepository,
 )
@@ -49,6 +50,18 @@ class ServersService:
     def get_by_hostname(self, hostname: str) -> Optional[Server]:
         matches = self._repo.filter(hostname=hostname)
         return matches[0] if matches else None
+
+    def search(self, query: SearchGroup) -> List[Server]:
+        return self._repo.search(query)
+
+    def get_search_facets(self) -> Dict[str, List[str]]:
+        return {
+            "os_family": self._repo.distinct_facet_values("os_family"),
+            "distribution": self._repo.distinct_facet_values("distribution"),
+            "distribution_version": self._repo.distinct_facet_values(
+                "distribution_version"
+            ),
+        }
 
     def create(self, data: "CreateServerRequest") -> Server:
         fields = data.model_dump()

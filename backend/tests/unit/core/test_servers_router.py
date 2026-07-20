@@ -50,6 +50,7 @@ def _summary(**kwargs: object) -> SimpleNamespace:
         "hostname": "web01",
         "location": {"id": "loc-1", "name": "NYC"},
         "cluster": None,
+        "distribution": "Ubuntu",
         "distribution_release": "22.04",
         "distribution_version": "22.04.3",
         "contact": {"id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4", "name": "ops"},
@@ -71,7 +72,10 @@ def _detail(**kwargs: object) -> SimpleNamespace:
         "processor_count": 4,
         "memtotal_mb": 8192,
         "disk_count": 2,
+        "disk_total_gb": 100,
+        "disk_usage_pct": 55,
         "architecture": "x86_64",
+        "distribution": "Ubuntu",
         "distribution_release": "22.04",
         "distribution_version": "22.04.3",
         "contact": {"id": "13b79fe1-264f-40a3-91ed-9e93dd45a5d4", "name": "ops"},
@@ -82,6 +86,28 @@ def _detail(**kwargs: object) -> SimpleNamespace:
         "selected_interfaces": None,
         "created_at": _NOW,
         "updated_at": _NOW,
+    }
+    defaults.update(kwargs)
+    return SimpleNamespace(**defaults)
+
+
+def _search_hit(**kwargs: object) -> SimpleNamespace:
+    defaults: dict = {
+        "id": 1,
+        "hostname": "web01",
+        "location": {"id": "loc-1", "name": "NYC"},
+        "cluster": None,
+        "os_family": "Debian",
+        "processor_count": 4,
+        "memtotal_mb": 8192,
+        "disk_count": 2,
+        "disk_total_gb": 100,
+        "disk_usage_pct": 55,
+        "distribution": "Ubuntu",
+        "distribution_release": "jammy",
+        "distribution_version": "22.04",
+        "contact": None,
+        "is_virtual": False,
     }
     defaults.update(kwargs)
     return SimpleNamespace(**defaults)
@@ -885,3 +911,75 @@ def test_update_server_internal_error_is_sanitized(client: TestClient) -> None:
     body = resp.json()
     assert body["detail"]["message"] == "An internal error occurred"
     assert "update-failed" not in resp.text
+
+
+# ── POST /api/servers/search & GET /api/servers/search/facets ─────────────────
+
+
+@pytest.mark.unit
+def test_search_servers_returns_hits(client: TestClient) -> None:
+    mock_service = MagicMock()
+    mock_service.search.return_value = [
+        _search_hit(),
+        _search_hit(id=2, hostname="db01", memtotal_mb=16384),
+    ]
+
+    with _auth_context(mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.post(
+            "/api/servers/search",
+            json={
+                "query": {
+                    "combinator": "and",
+                    "rules": [
+                        {"field": "memtotal_mb", "op": "gt", "value": 8192},
+                        {"field": "os_family", "op": "eq", "value": "Debian"},
+                    ],
+                }
+            },
+            headers=_AUTH_HEADERS,
+        )
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 2
+    assert body["servers"][0]["hostname"] == "web01"
+    assert body["servers"][0]["disk_total_gb"] == 100
+    assert body["servers"][0]["distribution"] == "Ubuntu"
+    mock_service.search.assert_called_once()
+
+
+@pytest.mark.unit
+def test_search_servers_rejects_empty_query(client: TestClient) -> None:
+    mock_service = MagicMock()
+
+    with _auth_context(mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.post(
+            "/api/servers/search",
+            json={"query": {"combinator": "and", "rules": []}},
+            headers=_AUTH_HEADERS,
+        )
+
+    assert resp.status_code == 422
+    mock_service.search.assert_not_called()
+
+
+@pytest.mark.unit
+def test_get_search_facets(client: TestClient) -> None:
+    mock_service = MagicMock()
+    mock_service.get_search_facets.return_value = {
+        "os_family": ["Debian", "RedHat"],
+        "distribution": ["Ubuntu", "Rocky"],
+        "distribution_version": ["22.04", "9.4"],
+    }
+
+    with _auth_context(mock_service) as rbac:
+        rbac.return_value.has_permission = MagicMock(return_value=True)
+        resp = client.get("/api/servers/search/facets", headers=_AUTH_HEADERS)
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["os_family"] == ["Debian", "RedHat"]
+    assert body["distribution"] == ["Ubuntu", "Rocky"]
+    assert body["distribution_version"] == ["22.04", "9.4"]

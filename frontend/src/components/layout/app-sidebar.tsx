@@ -155,6 +155,7 @@ const navigationSections: NavSection[] = [
     items: [
       { label: 'Clients', href: '/clients', icon: Users },
       { label: 'Server', href: '/server-clients/server', icon: Server },
+      { label: 'Search', href: '/server-clients/search', icon: Search },
     ],
   },
   {

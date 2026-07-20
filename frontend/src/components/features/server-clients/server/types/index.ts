@@ -61,6 +61,7 @@ export interface ServerSummaryResponse {
   hostname: string
   location: ServerLocation | null
   cluster: ServerCluster | null
+  distribution: string | null
   distribution_release: string | null
   distribution_version: string | null
   contact: ServerContact[] | null
@@ -78,7 +79,10 @@ export interface ServerResponse {
   processor_count: number | null
   memtotal_mb: number | null
   disk_count: number | null
+  disk_total_gb: number | null
+  disk_usage_pct: number | null
   architecture: string | null
+  distribution: string | null
   distribution_release: string | null
   distribution_version: string | null
   contact: ServerContact[] | null
