@@ -8,24 +8,21 @@ import { UserPlus, Edit, Trash2, RefreshCw } from 'lucide-react'
 import { useRbacUsers } from '../hooks/use-rbac-queries'
 import { useRbacMutations } from '../hooks/use-rbac-mutations'
 import { UserDialog } from '../components/dialogs/user-dialog'
+import { DeleteUserDialog } from '../components/dialogs/delete-user-dialog'
 import { RBACDataTable } from '../components/rbac-data-table'
 import { RBACLoading } from '../components/rbac-loading'
 import type { User, CreateUserData, UpdateUserData } from '../types'
 import { EMPTY_USERS } from '../utils/constants'
-import { useConfirmDialog } from '@/hooks/use-confirm-dialog'
-import { ConfirmDialog } from '@/components/shared/confirm-dialog'
 
 export function UsersManager() {
   // TanStack Query hooks - no manual state management needed
   const { data: users = EMPTY_USERS, isLoading, refetch } = useRbacUsers()
-  const { createUser, updateUser, deleteUser } = useRbacMutations()
-
-  // Confirm dialog
-  const { confirmDialog, openConfirm } = useConfirmDialog()
+  const { createUser, updateUser } = useRbacMutations()
 
   // Client-side UI state only
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [userPendingDelete, setUserPendingDelete] = useState<User | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
 
   // Derived state with useMemo
@@ -51,17 +48,9 @@ export function UsersManager() {
     setIsDialogOpen(true)
   }, [])
 
-  const handleDelete = useCallback(
-    (userId: number) => {
-      openConfirm({
-        title: 'Delete User',
-        description: 'Are you sure you want to delete this user?',
-        variant: 'destructive',
-        onConfirm: () => deleteUser.mutate(userId),
-      })
-    },
-    [deleteUser, openConfirm]
-  )
+  const handleDeleteClick = useCallback((user: User) => {
+    setUserPendingDelete(user)
+  }, [])
 
   const handleSubmit = useCallback(
     (data: CreateUserData | UpdateUserData) => {
@@ -154,7 +143,7 @@ export function UsersManager() {
             <Button
               size="sm"
               variant="ghost"
-              onClick={() => handleDelete(user.id)}
+              onClick={() => handleDeleteClick(user)}
               disabled={user.username === 'admin'}
             >
               <Trash2 className="h-4 w-4" />
@@ -171,7 +160,13 @@ export function UsersManager() {
         user={selectedUser}
         isEdit={!!selectedUser}
       />
-      <ConfirmDialog {...confirmDialog} />
+      <DeleteUserDialog
+        open={!!userPendingDelete}
+        onOpenChange={open => {
+          if (!open) setUserPendingDelete(null)
+        }}
+        user={userPendingDelete}
+      />
     </div>
   )
 }

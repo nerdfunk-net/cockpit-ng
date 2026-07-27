@@ -1,7 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { useApi } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
-import type { Role, Permission, UsersResponse, RoleWithPermissions } from '../types'
+import type {
+  Role,
+  Permission,
+  UsersResponse,
+  RoleWithPermissions,
+  UserDeletionImpact,
+} from '../types'
 import {
   CACHE_TIME,
   EMPTY_USERS,
@@ -172,5 +178,37 @@ export function useUserPermissionOverrides(
     },
     enabled: enabled && !!userId,
     staleTime: 0, // Always fetch fresh for overrides
+  })
+}
+
+interface UseUserDeletionImpactOptions {
+  enabled?: boolean
+}
+
+const DEFAULT_DELETION_IMPACT_OPTIONS: UseUserDeletionImpactOptions = {
+  enabled: true,
+}
+
+/**
+ * Preview what deleting a user would affect (global/private job
+ * templates and schedules) — fetched on demand when the delete-user
+ * dialog opens, always fresh since it gates a destructive action.
+ */
+export function useUserDeletionImpact(
+  userId: number | null,
+  options: UseUserDeletionImpactOptions = DEFAULT_DELETION_IMPACT_OPTIONS
+) {
+  const { apiCall } = useApi()
+  const { enabled = true } = options
+
+  return useQuery({
+    queryKey: queryKeys.rbac.deletionImpact(userId!),
+    queryFn: async () => {
+      return apiCall<UserDeletionImpact>(`rbac/users/${userId}/deletion-impact`, {
+        method: 'GET',
+      })
+    },
+    enabled: enabled && !!userId,
+    staleTime: 0,
   })
 }

@@ -72,3 +72,36 @@ export interface UpdateRoleData {
   name?: string
   description?: string
 }
+
+// User deletion impact preview (GET /rbac/users/{id}/deletion-impact)
+export interface UserDeletionImpactTemplate {
+  id: number
+  name: string
+  job_type: string
+}
+
+export interface UserDeletionImpactSchedule {
+  id: number
+  job_identifier: string
+  template_name: string | null
+}
+
+export interface UserDeletionImpactCascadeSchedule {
+  id: number
+  job_identifier: string
+  owner_user_id: number | null
+  is_global: boolean
+}
+
+export interface UserDeletionImpact {
+  user_id: number
+  username: string
+  global_templates: UserDeletionImpactTemplate[]
+  global_schedules: UserDeletionImpactSchedule[]
+  private_templates: UserDeletionImpactTemplate[]
+  private_schedules: UserDeletionImpactSchedule[]
+  cascade_schedules_from_other_users: UserDeletionImpactCascadeSchedule[]
+  private_credentials_count: number
+  requires_global_reassignment: boolean
+  requires_private_confirmation: boolean
+}

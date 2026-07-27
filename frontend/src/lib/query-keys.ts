@@ -323,6 +323,8 @@ export const queryKeys = {
       [...queryKeys.rbac.all, 'user', userId, 'roles'] as const,
     userPermissions: (userId: number) =>
       [...queryKeys.rbac.all, 'user', userId, 'permissions'] as const,
+    deletionImpact: (userId: number) =>
+      [...queryKeys.rbac.all, 'user', userId, 'deletion-impact'] as const,
 
     // Roles
     roles: () => [...queryKeys.rbac.all, 'roles'] as const,

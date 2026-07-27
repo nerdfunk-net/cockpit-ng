@@ -8,6 +8,23 @@ interface ApiOptions {
   headers?: Record<string, string>
 }
 
+/**
+ * Thrown by apiCall on any non-2xx response. `status` and `detail` let
+ * callers branch on structured error bodies (e.g. a 409 whose
+ * `detail` is `{ message, impact }`) instead of parsing `error.message`.
+ */
+export class ApiError extends Error {
+  status: number
+  detail: unknown
+
+  constructor(message: string, status: number, detail: unknown) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.detail = detail
+  }
+}
+
 const EMPTY_OPTIONS: ApiOptions = {}
 const EMPTY_HEADERS: Record<string, string> = {}
 
@@ -68,10 +85,12 @@ export function useApi() {
         }
 
         let errorMessage = `API Error ${response.status}`
+        let errorDetail: unknown = undefined
         try {
           const errorData = JSON.parse(errorText)
           if (errorData.detail) {
             const detail = errorData.detail
+            errorDetail = detail
             if (typeof detail === 'object' && detail !== null && typeof detail.message === 'string') {
               errorMessage = detail.message
             } else {
@@ -83,7 +102,7 @@ export function useApi() {
         } catch {
           if (errorText) errorMessage = `${errorMessage}: ${errorText}`
         }
-        throw new Error(errorMessage)
+        throw new ApiError(errorMessage, response.status, errorDetail)
       }
 
       const contentType = response.headers.get('content-type')

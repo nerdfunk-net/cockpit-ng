@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useApi } from '@/hooks/use-api'
+import { useApi, ApiError } from '@/hooks/use-api'
 import { queryKeys } from '@/lib/query-keys'
 import { useToast } from '@/hooks/use-toast'
 import type {
@@ -62,9 +62,30 @@ export function useRbacMutations() {
     },
   })
 
+  interface DeleteUserParams {
+    userId: number
+    reassignGlobalItemsToUserId?: number
+    deletePrivateItems?: boolean
+  }
+
   const deleteUser = useMutation({
-    mutationFn: async (userId: number) => {
-      return apiCall(`rbac/users/${userId}`, { method: 'DELETE' })
+    mutationFn: async ({
+      userId,
+      reassignGlobalItemsToUserId,
+      deletePrivateItems,
+    }: DeleteUserParams) => {
+      const params = new URLSearchParams()
+      if (reassignGlobalItemsToUserId != null) {
+        params.set(
+          'reassign_global_items_to_user_id',
+          String(reassignGlobalItemsToUserId)
+        )
+      }
+      if (deletePrivateItems) {
+        params.set('delete_private_items', 'true')
+      }
+      const qs = params.toString()
+      return apiCall(`rbac/users/${userId}${qs ? `?${qs}` : ''}`, { method: 'DELETE' })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.rbac.users() })
@@ -74,6 +95,12 @@ export function useRbacMutations() {
       })
     },
     onError: (error: Error) => {
+      // 409 means the delete-user dialog needs another round of input
+      // (reassignment/confirmation) — it handles that inline itself,
+      // so don't also pop a dead-end error toast for it.
+      if (error instanceof ApiError && error.status === 409) {
+        return
+      }
       toast({
         title: 'Error',
         description: `Failed to delete user: ${error.message}`,
