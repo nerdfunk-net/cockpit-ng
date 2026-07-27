@@ -55,9 +55,13 @@ async def create_job_schedule(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Permission denied: jobs:write required for global jobs",
                 )
-        else:
-            # For private jobs, set the user_id to current user
-            job_data.user_id = current_user["user_id"]
+
+        # Always record the creator, even for global schedules — this is
+        # what lets a later user-deletion reassign global schedules to a
+        # live user (see doc/refactoring/REMOVE_USER_CLEANUP.md). It has
+        # no effect on visibility/authorization: both existing ownership
+        # checks below gate on `is_global` first.
+        job_data.user_id = current_user["user_id"]
 
         # Create the job schedule
         job_schedule = job_schedule_service.create_job_schedule(

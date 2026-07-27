@@ -267,3 +267,46 @@ class BulkUserDelete(BaseModel):
     user_ids: List[int] = Field(
         ..., min_length=1, description="List of user IDs to delete"
     )
+
+
+class UserDeletionImpactTemplate(BaseModel):
+    """One template affected by a pending user deletion."""
+
+    id: int
+    name: str
+    job_type: str
+
+
+class UserDeletionImpactSchedule(BaseModel):
+    """One schedule affected by a pending user deletion."""
+
+    id: int
+    job_identifier: str
+    template_name: Optional[str] = None
+
+
+class UserDeletionImpactCascadeSchedule(BaseModel):
+    """A schedule owned by ANOTHER user that will be cascade-deleted if
+    the departing user's private templates are removed."""
+
+    id: int
+    job_identifier: str
+    owner_user_id: Optional[int] = None
+    is_global: bool
+
+
+class UserDeletionImpact(BaseModel):
+    """Preview of what deleting a user would affect."""
+
+    user_id: int
+    username: str
+    global_templates: List[UserDeletionImpactTemplate] = Field(default_factory=list)
+    global_schedules: List[UserDeletionImpactSchedule] = Field(default_factory=list)
+    private_templates: List[UserDeletionImpactTemplate] = Field(default_factory=list)
+    private_schedules: List[UserDeletionImpactSchedule] = Field(default_factory=list)
+    cascade_schedules_from_other_users: List[UserDeletionImpactCascadeSchedule] = Field(
+        default_factory=list
+    )
+    private_credentials_count: int = 0
+    requires_global_reassignment: bool = False
+    requires_private_confirmation: bool = False

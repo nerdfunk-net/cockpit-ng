@@ -337,7 +337,8 @@ def db_session():
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
 
-    from core.models import Base
+    import core.models  # noqa: F401  # registers all models on Base.metadata
+    from core.database import Base
 
     # Create in-memory SQLite database
     engine = create_engine("sqlite:///:memory:", echo=False)

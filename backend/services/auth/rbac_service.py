@@ -11,6 +11,7 @@ from services.auth.exceptions import (
     RBACConflictError,
     RBACConstraintError,
     RBACNotFoundError,
+    UserDeletionBlockedError,
 )
 
 if TYPE_CHECKING:
@@ -303,11 +304,176 @@ class RBACService:
             is_active=is_active,
         )
 
-    def delete_user_with_rbac(self, user_id: int) -> bool:
+    def get_user_deletion_impact(self, user_id: int) -> Dict[str, Any]:
+        """Preview what deleting this user would affect.
+
+        - global_templates / global_schedules: items this user created
+          that are currently global — deleting the user requires picking
+          a live user to reassign them to.
+        - private_templates / private_schedules: items this user owns
+          privately — deleting the user requires explicit confirmation
+          to hard-delete them.
+        - cascade_schedules_from_other_users: schedules owned by OTHER
+          users that reference one of this user's private templates.
+          These will be cascade-deleted as a side effect of removing the
+          private templates (see JobSchedule.template's
+          cascade="all, delete-orphan" in core/models/jobs.py) — surfaced
+          here so the admin isn't surprised.
+        """
+        user = self._user_service.get_user_by_id(user_id, include_inactive=True)
+        if not user:
+            raise RBACNotFoundError("User", user_id)
+        username = user["username"]
+
+        from services.jobs.job_schedule_service import JobScheduleService
+        from services.jobs.job_template_service import JobTemplateService
+        from services.settings.credentials_service import CredentialsService
+
+        template_service = JobTemplateService()
+        schedule_service = JobScheduleService(template_service=template_service)
+        credentials_service = CredentialsService()
+
+        created_templates = template_service.get_templates_created_by(username)
+        global_templates = [t for t in created_templates if t["is_global"]]
+        private_templates = [t for t in created_templates if not t["is_global"]]
+
+        owned_schedules = schedule_service.get_schedules_owned_by(user_id)
+        global_schedules = [s for s in owned_schedules if s["is_global"]]
+        private_schedules = [s for s in owned_schedules if not s["is_global"]]
+
+        cascade_schedules: List[Dict[str, Any]] = []
+        if private_templates:
+            template_ids = [t["id"] for t in private_templates]
+            referencing = schedule_service.get_schedules_for_templates(template_ids)
+            cascade_schedules = [s for s in referencing if s.get("user_id") != user_id]
+
+        private_creds = credentials_service.list_credentials(
+            include_expired=True, source="private"
+        )
+        private_credentials_count = len(
+            [c for c in private_creds if c.get("owner") == username]
+        )
+
+        return {
+            "user_id": user_id,
+            "username": username,
+            "global_templates": [
+                {"id": t["id"], "name": t["name"], "job_type": t["job_type"]}
+                for t in global_templates
+            ],
+            "global_schedules": [
+                {
+                    "id": s["id"],
+                    "job_identifier": s["job_identifier"],
+                    "template_name": s.get("template_name"),
+                }
+                for s in global_schedules
+            ],
+            "private_templates": [
+                {"id": t["id"], "name": t["name"], "job_type": t["job_type"]}
+                for t in private_templates
+            ],
+            "private_schedules": [
+                {
+                    "id": s["id"],
+                    "job_identifier": s["job_identifier"],
+                    "template_name": s.get("template_name"),
+                }
+                for s in private_schedules
+            ],
+            "cascade_schedules_from_other_users": [
+                {
+                    "id": s["id"],
+                    "job_identifier": s["job_identifier"],
+                    "owner_user_id": s.get("user_id"),
+                    "is_global": s["is_global"],
+                }
+                for s in cascade_schedules
+            ],
+            "private_credentials_count": private_credentials_count,
+            "requires_global_reassignment": bool(global_templates or global_schedules),
+            "requires_private_confirmation": bool(
+                private_templates or private_schedules
+            ),
+        }
+
+    def delete_user_with_rbac(
+        self,
+        user_id: int,
+        *,
+        reassign_global_items_to_user_id: Optional[int] = None,
+        delete_private_items: bool = False,
+    ) -> bool:
         user = self._user_service.get_user_by_id(user_id, include_inactive=True)
         if not user:
             return False
         username = user.get("username")
+
+        impact = self.get_user_deletion_impact(user_id)
+
+        if impact["requires_global_reassignment"] and (
+            reassign_global_items_to_user_id is None
+        ):
+            raise UserDeletionBlockedError(impact)
+        if impact["requires_private_confirmation"] and not delete_private_items:
+            raise UserDeletionBlockedError(impact)
+
+        from services.jobs.job_schedule_service import JobScheduleService
+        from services.jobs.job_template_service import JobTemplateService
+
+        template_service = JobTemplateService()
+        schedule_service = JobScheduleService(template_service=template_service)
+
+        # --- New steps first: run and commit atomically, before anything
+        # below is touched, so a failure here leaves the user record and
+        # all its other data completely untouched. ---
+        if impact["requires_global_reassignment"]:
+            target_user = self._user_service.get_user_by_id(
+                reassign_global_items_to_user_id
+            )
+            if not target_user:
+                raise RBACNotFoundError("User", reassign_global_items_to_user_id)
+            from core.database import db_transaction
+
+            with db_transaction() as db:
+                template_service.reassign_global_templates(
+                    old_created_by=username,
+                    new_created_by=target_user["username"],
+                    db=db,
+                )
+                schedule_service.reassign_global_schedules(
+                    old_user_id=user_id,
+                    new_user_id=target_user["id"],
+                    db=db,
+                )
+            logger.info(
+                "Reassigned global templates/schedules from user %s to user %s",
+                username,
+                target_user["username"],
+            )
+
+        if impact["requires_private_confirmation"]:
+            from core.database import db_transaction
+
+            with db_transaction() as db:
+                # Schedules before templates: harmless either way given the
+                # ORM cascade (see JobSchedule.template's
+                # cascade="all, delete-orphan"), but this ordering means the
+                # log below reports real, not-yet-cascaded counts for both.
+                deleted_schedule_ids = (
+                    schedule_service.delete_private_schedules_for_user(user_id, db=db)
+                )
+                deleted_template_ids = (
+                    template_service.delete_private_templates_for_user(user_id, db=db)
+                )
+            logger.info(
+                "Deleted %s private schedule(s) and %s private template(s) for user %s",
+                len(deleted_schedule_ids),
+                len(deleted_template_ids),
+                username,
+            )
+
+        # --- Existing cleanup, unchanged below this point ---
         for role in self.get_user_roles(user_id):
             self.remove_role_from_user(user_id, role["id"])
         for override in self.get_user_permission_overrides(user_id):

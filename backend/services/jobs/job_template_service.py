@@ -267,6 +267,21 @@ class JobTemplateService:
         templates = self._repo.get_user_templates(user_id, job_type)
         return [self._to_dict(t) for t in templates]
 
+    def get_templates_created_by(self, username: str) -> List[Dict[str, Any]]:
+        return [self._to_dict(t) for t in self._repo.get_by_created_by(username)]
+
+    def reassign_global_templates(
+        self, old_created_by: str, new_created_by: str, db: Optional[Any] = None
+    ) -> int:
+        return self._repo.reassign_global_by_created_by(
+            old_created_by, new_created_by, db=db
+        )
+
+    def delete_private_templates_for_user(
+        self, user_id: int, db: Optional[Any] = None
+    ) -> List[int]:
+        return self._repo.delete_by_user_id(user_id, db=db)
+
     def update_job_template(
         self,
         template_id: int,

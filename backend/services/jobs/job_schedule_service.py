@@ -199,6 +199,24 @@ class JobScheduleService:
         schedules = self._repo.get_global_schedules()
         return [self._to_dict(s) for s in schedules]
 
+    def get_schedules_owned_by(self, user_id: int) -> List[Dict[str, Any]]:
+        return [self._to_dict(s) for s in self._repo.get_by_owner(user_id)]
+
+    def reassign_global_schedules(
+        self, old_user_id: int, new_user_id: int, db: Optional[Any] = None
+    ) -> int:
+        return self._repo.reassign_global_by_owner(old_user_id, new_user_id, db=db)
+
+    def delete_private_schedules_for_user(
+        self, user_id: int, db: Optional[Any] = None
+    ) -> List[int]:
+        return self._repo.delete_by_user_id(user_id, db=db)
+
+    def get_schedules_for_templates(
+        self, template_ids: List[int]
+    ) -> List[Dict[str, Any]]:
+        return [self._to_dict(s) for s in self._repo.get_by_template_ids(template_ids)]
+
     def initialize_schedule_next_runs(self) -> Dict[str, Any]:
         schedules = self.list_job_schedules(is_active=True)
         initialized = 0

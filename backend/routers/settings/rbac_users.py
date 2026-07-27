@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
@@ -12,12 +13,17 @@ from dependencies import get_audit_log_service, get_rbac_service
 from models.rbac import (
     BulkUserDelete,
     UserCreate,
+    UserDeletionImpact,
     UserListResponse,
     UserResponse,
     UserUpdate,
 )
 from services.audit.audit_log_service import AuditLogService
-from services.auth.exceptions import RBACNotFoundError
+from services.auth.exceptions import (
+    RBACConstraintError,
+    RBACNotFoundError,
+    UserDeletionBlockedError,
+)
 from services.auth.rbac_service import RBACService
 
 logger = logging.getLogger(__name__)
@@ -163,16 +169,66 @@ async def update_user(
         )
 
 
+@router.get("/users/{user_id}/deletion-impact", response_model=UserDeletionImpact)
+async def get_user_deletion_impact(
+    user_id: int,
+    current_user: dict = Depends(require_role("admin")),
+    rbac: RBACService = Depends(get_rbac_service),
+):
+    """Preview what deleting this user would affect (admin only).
+
+    Use this before calling DELETE /users/{user_id} to know whether
+    reassign_global_items_to_user_id and/or delete_private_items will be
+    required.
+    """
+    try:
+        impact = rbac.get_user_deletion_impact(user_id)
+        return UserDeletionImpact(**impact)
+    except RBACNotFoundError:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"User {user_id} not found",
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            "Error computing deletion impact for user %s: %s",
+            user_id,
+            str(e),
+            exc_info=True,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to compute user deletion impact",
+        )
+
+
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_user(
     user_id: int,
+    reassign_global_items_to_user_id: Optional[int] = None,
+    delete_private_items: bool = False,
     current_user: dict = Depends(require_role("admin")),
     rbac: RBACService = Depends(get_rbac_service),
     audit_log: AuditLogService = Depends(get_audit_log_service),
 ):
-    """Delete a user and all RBAC associations (admin only)."""
+    """Delete a user and all RBAC associations (admin only).
+
+    - If the user created any global job templates/schedules,
+      `reassign_global_items_to_user_id` must be supplied — otherwise this
+      returns 409 with a `UserDeletionImpact` body describing what's
+      blocking (call GET .../deletion-impact first to preview it).
+    - If the user owns any private job templates/schedules,
+      `delete_private_items=true` must be supplied to confirm their
+      removal — otherwise 409, same impact body.
+    """
     try:
-        success = rbac.delete_user_with_rbac(user_id)
+        success = rbac.delete_user_with_rbac(
+            user_id,
+            reassign_global_items_to_user_id=reassign_global_items_to_user_id,
+            delete_private_items=delete_private_items,
+        )
         if not success:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
@@ -186,9 +242,25 @@ async def delete_user(
             resource_id=str(user_id),
             resource_name=str(user_id),
             severity="info",
+            extra_data={
+                "reassigned_global_items_to_user_id": reassign_global_items_to_user_id,
+                "deleted_private_items": delete_private_items,
+            },
         )
     except HTTPException:
         raise
+    except UserDeletionBlockedError as e:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": "User deletion requires additional confirmation",
+                "impact": e.impact,
+            },
+        )
+    except RBACNotFoundError as e:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+    except RBACConstraintError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
     except Exception as e:
         logger.error("Error deleting user %s: %s", user_id, str(e), exc_info=True)
         raise HTTPException(

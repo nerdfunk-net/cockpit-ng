@@ -10,6 +10,7 @@ from services.auth.exceptions import (
     RBACConflictError,
     RBACConstraintError,
     RBACNotFoundError,
+    UserDeletionBlockedError,
 )
 from services.auth.rbac_service import RBACService
 from services.auth.user_service import PERMISSIONS_USER, UserService
@@ -517,6 +518,32 @@ class TestGetUserWithRBAC:
 # ===========================================================================
 
 
+@pytest.fixture(autouse=True)
+def no_owned_job_items(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Default baseline for delete_user_with_rbac tests: the user owns no
+    job templates/schedules, so get_user_deletion_impact reports nothing
+    blocking. Individual tests override these to exercise the
+    reassignment/confirmation flow."""
+    import services.jobs.job_schedule_service as schedule_service_module
+    import services.jobs.job_template_service as template_service_module
+
+    monkeypatch.setattr(
+        template_service_module.JobTemplateService,
+        "get_templates_created_by",
+        lambda self, username: [],
+    )
+    monkeypatch.setattr(
+        schedule_service_module.JobScheduleService,
+        "get_schedules_owned_by",
+        lambda self, user_id: [],
+    )
+    monkeypatch.setattr(
+        schedule_service_module.JobScheduleService,
+        "get_schedules_for_templates",
+        lambda self, template_ids: [],
+    )
+
+
 @pytest.mark.unit
 class TestDeleteUserWithRBAC:
     def test_delete_removes_user_and_cleans_roles(
@@ -566,3 +593,280 @@ class TestDeleteUserWithRBAC:
 
         # Partial failure must not hard-delete the user record.
         assert rbac_svc.get_user_with_rbac(alice_id, include_inactive=True) is not None
+
+    def test_delete_blocked_when_user_owns_global_template_without_reassignment(
+        self, rbac_svc: RBACService, alice_id: int, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import services.jobs.job_template_service as template_service_module
+
+        monkeypatch.setattr(
+            template_service_module.JobTemplateService,
+            "get_templates_created_by",
+            lambda self, username: [
+                {"id": 1, "name": "tmpl", "job_type": "backup", "is_global": True}
+            ],
+        )
+
+        with pytest.raises(UserDeletionBlockedError) as exc:
+            rbac_svc.delete_user_with_rbac(alice_id)
+
+        assert exc.value.impact["requires_global_reassignment"] is True
+        assert rbac_svc.get_user_with_rbac(alice_id, include_inactive=True) is not None
+
+    def test_delete_reassigns_global_items_then_succeeds(
+        self,
+        rbac_svc: RBACService,
+        user_repo: FakeUserRepository,
+        alice_id: int,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        import services.jobs.job_schedule_service as schedule_service_module
+        import services.jobs.job_template_service as template_service_module
+
+        bob = user_repo.create(
+            username="bob",
+            realname="Bob",
+            email="bob@example.com",
+            password=get_password_hash("password"),
+            permissions=PERMISSIONS_USER,
+        )
+
+        monkeypatch.setattr(
+            template_service_module.JobTemplateService,
+            "get_templates_created_by",
+            lambda self, username: [
+                {"id": 1, "name": "tmpl", "job_type": "backup", "is_global": True}
+            ],
+        )
+
+        reassign_calls: list[dict] = []
+
+        def _fake_reassign_templates(self, old_created_by, new_created_by, db=None):
+            reassign_calls.append(
+                {
+                    "old_created_by": old_created_by,
+                    "new_created_by": new_created_by,
+                }
+            )
+            return 1
+
+        def _fake_reassign_schedules(self, old_user_id, new_user_id, db=None):
+            reassign_calls.append(
+                {"old_user_id": old_user_id, "new_user_id": new_user_id}
+            )
+            return 0
+
+        monkeypatch.setattr(
+            template_service_module.JobTemplateService,
+            "reassign_global_templates",
+            _fake_reassign_templates,
+        )
+        monkeypatch.setattr(
+            schedule_service_module.JobScheduleService,
+            "reassign_global_schedules",
+            _fake_reassign_schedules,
+        )
+
+        result = rbac_svc.delete_user_with_rbac(
+            alice_id, reassign_global_items_to_user_id=bob.id
+        )
+
+        assert result is True
+        assert {"old_created_by": "alice", "new_created_by": "bob"} in reassign_calls
+        assert {"old_user_id": alice_id, "new_user_id": bob.id} in reassign_calls
+
+    def test_delete_blocked_when_user_owns_private_template_without_confirmation(
+        self, rbac_svc: RBACService, alice_id: int, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import services.jobs.job_template_service as template_service_module
+
+        monkeypatch.setattr(
+            template_service_module.JobTemplateService,
+            "get_templates_created_by",
+            lambda self, username: [
+                {"id": 1, "name": "tmpl", "job_type": "backup", "is_global": False}
+            ],
+        )
+
+        with pytest.raises(UserDeletionBlockedError) as exc:
+            rbac_svc.delete_user_with_rbac(alice_id)
+
+        assert exc.value.impact["requires_private_confirmation"] is True
+        assert rbac_svc.get_user_with_rbac(alice_id, include_inactive=True) is not None
+
+    def test_delete_removes_private_items_when_confirmed(
+        self, rbac_svc: RBACService, alice_id: int, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import services.jobs.job_schedule_service as schedule_service_module
+        import services.jobs.job_template_service as template_service_module
+
+        monkeypatch.setattr(
+            template_service_module.JobTemplateService,
+            "get_templates_created_by",
+            lambda self, username: [
+                {"id": 1, "name": "tmpl", "job_type": "backup", "is_global": False}
+            ],
+        )
+
+        delete_calls: list[tuple[str, int]] = []
+
+        def _fake_delete_templates(self, user_id, db=None):
+            delete_calls.append(("templates", user_id))
+            return [1]
+
+        def _fake_delete_schedules(self, user_id, db=None):
+            delete_calls.append(("schedules", user_id))
+            return []
+
+        monkeypatch.setattr(
+            template_service_module.JobTemplateService,
+            "delete_private_templates_for_user",
+            _fake_delete_templates,
+        )
+        monkeypatch.setattr(
+            schedule_service_module.JobScheduleService,
+            "delete_private_schedules_for_user",
+            _fake_delete_schedules,
+        )
+
+        result = rbac_svc.delete_user_with_rbac(alice_id, delete_private_items=True)
+
+        assert result is True
+        assert ("templates", alice_id) in delete_calls
+        assert ("schedules", alice_id) in delete_calls
+
+    def test_delete_reassign_target_user_not_found_raises(
+        self, rbac_svc: RBACService, alice_id: int, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import services.jobs.job_template_service as template_service_module
+
+        monkeypatch.setattr(
+            template_service_module.JobTemplateService,
+            "get_templates_created_by",
+            lambda self, username: [
+                {"id": 1, "name": "tmpl", "job_type": "backup", "is_global": True}
+            ],
+        )
+
+        with pytest.raises(RBACNotFoundError):
+            rbac_svc.delete_user_with_rbac(
+                alice_id, reassign_global_items_to_user_id=99999
+            )
+
+
+@pytest.mark.unit
+class TestGetUserDeletionImpact:
+    def test_impact_reports_no_items_for_clean_user(
+        self, rbac_svc: RBACService, alice_id: int
+    ) -> None:
+        impact = rbac_svc.get_user_deletion_impact(alice_id)
+        assert impact["requires_global_reassignment"] is False
+        assert impact["requires_private_confirmation"] is False
+        assert impact["global_templates"] == []
+        assert impact["global_schedules"] == []
+        assert impact["private_templates"] == []
+        assert impact["private_schedules"] == []
+        assert impact["cascade_schedules_from_other_users"] == []
+
+    def test_impact_splits_global_vs_private(
+        self, rbac_svc: RBACService, alice_id: int, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import services.jobs.job_schedule_service as schedule_service_module
+        import services.jobs.job_template_service as template_service_module
+
+        monkeypatch.setattr(
+            template_service_module.JobTemplateService,
+            "get_templates_created_by",
+            lambda self, username: [
+                {
+                    "id": 1,
+                    "name": "global-tmpl",
+                    "job_type": "backup",
+                    "is_global": True,
+                },
+                {
+                    "id": 2,
+                    "name": "private-tmpl",
+                    "job_type": "backup",
+                    "is_global": False,
+                },
+            ],
+        )
+        monkeypatch.setattr(
+            schedule_service_module.JobScheduleService,
+            "get_schedules_owned_by",
+            lambda self, user_id: [
+                {
+                    "id": 10,
+                    "job_identifier": "global-sched",
+                    "template_name": "t",
+                    "is_global": True,
+                },
+                {
+                    "id": 11,
+                    "job_identifier": "private-sched",
+                    "template_name": "t",
+                    "is_global": False,
+                },
+            ],
+        )
+
+        impact = rbac_svc.get_user_deletion_impact(alice_id)
+
+        assert [t["id"] for t in impact["global_templates"]] == [1]
+        assert [t["id"] for t in impact["private_templates"]] == [2]
+        assert [s["id"] for s in impact["global_schedules"]] == [10]
+        assert [s["id"] for s in impact["private_schedules"]] == [11]
+
+    def test_impact_reports_cascade_schedules_from_other_users(
+        self, rbac_svc: RBACService, alice_id: int, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        import services.jobs.job_schedule_service as schedule_service_module
+        import services.jobs.job_template_service as template_service_module
+
+        monkeypatch.setattr(
+            template_service_module.JobTemplateService,
+            "get_templates_created_by",
+            lambda self, username: [
+                {
+                    "id": 5,
+                    "name": "private-tmpl",
+                    "job_type": "backup",
+                    "is_global": False,
+                }
+            ],
+        )
+
+        def _fake_get_schedules_for_templates(self, template_ids):
+            assert template_ids == [5]
+            return [
+                {
+                    "id": 20,
+                    "job_identifier": "other-owner-sched",
+                    "user_id": alice_id + 1,
+                    "is_global": False,
+                },
+                {
+                    "id": 21,
+                    "job_identifier": "own-sched",
+                    "user_id": alice_id,
+                    "is_global": False,
+                },
+            ]
+
+        monkeypatch.setattr(
+            schedule_service_module.JobScheduleService,
+            "get_schedules_for_templates",
+            _fake_get_schedules_for_templates,
+        )
+
+        impact = rbac_svc.get_user_deletion_impact(alice_id)
+
+        cascade_ids = [s["id"] for s in impact["cascade_schedules_from_other_users"]]
+        assert cascade_ids == [20]
+
+    def test_impact_raises_not_found_for_missing_user(
+        self, rbac_svc: RBACService
+    ) -> None:
+        with pytest.raises(RBACNotFoundError):
+            rbac_svc.get_user_deletion_impact(99999)
