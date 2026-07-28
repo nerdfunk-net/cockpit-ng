@@ -11,6 +11,7 @@ import { EMPTY_PROFILES } from '@/components/features/settings/defaults/profiles
 import {
   buildAutoFieldMapping,
   CSV_UPDATE_APP_NAME,
+  INTERFACE_IP_ADDRESS_NAMESPACE_FIELD_KEY,
   LOOKUP_COLUMN_MAPPING_KEY,
   USE_NEW_MAPPING_KEY,
   USE_DEFAULT_PROPERTIES_KEY,
@@ -63,19 +64,22 @@ const PRIMARY_KEY_PREFERENCES: Record<ObjectType, string[]> = {
 
 /**
  * Profile keys auto-applied per object type, keyed by profile field name → device
- * payload field name. The CSV value always wins; a profile value only fills in a
- * field the CSV left blank — for both new devices (Add Missing Devices) and updates
- * to existing ones.
+ * payload field name, for the existing-device update path (dry-run/submit/preview in
+ * csv-update-wizard.tsx). The CSV value always wins; a profile value only fills in a
+ * field the CSV left blank.
+ *
+ * Only interface-level fields belong here (interface_status, interface_type,
+ * namespace) — a CSV row that defines a new interface still needs a fallback to
+ * create it with. No device-level field (status, role, location, device_type,
+ * platform, ...) may ever be added: backfilling any of them from the profile would
+ * silently change an already-configured device. Those profile defaults apply solely
+ * when creating a brand-new device, handled separately in use-add-missing-devices.ts.
  */
 const DEFAULTS_FIELD_MAP: Partial<Record<ObjectType, Record<string, string>>> = {
   devices: {
-    device_status: 'status',
-    device_role: 'role',
-    location: 'location',
-    device_type: 'device_type',
-    platform: 'platform',
     interface_status: 'interface_status',
     interface_type: 'interface_type',
+    namespace: INTERFACE_IP_ADDRESS_NAMESPACE_FIELD_KEY,
   },
 }
 
@@ -487,6 +491,17 @@ export function useCsvWizard() {
 
   // --- Profile-driven default properties ---
 
+  /**
+   * True once any CSV column is mapped to the interface IP address namespace field.
+   * When true, the profile's default namespace is withheld from autoDefaultProperties
+   * below — the CSV's per-row mapping takes over entirely rather than backfilling
+   * blanks, since namespace defaulting is a column-mapped/not-mapped decision.
+   */
+  const namespaceColumnMapped = useMemo(
+    () => Object.values(fieldMapping).includes(INTERFACE_IP_ADDRESS_NAMESPACE_FIELD_KEY),
+    [fieldMapping]
+  )
+
   const autoDefaultProperties = useMemo<DefaultProperty[]>(() => {
     if (!useDefaultProperties || !profileFields) return EMPTY_DEFAULT_PROPERTIES
     const map = DEFAULTS_FIELD_MAP[objectType]
@@ -495,11 +510,14 @@ export function useCsvWizard() {
     const defaultsRecord = profileFields as unknown as Record<string, string>
     const result: DefaultProperty[] = []
     for (const [defaultsKey, fieldKey] of Object.entries(map)) {
+      if (fieldKey === INTERFACE_IP_ADDRESS_NAMESPACE_FIELD_KEY && namespaceColumnMapped) {
+        continue
+      }
       const value = defaultsRecord[defaultsKey]
       if (value) result.push({ field: fieldKey, value, rowKey: defaultsKey })
     }
     return result
-  }, [useDefaultProperties, profileFields, objectType])
+  }, [useDefaultProperties, profileFields, objectType, namespaceColumnMapped])
 
   const effectiveDefaultProperties = useDefaultProperties
     ? autoDefaultProperties

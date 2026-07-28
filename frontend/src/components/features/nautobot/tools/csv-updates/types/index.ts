@@ -80,6 +80,7 @@ export interface DeviceInterfaceEntry {
   type?: string
   status?: string
   ip_address?: string
+  namespace?: string
   is_primary_ipv4?: boolean
 }
 

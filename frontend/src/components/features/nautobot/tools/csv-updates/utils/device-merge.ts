@@ -1,11 +1,7 @@
 import {
-  DEVICE_LOCATION_FIELD_KEY,
   DEVICE_NAME_FIELD_KEY,
-  DEVICE_PLATFORM_FIELD_KEY,
-  DEVICE_ROLE_FIELD_KEY,
-  DEVICE_STATUS_FIELD_KEY,
-  DEVICE_TYPE_FIELD_KEY,
   INTERFACE_CONFIG_FIELD_KEYS,
+  INTERFACE_IP_ADDRESS_NAMESPACE_FIELD_KEY,
   INTERFACE_NAME_FIELD_KEY,
   INTERFACE_STATUS_FIELD_KEY,
   INTERFACE_TYPE_FIELD_KEY,
@@ -96,6 +92,8 @@ export function buildDeviceUpdatePayloads(
     if (status) entry.status = status
     const ipAddress = row.fields[PRIMARY_IP_FIELD_KEY]?.trim()
     if (ipAddress) entry.ip_address = ipAddress
+    const namespace = row.fields[INTERFACE_IP_ADDRESS_NAMESPACE_FIELD_KEY]?.trim()
+    if (namespace) entry.namespace = namespace
     if (primaryIpByDevice[row.deviceName] === row.id) entry.is_primary_ipv4 = true
 
     deviceInterfaces.get(row.deviceName)?.push(entry)
@@ -108,20 +106,20 @@ export function buildDeviceUpdatePayloads(
   }))
 }
 
-/** Device-level fields eligible for profile backfill (mirrors DEFAULTS_FIELD_MAP in use-csv-wizard.ts). */
-const DEVICE_LEVEL_DEFAULT_FIELD_KEYS: string[] = [
-  DEVICE_STATUS_FIELD_KEY,
-  DEVICE_ROLE_FIELD_KEY,
-  DEVICE_LOCATION_FIELD_KEY,
-  DEVICE_TYPE_FIELD_KEY,
-  DEVICE_PLATFORM_FIELD_KEY,
-]
-
 /**
- * Fills in device- and interface-level fields missing from a device payload with
- * the selected profile's values. The CSV always wins — a default is only applied
- * when the CSV left that field blank — so this applies equally to a brand-new
- * device (Add Missing Devices) and an update to an existing one.
+ * Fills in interface-level fields missing from a device payload with the selected
+ * profile's values. The CSV always wins — a default is only applied when the CSV
+ * left that field blank. Used on the existing-device update path only (dry-run/
+ * submit/preview in csv-update-wizard.tsx).
+ *
+ * No device-level field (status, role, location, device_type, platform, ...) is ever
+ * backfilled here: an update to an existing device must only ever touch what the CSV
+ * explicitly maps — silently changing an already-configured device's status/role/
+ * location/etc. from a profile default would be as wrong as it is for location. The
+ * profile's defaults for these fields apply solely when creating a brand-new device,
+ * handled separately in use-add-missing-devices.ts. Interface-level fields
+ * (interface_status, interface_type, namespace) are the one exception, because a CSV
+ * row that defines a new interface still needs a fallback value to create it with.
  */
 export function applyDeviceDefaults(
   payload: DeviceUpdatePayload,
@@ -129,15 +127,8 @@ export function applyDeviceDefaults(
 ): DeviceUpdatePayload {
   if (defaults.length === 0) return payload
 
-  const patched: DeviceUpdatePayload = { ...payload }
-  for (const d of defaults) {
-    if (DEVICE_LEVEL_DEFAULT_FIELD_KEYS.includes(d.field) && !patched[d.field]) {
-      patched[d.field] = d.value
-    }
-  }
-
   return {
-    ...patched,
+    ...payload,
     interfaces: payload.interfaces.map(iface => {
       const patchedIface = { ...iface }
       for (const d of defaults) {
@@ -146,6 +137,9 @@ export function applyDeviceDefaults(
         }
         if (d.field === INTERFACE_TYPE_FIELD_KEY && !patchedIface.type) {
           patchedIface.type = d.value
+        }
+        if (d.field === INTERFACE_IP_ADDRESS_NAMESPACE_FIELD_KEY && !patchedIface.namespace) {
+          patchedIface.namespace = d.value
         }
       }
       return patchedIface

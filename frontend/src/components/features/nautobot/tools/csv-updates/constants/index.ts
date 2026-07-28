@@ -50,6 +50,7 @@ export const NAUTOBOT_UPDATE_FIELDS: Record<
     { key: 'interface_type', label: 'Interface Type' },
     { key: 'interface_status', label: 'Interface Status' },
     { key: 'interface_ip_address', label: 'Interface IP Address' },
+    { key: 'interface_ip_address_namespace', label: 'Interface IP Address Namespace' },
   ],
   'ip-prefixes': [
     { key: 'prefix', label: 'Prefix' },
@@ -127,19 +128,14 @@ export const PRIMARY_IP_FIELD_KEY = 'interface_ip_address'
 export const INTERFACE_NAME_FIELD_KEY = 'interface_name'
 export const INTERFACE_TYPE_FIELD_KEY = 'interface_type'
 export const INTERFACE_STATUS_FIELD_KEY = 'interface_status'
-
-/** Device-level field keys that may be backfilled from the selected profile. */
-export const DEVICE_STATUS_FIELD_KEY = 'status'
-export const DEVICE_ROLE_FIELD_KEY = 'role'
-export const DEVICE_LOCATION_FIELD_KEY = 'location'
-export const DEVICE_TYPE_FIELD_KEY = 'device_type'
-export const DEVICE_PLATFORM_FIELD_KEY = 'platform'
+export const INTERFACE_IP_ADDRESS_NAMESPACE_FIELD_KEY = 'interface_ip_address_namespace'
 
 /** Interface columns the backend only recognizes by these literal header names. */
 export const INTERFACE_CONFIG_FIELD_KEYS = [
   INTERFACE_NAME_FIELD_KEY,
   INTERFACE_TYPE_FIELD_KEY,
   INTERFACE_STATUS_FIELD_KEY,
+  INTERFACE_IP_ADDRESS_NAMESPACE_FIELD_KEY,
 ]
 
 /** Identifies this tool's saved field mapping in the per-user field-mappings store. */

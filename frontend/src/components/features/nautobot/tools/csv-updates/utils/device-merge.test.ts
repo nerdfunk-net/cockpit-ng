@@ -24,17 +24,17 @@ describe('applyDeviceDefaults', () => {
     expect(applyDeviceDefaults(p, [])).toEqual(p)
   })
 
-  it('backfills missing device-level fields from the profile', () => {
+  it('never backfills any device-level field from the profile — an existing device update must only ever touch what the CSV explicitly maps', () => {
     const result = applyDeviceDefaults(payload(), PROFILE_DEFAULTS)
 
-    expect(result.status).toBe('profile-status')
-    expect(result.role).toBe('profile-role')
-    expect(result.location).toBe('profile-location')
-    expect(result.device_type).toBe('profile-device-type')
-    expect(result.platform).toBe('profile-platform')
+    expect(result.status).toBeUndefined()
+    expect(result.role).toBeUndefined()
+    expect(result.location).toBeUndefined()
+    expect(result.device_type).toBeUndefined()
+    expect(result.platform).toBeUndefined()
   })
 
-  it('never overwrites a device-level field the CSV already supplied', () => {
+  it('leaves device-level fields the CSV supplied exactly as-is', () => {
     const result = applyDeviceDefaults(
       payload({
         status: 'csv-status',
@@ -76,13 +76,29 @@ describe('applyDeviceDefaults', () => {
     })
   })
 
-  it('leaves fields absent when the profile has no value for them', () => {
+  it('backfills interface namespace only for interfaces missing it, per interface', () => {
+    const namespaceDefaults: DefaultProperty[] = [
+      { field: 'interface_ip_address_namespace', value: 'profile-namespace', rowKey: 'namespace' },
+    ]
+    const result = applyDeviceDefaults(
+      payload({
+        interfaces: [
+          { name: 'eth0' },
+          { name: 'eth1', namespace: 'csv-namespace' },
+        ],
+      }),
+      namespaceDefaults
+    )
+
+    expect(result.interfaces[0]).toMatchObject({ name: 'eth0', namespace: 'profile-namespace' })
+    expect(result.interfaces[1]).toMatchObject({ name: 'eth1', namespace: 'csv-namespace' })
+  })
+
+  it('ignores a device-level default even when it is the only default passed in', () => {
     const result = applyDeviceDefaults(payload(), [
       { field: 'status', value: 'profile-status', rowKey: 'device_status' },
     ])
 
-    expect(result.status).toBe('profile-status')
-    expect(result.role).toBeUndefined()
-    expect(result.location).toBeUndefined()
+    expect(result.status).toBeUndefined()
   })
 })

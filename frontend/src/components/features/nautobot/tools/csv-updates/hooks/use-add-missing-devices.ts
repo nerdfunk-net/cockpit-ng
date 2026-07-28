@@ -100,7 +100,7 @@ export function useAddMissingDevices(profileId: number | null) {
                   {
                     id: crypto.randomUUID(),
                     address: iface.ip_address,
-                    namespace: defaults?.namespace || '',
+                    namespace: iface.namespace || defaults?.namespace || '',
                     ip_role: '',
                     is_primary: iface.is_primary_ipv4,
                   },
