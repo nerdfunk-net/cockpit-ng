@@ -4,16 +4,48 @@ Convert OpenBSD pf log CSV fields to human-readable form.
 
 Streams input line-by-line so large files (multi-GB) fit in memory.
 
-Reads a CSV with:
-  - src/dst as unsigned 32-bit integers → dotted-quad IPv4 (e.g. 192.168.0.1)
-  - timestamp as Unix epoch seconds → YYYY-MM-DD hh:mm:ss (local time)
-  - proto as IP protocol number → name for known values
+How to
+------
+Convert a single CSV file:
 
-With --deduplicate, rows that share the same src, dst, sport, and dport are
-collapsed via an on-disk external sort (chunked), then counted while merging.
+  python3 backend/scripts/pflog_reader.py \\
+    --source /path/to/pflog.csv \\
+    --destination /path/to/out.csv
 
-Use --source for a single file, or --source-dir for a directory / glob of
-CSV files merged into one destination.
+Convert and merge all CSV files in a directory:
+
+  python3 backend/scripts/pflog_reader.py \\
+    --source-dir /path/to/logs \\
+    --destination /path/to/out.csv
+
+Convert matching files via a glob (quote the pattern so the shell does not
+expand it):
+
+  python3 backend/scripts/pflog_reader.py \\
+    --source-dir '/path/to/logs/*.csv' \\
+    --destination /path/to/out.csv
+
+Deduplicate rows that share the same src, dst, sport, and dport (appends a
+count column). Uses an on-disk external sort; needs roughly as much free disk
+as the input size for temporary files. Lower --chunk-rows if RAM is tight:
+
+  python3 backend/scripts/pflog_reader.py \\
+    --source /path/to/huge.csv \\
+    --destination /path/to/out.csv \\
+    --deduplicate \\
+    --chunk-rows 100000
+
+Conversions applied to each row
+-------------------------------
+  src / dst   unsigned 32-bit integer → dotted-quad IPv4
+              e.g. 385884955 → 23.0.35.27
+              (big-endian: (n>>24)&255 . (n>>16)&255 . (n>>8)&255 . n&255)
+
+  timestamp   Unix epoch seconds → YYYY-MM-DD hh:mm:ss (local time)
+              e.g. 1785309564 → 2026-07-29 09:19:24
+
+  proto       IP protocol number → name when known
+              e.g. 6 → tcp, 17 → udp, 1 → icmp
 """
 
 from __future__ import annotations
