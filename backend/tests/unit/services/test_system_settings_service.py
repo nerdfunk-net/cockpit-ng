@@ -12,7 +12,6 @@ import pytest
 from services.settings.system_service import SystemSettingsService
 
 _PATCH_NAUTOBOT_REPO = "services.settings.system_service.NautobotSettingRepository"
-_PATCH_GIT_REPO = "services.settings.system_service.GitSettingRepository"
 _PATCH_METADATA_REPO = "services.settings.system_service.SettingsMetadataRepository"
 
 
@@ -28,18 +27,12 @@ def test_health_check_returns_healthy():
     """health_check() returns status=healthy when repos respond."""
     mock_nb_repo = MagicMock()
     mock_nb_repo.get_settings.return_value = MagicMock()
-    mock_git_repo = MagicMock()
-    mock_git_repo.get_settings.return_value = None
 
-    with (
-        patch(_PATCH_NAUTOBOT_REPO, return_value=mock_nb_repo),
-        patch(_PATCH_GIT_REPO, return_value=mock_git_repo),
-    ):
+    with patch(_PATCH_NAUTOBOT_REPO, return_value=mock_nb_repo):
         result = _make_service().health_check()
 
     assert result["status"] == "healthy"
     assert result["nautobot_settings_count"] == 1
-    assert result["git_settings_count"] == 0
 
 
 @pytest.mark.unit
@@ -59,13 +52,8 @@ def test_health_check_includes_database_type():
     """health_check() always includes database_type='postgresql'."""
     mock_nb_repo = MagicMock()
     mock_nb_repo.get_settings.return_value = None
-    mock_git_repo = MagicMock()
-    mock_git_repo.get_settings.return_value = None
 
-    with (
-        patch(_PATCH_NAUTOBOT_REPO, return_value=mock_nb_repo),
-        patch(_PATCH_GIT_REPO, return_value=mock_git_repo),
-    ):
+    with patch(_PATCH_NAUTOBOT_REPO, return_value=mock_nb_repo):
         result = _make_service().health_check()
 
     assert result["database_type"] == "postgresql"

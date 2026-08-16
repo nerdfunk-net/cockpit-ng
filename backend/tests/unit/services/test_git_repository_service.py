@@ -171,6 +171,22 @@ def test_update_repository_returns_true_on_valid_fields():
 
 
 @pytest.mark.unit
+def test_update_repository_toggles_is_active():
+    """update_repository() persists an is_active flag flip (PATCH .../toggle-active)."""
+    mock_repo = MagicMock()
+    mock_repo.get_by_name.return_value = None
+
+    with patch(_PATCH_REPO, return_value=mock_repo):
+        svc = GitRepositoryService()
+        result = svc.update_repository(1, {"is_active": False})
+
+    assert result is True
+    mock_repo.update.assert_called_once()
+    call_kwargs = mock_repo.update.call_args.kwargs
+    assert call_kwargs["is_active"] is False
+
+
+@pytest.mark.unit
 def test_update_repository_returns_false_for_empty_payload():
     """update_repository() returns False when no valid fields are provided."""
     mock_repo = MagicMock()

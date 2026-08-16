@@ -20,11 +20,24 @@ from models.git_repositories import (
     GitRepositoryRequest,
     GitRepositoryResponse,
     GitRepositoryUpdateRequest,
+    GitToggleActiveRequest,
 )
 from services.git.shared_utils import git_repo_manager
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/git-repositories", tags=["git-repositories"])
+
+
+@router.get("/health")
+async def health_check(
+    current_user: dict = Depends(require_permission("git.repositories", "read")),
+):
+    """Health check for git repository management."""
+    try:
+        health = git_repo_manager.health_check()
+        return health
+    except Exception as e:
+        raise_internal_server_error(logger, "Internal error", e)
 
 
 @router.get("/", response_model=GitRepositoryListResponse)
@@ -166,6 +179,26 @@ async def update_repository(
         raise_internal_server_error(logger, "Internal error", e)
 
 
+@router.patch("/{repo_id}/toggle-active", response_model=GitRepositoryResponse)
+async def toggle_repository_active(
+    repo_id: int,
+    body: GitToggleActiveRequest,
+    current_user: dict = Depends(require_permission("git.repositories", "write")),
+):
+    """Toggle a git repository's active flag."""
+    try:
+        existing = git_repo_manager.get_repository(repo_id)
+        if not existing:
+            raise HTTPException(status_code=404, detail="Repository not found")
+        git_repo_manager.update_repository(repo_id, {"is_active": body.is_active})
+        updated = git_repo_manager.get_repository(repo_id)
+        return GitRepositoryResponse(**dict(updated))
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise_internal_server_error(logger, "Internal error", e)
+
+
 @router.delete("/{repo_id}")
 async def delete_repository(
     repo_id: int,
@@ -225,15 +258,3 @@ async def test_git_connection(
     except Exception as e:
         logger.error("Exception in test_git_connection endpoint: %s", e, exc_info=True)
         raise
-
-
-@router.get("/health")
-async def health_check(
-    current_user: dict = Depends(require_permission("git.repositories", "read")),
-):
-    """Health check for git repository management."""
-    try:
-        health = git_repo_manager.health_check()
-        return health
-    except Exception as e:
-        raise_internal_server_error(logger, "Internal error", e)

@@ -6,7 +6,6 @@ import logging
 from typing import Any, Dict
 
 from repositories.settings.settings_repository import (
-    GitSettingRepository,
     NautobotSettingRepository,
     SettingsMetadataRepository,
 )
@@ -18,12 +17,10 @@ class SystemSettingsService:
     def health_check(self) -> Dict[str, Any]:
         try:
             nautobot_repo = NautobotSettingRepository()
-            git_repo = GitSettingRepository()
             return {
                 "status": "healthy",
                 "database_type": "postgresql",
                 "nautobot_settings_count": 1 if nautobot_repo.get_settings() else 0,
-                "git_settings_count": 1 if git_repo.get_settings() else 0,
             }
         except Exception as e:
             logger.error("Database health check failed: %s", e)
@@ -35,14 +32,12 @@ class SystemSettingsService:
             from core.models import (
                 CacheSetting,
                 CheckMKSetting,
-                GitSetting,
                 NautobotSetting,
             )
 
             session = get_db_session()
             try:
                 session.query(NautobotSetting).delete()
-                session.query(GitSetting).delete()
                 session.query(CheckMKSetting).delete()
                 session.query(CacheSetting).delete()
                 session.commit()

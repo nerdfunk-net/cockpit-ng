@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from core.auth import require_permission
 from core.safe_http_errors import raise_internal_server_error
-from dependencies import get_git_connection_service, get_git_operations_service
+from dependencies import get_git_connection_service, get_git_service
 from models.git_repositories import (
     GitAuthType,
     GitCategory,
@@ -62,7 +62,7 @@ async def test_git_connection(
 async def sync_templates(
     sync_request: TemplateSyncRequest,
     current_user: dict = Depends(require_permission("network.templates", "write")),
-    git_operations_service=Depends(get_git_operations_service),
+    git_service=Depends(get_git_service),
 ) -> TemplateSyncResponse:
     """Pull/clone all Git repositories in the ``templates`` category and refresh template sync metadata."""
     try:
@@ -75,7 +75,7 @@ async def sync_templates(
         repos = git_repo_svc.get_repositories_by_category(GitCategory.TEMPLATES.value)
         repo_errors: Dict[str, str] = {}
         for repo in repos:
-            sync_result = git_operations_service.sync_repository(repo)
+            sync_result = git_service.sync_repository(repo)
             if not sync_result.success:
                 repo_errors[str(repo.get("id", "unknown"))] = sync_result.message
 

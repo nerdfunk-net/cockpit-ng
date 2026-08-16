@@ -53,13 +53,6 @@ const templateFormSchema = z.object({
   scope: z.enum(['global', 'private']),
   use_nautobot_context: z.boolean().optional(),
 
-  // Git source fields
-  git_repo_url: z.string().optional(),
-  git_branch: z.string().optional(),
-  git_path: z.string().optional(),
-  git_username: z.string().optional(),
-  git_token: z.string().optional(),
-
   // Editor source fields
   content: z.string().optional(),
 
@@ -110,11 +103,6 @@ export function TemplateForm({
         description: template.description || '',
         scope: template.scope || 'global',
         use_nautobot_context: template.use_nautobot_context || false,
-        git_repo_url: template.git_repo_url || '',
-        git_branch: template.git_branch || 'main',
-        git_path: template.git_path || '',
-        git_username: '',
-        git_token: '',
         content: templateContent || '',
       }
     }
@@ -126,11 +114,6 @@ export function TemplateForm({
       description: '',
       scope: 'global',
       use_nautobot_context: false,
-      git_repo_url: '',
-      git_branch: 'main',
-      git_path: '',
-      git_username: '',
-      git_token: '',
       content: '',
     }
   }, [isEditMode, template, templateContent])
@@ -415,81 +398,14 @@ export function TemplateForm({
                     <span>Git Repository Configuration</span>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="git_repo_url"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>
-                            Repository URL <span className="text-destructive">*</span>
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder="https://github.com/user/repo.git"
-                              {...field}
-                            />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="git_branch"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Branch</FormLabel>
-                          <FormControl>
-                            <Input placeholder="main" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="git_path"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>File Path</FormLabel>
-                          <FormControl>
-                            <Input placeholder="templates/template.j2" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    <FormField
-                      control={form.control}
-                      name="git_username"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Username (if private)</FormLabel>
-                          <FormControl>
-                            <Input {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-                  <FormField
-                    control={form.control}
-                    name="git_token"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Personal Access Token (if private)</FormLabel>
-                        <FormControl>
-                          <Input type="password" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                <CardContent>
+                  <p className="text-sm text-muted-foreground">
+                    Git-sourced templates are files pulled from repositories
+                    registered under <strong>Settings &rarr; Git</strong> with
+                    category <strong>templates</strong>. Register or update the
+                    repository there, then use the template Sync action to pull in
+                    changes.
+                  </p>
                 </CardContent>
               </Card>
             )}

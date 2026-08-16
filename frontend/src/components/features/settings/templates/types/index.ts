@@ -11,9 +11,6 @@ export interface Template {
   scope: 'global' | 'private'
   variables?: Record<string, string>
   use_nautobot_context?: boolean
-  git_repo_url?: string
-  git_branch?: string
-  git_path?: string
 }
 
 // Template form data
@@ -27,11 +24,6 @@ export interface TemplateFormData {
   scope: 'global' | 'private'
   variables?: Record<string, string>
   use_nautobot_context?: boolean
-  git_repo_url?: string
-  git_branch?: string
-  git_path?: string
-  git_username?: string
-  git_token?: string
   filename?: string
 }
 

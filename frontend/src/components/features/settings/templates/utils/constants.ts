@@ -11,11 +11,6 @@ export const DEFAULT_TEMPLATE_FORM_DATA: TemplateFormData = {
   scope: 'global',
   variables: {},
   use_nautobot_context: true,
-  git_repo_url: '',
-  git_branch: 'main',
-  git_path: '',
-  git_username: '',
-  git_token: '',
 } as const
 
 export const EMPTY_TEMPLATES: Template[] = []

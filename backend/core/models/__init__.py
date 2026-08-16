@@ -17,7 +17,6 @@ from core.models.settings import (
     CelerySetting,
     CheckMKPriorityRule,
     CheckMKSetting,
-    GitSetting,
     NautobotSetting,
     NetworkDefault,
     Profile,
@@ -48,7 +47,6 @@ __all__ = [
     # Settings
     "Setting",
     "NautobotSetting",
-    "GitSetting",
     "CheckMKSetting",
     "CheckMKPriorityRule",
     "AgentsSetting",

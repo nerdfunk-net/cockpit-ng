@@ -192,11 +192,6 @@ def get_rbac_service():
     return service_factory.build_rbac_service()
 
 
-def get_git_operations_service():
-    """Provide the GitOperationsService."""
-    return service_factory.build_git_operations_service()
-
-
 def get_git_connection_service():
     """Provide the GitConnectionService."""
     return service_factory.build_git_connection_service()

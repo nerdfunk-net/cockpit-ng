@@ -18,18 +18,6 @@ class NautobotSettingsRequest(BaseModel):
     verify_ssl: bool = True
 
 
-class GitSettingsRequest(BaseModel):
-    """Git settings request model."""
-
-    repo_url: str
-    branch: str = "main"
-    username: Optional[str] = ""
-    token: Optional[str] = ""
-    config_path: str = "configs/"
-    sync_interval: int = 15
-    verify_ssl: bool = True
-
-
 class CheckMKSettingsRequest(BaseModel):
     """CheckMK settings request model."""
 
@@ -44,7 +32,6 @@ class AllSettingsRequest(BaseModel):
     """All settings request model."""
 
     nautobot: NautobotSettingsRequest
-    git: GitSettingsRequest
     checkmk: Optional[CheckMKSettingsRequest] = None
     cache: Optional[CacheSettingsRequest] = None
 
@@ -135,16 +122,6 @@ class AgentsTestRequest(BaseModel):
     sftp_username: Optional[str] = None
     sftp_password: Optional[str] = None
     git_repository_id: Optional[int] = None
-
-
-class GitTestRequest(BaseModel):
-    """Git connection test request model."""
-
-    repo_url: str
-    branch: str = "main"
-    username: Optional[str] = ""
-    token: Optional[str] = ""
-    verify_ssl: bool = True
 
 
 class ProfileFieldsRequest(BaseModel):

@@ -31,16 +31,19 @@ Usage:
 from __future__ import annotations
 
 import logging
+import os
 import re
 import shutil
+import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 from git import Repo
 from git.exc import GitCommandError, InvalidGitRepositoryError
 
+from models.git import SyncResult
 from services.git.auth import GitAuthenticationService
 from services.git.config import set_git_author
 from services.git.env import set_ssl_env
@@ -198,28 +201,6 @@ class GitService:
             return repo
         except Exception:
             return self._clone_fresh(repository, repo_dir)
-
-    def clone(
-        self, repository: Dict, target_path: Optional[Union[str, Path]] = None
-    ) -> Repo:
-        """Clone a repository to a specific path.
-
-        Args:
-            repository: Repository metadata dict with url, branch, auth info
-            target_path: Optional target path (uses default if not provided)
-
-        Returns:
-            GitPython Repo instance
-
-        Raises:
-            GitCommandError: If clone operation fails
-        """
-        if target_path:
-            path = Path(target_path)
-        else:
-            path = self.get_repo_path(repository)
-
-        return self._clone_fresh(repository, path)
 
     def _clone_fresh(self, repository: Dict, target_path: Path) -> Repo:
         """Clone a repository fresh to the target path.
@@ -638,73 +619,238 @@ class GitService:
                 message=f"Fetch failed: {_redact(str(e))}",
             )
 
-    def get_status(
-        self, repository: Dict, repo: Optional[Repo] = None
+    def get_repository_status(
+        self, repository: Dict[str, Any], repo_id: int
     ) -> Dict[str, Any]:
-        """Get comprehensive repository status.
+        """Get comprehensive repository status using GitPython.
 
         Args:
             repository: Repository metadata dict
-            repo: Optional existing Repo instance
+            repo_id: Repository ID for cache access
 
         Returns:
-            Dictionary with status information
+            Dictionary with comprehensive status information
         """
-        repo_path = self.get_repo_path(repository)
+        repo_path = str(self.get_repo_path(repository))
 
-        status = {
-            "exists": repo_path.exists(),
+        status_info = {
+            "repository_name": repository["name"],
+            "repository_url": repository["url"],
+            "repository_branch": repository["branch"],
+            "sync_status": repository.get("sync_status", "unknown"),
+            "exists": os.path.exists(repo_path),
             "is_git_repo": False,
-            "current_branch": None,
+            "is_synced": False,
+            "behind_count": 0,
+            "ahead_count": 0,
             "current_commit": None,
-            "is_dirty": False,
-            "untracked_files": [],
-            "modified_files": [],
-            "staged_files": [],
+            "current_branch": None,
+            "last_commit_message": None,
+            "last_commit_date": None,
+            "branches": [],
+            "commits": [],
+            "config_files": [],
         }
 
-        if not status["exists"]:
-            return status
+        if not status_info["exists"]:
+            return status_info
 
         try:
-            if repo is None:
-                repo = Repo(repo_path)
-
-            status["is_git_repo"] = True
+            repo = Repo(repo_path)
+            status_info["is_git_repo"] = True
 
             try:
-                status["current_branch"] = repo.active_branch.name
-            except Exception:
-                status["current_branch"] = "HEAD"
+                status_info["current_branch"] = repo.active_branch.name
+            except Exception as e:
+                logger.warning("Could not get current branch: %s", e)
+                status_info["current_branch"] = "HEAD"
 
             try:
                 if repo.head.is_valid():
                     commit = repo.head.commit
-                    status["current_commit"] = {
-                        "sha": commit.hexsha[:8],
-                        "message": commit.message.strip(),
-                        "author": commit.author.name,
-                        "date": commit.committed_datetime.isoformat(),
-                    }
-            except Exception:
-                pass
+                    status_info["current_commit"] = commit.hexsha[:8]
+                    status_info["last_commit_message"] = commit.message.strip()
+                    status_info["last_commit_date"] = (
+                        commit.committed_datetime.isoformat()
+                    )
+                    status_info["last_commit_author"] = commit.author.name
+                    status_info["last_commit_author_email"] = commit.author.email
+            except Exception as e:
+                logger.warning("Could not get commit info: %s", e)
 
-            status["is_dirty"] = repo.is_dirty()
-            status["untracked_files"] = repo.untracked_files
-            status["modified_files"] = [item.a_path for item in repo.index.diff(None)]
-            status["staged_files"] = (
-                [item.a_path for item in repo.index.diff("HEAD")]
-                if repo.head.is_valid()
-                else []
-            )
+            try:
+                status_info["branches"] = [branch.name for branch in repo.branches]
+            except Exception as e:
+                logger.warning("Could not list branches: %s", e)
 
-        except InvalidGitRepositoryError:
-            status["is_git_repo"] = False
+            try:
+                import service_factory
+
+                git_cache_service = service_factory.build_git_cache_service()
+
+                status_info["commits"] = git_cache_service.get_commits(
+                    repo_id=repo_id,
+                    repo_path=repo_path,
+                    branch_name=repository["branch"],
+                    limit=50,
+                    use_models=False,
+                )
+            except Exception as e:
+                logger.warning("Could not get recent commits: %s", e)
+                status_info["commits"] = []
+
+            try:
+                if "origin" in [r.name for r in repo.remotes]:
+                    origin = repo.remote("origin")
+
+                    try:
+                        origin.fetch()
+                    except Exception as fetch_error:
+                        logger.debug("Fetch failed: %s", fetch_error)
+
+                    try:
+                        remote_branch = f"origin/{repository['branch']}"
+                        if remote_branch in [ref.name for ref in repo.refs]:
+                            behind = list(
+                                repo.iter_commits(
+                                    f"HEAD..{remote_branch}", max_count=100
+                                )
+                            )
+                            status_info["behind_count"] = len(behind)
+
+                            ahead = list(
+                                repo.iter_commits(
+                                    f"{remote_branch}..HEAD", max_count=100
+                                )
+                            )
+                            status_info["ahead_count"] = len(ahead)
+
+                            status_info["is_synced"] = status_info["behind_count"] == 0
+                    except Exception as rev_error:
+                        logger.debug("Could not calculate ahead/behind: %s", rev_error)
+            except Exception as e:
+                logger.warning("Could not check sync status: %s", e)
+                status_info["is_synced"] = False
+
+            try:
+                for root, _dirs, files in os.walk(repo_path):
+                    if ".git" in root:
+                        continue
+
+                    for file in files:
+                        if not file.startswith("."):
+                            rel_path = os.path.relpath(
+                                os.path.join(root, file), repo_path
+                            )
+                            status_info["config_files"].append(rel_path)
+
+                status_info["config_files"].sort()
+            except Exception as e:
+                logger.warning("Could not scan config files: %s", e)
+
         except Exception as e:
-            logger.warning("Error getting repository status: %s", e)
-            status["error"] = str(e)
+            logger.warning("Error checking Git repository status: %s", e)
 
-        return status
+        return status_info
+
+    def _clone_error_message(self, repository: Dict[str, Any], error: Exception) -> str:
+        """Map clone failures to the user-facing messages the UI shows today."""
+        err = str(error)
+        if "authentication" in err.lower():
+            return "Authentication failed. Please check your Git credentials."
+        if "not found" in err.lower():
+            return (
+                f"Repository or branch not found. "
+                f"URL: {repository['url']} Branch: {repository['branch']}"
+            )
+        return f"Git clone failed: {_redact(err)}"
+
+    def sync_repository(
+        self, repository: Dict[str, Any], force_clone: bool = False
+    ) -> SyncResult:
+        """Clone if missing, pull if present. Never persist credentials in origin URL."""
+        if force_clone:
+            return self.remove_and_sync(repository)
+
+        repo_path = str(self.get_repo_path(repository))
+        logger.info(
+            "Syncing repository '%s' to path: %s", repository["name"], repo_path
+        )
+        os.makedirs(os.path.dirname(repo_path) or ".", exist_ok=True)
+
+        repo_dir_exists = os.path.exists(repo_path)
+        is_git_repo = os.path.isdir(os.path.join(repo_path, ".git"))
+
+        if not is_git_repo:
+            if repo_dir_exists:
+                parent_dir = os.path.dirname(
+                    repo_path.rstrip(os.sep)
+                ) or os.path.dirname(repo_path)
+                base_name = os.path.basename(os.path.normpath(repo_path))
+                backup_path = os.path.join(
+                    parent_dir, f"{base_name}_backup_{int(time.time())}"
+                )
+                shutil.move(repo_path, backup_path)
+                logger.info("Backed up existing directory to %s", backup_path)
+            try:
+                self._clone_fresh(repository, Path(repo_path))
+                return SyncResult(
+                    success=True,
+                    message=(
+                        f"Repository '{repository['name']}' cloned successfully "
+                        f"to {repo_path}"
+                    ),
+                    repository_path=repo_path,
+                )
+            except Exception as e:
+                message = self._clone_error_message(repository, e)
+                logger.error("Git clone failed: %s", e)
+                return SyncResult(success=False, message=message)
+
+        pull_result = self.pull(repository)
+        return SyncResult(
+            success=pull_result.success,
+            message=pull_result.message,
+            repository_path=repo_path if pull_result.success else None,
+        )
+
+    def remove_and_sync(self, repository: Dict[str, Any]) -> SyncResult:
+        """Backup existing working tree, then clone fresh."""
+        repo_path = str(self.get_repo_path(repository))
+        logger.info(
+            "Removing and re-syncing repository '%s' at %s",
+            repository["name"],
+            repo_path,
+        )
+        if os.path.exists(repo_path):
+            parent_dir = os.path.dirname(repo_path.rstrip(os.sep)) or os.path.dirname(
+                repo_path
+            )
+            base_name = os.path.basename(os.path.normpath(repo_path))
+            backup_path = os.path.join(
+                parent_dir, f"{base_name}_removed_{int(time.time())}"
+            )
+            try:
+                shutil.move(repo_path, backup_path)
+                logger.info("Existing repository backed up to %s", backup_path)
+            except Exception as e:
+                logger.warning("Could not backup existing repository: %s", e)
+                shutil.rmtree(repo_path, ignore_errors=True)
+
+        try:
+            self._clone_fresh(repository, Path(repo_path))
+            return SyncResult(
+                success=True,
+                message=(
+                    f"Repository '{repository['name']}' removed and "
+                    f"re-cloned successfully"
+                ),
+                repository_path=repo_path,
+            )
+        except Exception as e:
+            message = self._clone_error_message(repository, e)
+            logger.error("Git clone failed: %s", e)
+            return SyncResult(success=False, message=message)
 
     @contextmanager
     def with_auth_environment(self, repository: Dict):

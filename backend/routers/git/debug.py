@@ -16,8 +16,6 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from core.auth import require_permission
 from dependencies import get_git_auth_service
-from services.git.config import set_git_author
-from services.git.env import set_ssl_env
 from services.git.shared_utils import get_git_repo_by_id, git_repo_manager
 
 logger = logging.getLogger(__name__)
@@ -398,185 +396,55 @@ async def debug_push_test(
             test_content = f"Cockpit Debug Push Test\nTimestamp: {datetime.now().isoformat()}\nRepository: {repository['name']}\n"
             test_file_path.write_text(test_content)
 
-            # Step 2: Stage the file
-            try:
-                repo.index.add([".cockpit_debug_test.txt"])
-            except Exception as add_error:
+            # Step 2-4: Commit and push via the central GitService (uses
+            # http.extraHeader for token auth; never writes credentials into
+            # the stored remote URL).
+            import service_factory
+
+            git_service = service_factory.build_git_service()
+            commit_message = f"Debug push test - {datetime.now().isoformat()}"
+            result = git_service.commit_and_push(
+                repository,
+                message=commit_message,
+                files=[".cockpit_debug_test.txt"],
+                repo=repo,
+            )
+
+            if not result.success:
                 logger.warning(
-                    "Debug push staging failed for repo %s: %s",
-                    repo_id,
-                    add_error,
-                    exc_info=True,
+                    "Debug push failed for repo %s: %s", repo_id, result.message
                 )
                 return {
                     "success": False,
-                    "message": "Failed to stage file",
+                    "message": result.message,
                     "details": {
-                        "error_type": type(add_error).__name__,
-                        "stage": "git_add",
+                        "commit_sha": result.commit_sha,
+                        "stage": "git_push" if result.commit_sha else "git_commit",
                     },
                 }
 
-            # Step 3: Commit the change
-            try:
-                commit_message = f"Debug push test - {datetime.now().isoformat()}"
-                # Set git author configuration for this commit
-                with set_git_author(repository, repo):
-                    commit = repo.index.commit(commit_message)
-                commit_sha = commit.hexsha[:8]
-            except Exception as commit_error:
-                logger.warning(
-                    "Debug push commit failed for repo %s: %s",
-                    repo_id,
-                    commit_error,
-                    exc_info=True,
-                )
-                # If nothing to commit (file already exists with same content), that's ok
-                if "nothing to commit" in str(commit_error).lower():
-                    return {
-                        "success": False,
-                        "message": "No changes to push (test file unchanged)",
-                        "details": {
-                            "error_type": "NoChanges",
-                            "suggestion": "The test file already exists with the same content. Use Write test first or modify the file manually.",
-                        },
-                    }
+            if result.files_changed == 0:
                 return {
                     "success": False,
-                    "message": "Failed to commit changes",
+                    "message": "No changes to push (test file unchanged)",
                     "details": {
-                        "error_type": type(commit_error).__name__,
-                        "stage": "git_commit",
+                        "error_type": "NoChanges",
+                        "suggestion": "The test file already exists with the same content. Use Write test first or modify the file manually.",
                     },
                 }
 
-            # Step 4: Push using authentication service context manager
-            original_url = None
-
-            try:
-                origin = repo.remote("origin")
-                original_url = list(origin.urls)[0]
-
-                # Use both SSL environment and authentication contexts
-                with set_ssl_env(repository):
-                    with git_auth_service.setup_auth_environment(repository) as (
-                        auth_url,
-                        _username,
-                        _token,
-                        _ssh_key_path,
-                    ):
-                        # Update remote URL with authenticated URL for token auth
-                        if auth_type != "ssh_key":
-                            origin.set_url(auth_url)
-
-                        # Push to remote
-                        try:
-                            push_info = origin.push(
-                                refspec=f"{repository['branch']}:{repository['branch']}"
-                            )
-
-                            # Restore original URL (without credentials) for token auth
-                            if auth_type != "ssh_key" and original_url:
-                                try:
-                                    origin.set_url(original_url)
-                                except Exception:
-                                    pass  # Best effort to clean up
-
-                            # Check push result
-                            if push_info and len(push_info) > 0:
-                                push_result = push_info[0]
-
-                                # Check for errors
-                                if push_result.flags & push_result.ERROR:
-                                    return {
-                                        "success": False,
-                                        "message": "Push failed",
-                                        "details": {
-                                            "error_type": "PushError",
-                                            "commit_sha": commit_sha,
-                                            "suggestion": "Check repository permissions and credentials",
-                                        },
-                                    }
-
-                                # Success!
-                                return {
-                                    "success": True,
-                                    "message": "Push test successful - changes pushed to remote",
-                                    "details": {
-                                        "commit_sha": commit_sha,
-                                        "commit_message": commit_message,
-                                        "branch": repository["branch"],
-                                        "remote": "origin",
-                                        "file_path": str(test_file_path),
-                                        "push_summary": push_result.summary,
-                                        "verified": True,
-                                    },
-                                }
-                            else:
-                                return {
-                                    "success": False,
-                                    "message": "Push completed but no feedback received",
-                                    "details": {
-                                        "error_type": "UnknownPushResult",
-                                        "commit_sha": commit_sha,
-                                    },
-                                }
-
-                        except Exception as push_error:
-                            # Restore original URL even if push fails
-                            if auth_type != "ssh_key" and original_url:
-                                try:
-                                    origin.set_url(original_url)
-                                except Exception:
-                                    pass
-
-                            logger.warning(
-                                "Debug push failed for repo %s: %s",
-                                repo_id,
-                                push_error,
-                                exc_info=True,
-                            )
-                            error_message = str(push_error)
-
-                            # Provide helpful error messages for common issues
-                            if (
-                                "permission denied" in error_message.lower()
-                                or "403" in error_message
-                            ):
-                                suggestion = "Authentication failed or insufficient permissions. Check that the token has write access."
-                            elif "could not resolve host" in error_message.lower():
-                                suggestion = "Network error: Cannot reach remote repository. Check network connectivity."
-                            elif "authentication failed" in error_message.lower():
-                                suggestion = "Credentials are invalid. Update the token in credential settings."
-                            else:
-                                suggestion = "Check repository configuration and network connectivity"
-
-                            return {
-                                "success": False,
-                                "message": "Failed to push",
-                                "details": {
-                                    "error_type": type(push_error).__name__,
-                                    "stage": "git_push",
-                                    "commit_sha": commit_sha,
-                                    "suggestion": suggestion,
-                                },
-                            }
-
-            except Exception as remote_error:
-                logger.warning(
-                    "Debug push remote configuration failed for repo %s: %s",
-                    repo_id,
-                    remote_error,
-                    exc_info=True,
-                )
-                return {
-                    "success": False,
-                    "message": "Failed to configure remote",
-                    "details": {
-                        "error_type": type(remote_error).__name__,
-                        "stage": "configure_remote",
-                    },
-                }
+            return {
+                "success": True,
+                "message": "Push test successful - changes pushed to remote",
+                "details": {
+                    "commit_sha": result.commit_sha,
+                    "commit_message": commit_message,
+                    "branch": result.branch,
+                    "remote": "origin",
+                    "file_path": str(test_file_path),
+                    "verified": True,
+                },
+            }
 
         except PermissionError as e:
             logger.warning(

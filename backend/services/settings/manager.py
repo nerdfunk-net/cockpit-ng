@@ -14,12 +14,10 @@ from services.settings.defaults import (
     CacheSettings,
     CelerySettings,
     CheckMKSettings,
-    GitSettings,
     NautobotSettings,
     NetworkDefaults,
     ServerDefaults,
 )
-from services.settings.git_service import GitSettingsService
 from services.settings.nautobot_service import NautobotSettingsService
 from services.settings.network_defaults_service import NetworkDefaultsService
 from services.settings.oidc_service import OidcService
@@ -48,7 +46,6 @@ class SettingsManager:
         self._nautobot = NautobotSettingsService(nautobot_default)
         self._network_defaults = NetworkDefaultsService(NetworkDefaults())
         self._server_defaults = ServerDefaultsService(ServerDefaults())
-        self._git = GitSettingsService(GitSettings())
         self._checkmk = CheckMKSettingsService(CheckMKSettings())
         self._cache = CacheSettingsService(CacheSettings())
         self._celery = CelerySettingsService(CelerySettings())
@@ -80,20 +77,6 @@ class SettingsManager:
 
     def update_server_defaults(self, defaults: Dict[str, Any]) -> bool:
         return self._server_defaults.update(defaults)
-
-    # --- Git ---
-
-    def get_git_settings(self) -> Dict[str, Any]:
-        return self._git.get()
-
-    def update_git_settings(self, settings: Dict[str, Any]) -> bool:
-        return self._git.update(settings)
-
-    def get_selected_git_repository(self) -> Optional[int]:
-        return self._git.get_selected_repository()
-
-    def set_selected_git_repository(self, repository_id: int) -> bool:
-        return self._git.set_selected_repository(repository_id)
 
     # --- CheckMK ---
 
@@ -163,7 +146,6 @@ class SettingsManager:
     def get_all_settings(self) -> Dict[str, Any]:
         return {
             "nautobot": self.get_nautobot_settings(),
-            "git": self.get_git_settings(),
             "checkmk": self.get_checkmk_settings(),
             "cache": self.get_cache_settings(),
             "metadata": self._system.get_metadata(),
@@ -173,8 +155,6 @@ class SettingsManager:
         success = True
         if "nautobot" in settings:
             success &= self.update_nautobot_settings(settings["nautobot"])
-        if "git" in settings:
-            success &= self.update_git_settings(settings["git"])
         if "checkmk" in settings:
             success &= self.update_checkmk_settings(settings["checkmk"])
         if "cache" in settings:

@@ -55,13 +55,7 @@ export function useTemplateMutations() {
       }
 
       // Add source-specific data
-      if (formData.source === 'git') {
-        templateData.git_repo_url = formData.git_repo_url
-        templateData.git_branch = formData.git_branch
-        templateData.git_path = formData.git_path
-        templateData.git_username = formData.git_username
-        templateData.git_token = formData.git_token
-      } else if (formData.source === 'webeditor') {
+      if (formData.source === 'webeditor') {
         templateData.content = formData.content
       } else if (formData.source === 'file' && selectedFile) {
         templateData.filename = selectedFile.name
@@ -117,13 +111,7 @@ export function useTemplateMutations() {
       }
 
       // Add source-specific data
-      if (formData.source === 'git') {
-        templateData.git_repo_url = formData.git_repo_url
-        templateData.git_branch = formData.git_branch
-        templateData.git_path = formData.git_path
-        templateData.git_username = formData.git_username
-        templateData.git_token = formData.git_token
-      } else if (formData.source === 'webeditor') {
+      if (formData.source === 'webeditor') {
         templateData.content = formData.content
       } else if (formData.source === 'file') {
         if (selectedFile) {

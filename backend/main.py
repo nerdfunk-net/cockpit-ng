@@ -113,7 +113,6 @@ from routers.settings import (
     compliance_router,
     config_router,
     credentials_router,
-    git_settings_router,
     nautobot_settings_router,
     profiles_router,
     rbac_router,
@@ -248,7 +247,6 @@ app.include_router(config_router)
 app.include_router(settings_router)
 app.include_router(nautobot_settings_router)
 app.include_router(profiles_router)
-app.include_router(git_settings_router)
 app.include_router(checkmk_settings_router)
 app.include_router(agents_settings_router)
 app.include_router(cache_settings_router)
@@ -500,7 +498,6 @@ async def _startup_services():
         from services.settings.manager import SettingsManager
 
         settings_manager = SettingsManager()
-        from services.git.shared_utils import get_git_repo_by_id
 
         cache_service = service_factory.build_cache_service()
 
@@ -513,64 +510,39 @@ async def _startup_services():
         async def prefetch_commits_once():
             try:
                 logger.debug("Startup cache: prefetch_commits_once() starting")
-                selected_id = settings_manager.get_selected_git_repository()
-                if not selected_id:
-                    logger.warning(
-                        "Startup cache: No repository selected; skipping commits prefetch"
-                    )
-                    return
+                from git import Repo
 
-                repo = get_git_repo_by_id(selected_id)
-                # Determine branch; handle empty repos safely
-                try:
-                    branch_name = repo.active_branch.name
-                except Exception:
-                    logger.warning(
-                        "Startup cache: No active branch detected; skipping commits prefetch"
-                    )
-                    return
-
-                # Skip if repo has no valid HEAD
-                try:
-                    if not repo.head.is_valid():
-                        logger.debug(
-                            "Startup cache: Repository has no commits yet; nothing to prefetch"
-                        )
-                        return
-                except Exception:
-                    logger.debug(
-                        "Startup cache: Unable to validate HEAD; skipping prefetch"
-                    )
-                    return
-
-                # Build commits payload similar to /api/git/commits
+                git_repo_svc = service_factory.build_git_repository_service()
+                git_cache_service = service_factory.build_git_cache_service()
+                git_service = service_factory.build_git_service()
                 limit = int(cache_cfg.get("max_commits", 500))
-                commits = []
-                for commit in repo.iter_commits(branch_name, max_count=limit):
-                    commits.append(
-                        {
-                            "hash": commit.hexsha,
-                            "short_hash": commit.hexsha[:8],
-                            "message": commit.message.strip(),
-                            "author": {
-                                "name": commit.author.name,
-                                "email": commit.author.email,
-                            },
-                            "date": commit.committed_datetime.isoformat(),
-                            "files_changed": len(commit.stats.files),
-                        }
-                    )
-
-                ttl = int(cache_cfg.get("ttl_seconds", 600))
-                repo_scope = f"repo:{selected_id}" if selected_id else "repo:default"
-                cache_key = f"{repo_scope}:commits:{branch_name}"
-                cache_service.set(cache_key, commits, ttl)
-                logger.debug(
-                    "Startup cache: Prefetched %s commits for branch '%s' (ttl=%ss)",
-                    len(commits),
-                    branch_name,
-                    ttl,
-                )
+                for repository in git_repo_svc.get_repositories(active_only=True):
+                    try:
+                        repo_path = git_service.get_repo_path(repository)
+                        if not (repo_path / ".git").is_dir():
+                            continue  # never clone at startup
+                        repo = Repo(repo_path)
+                        if not repo.head.is_valid():
+                            continue
+                        branch_name = repo.active_branch.name
+                        git_cache_service.get_commits(
+                            repo_id=repository["id"],
+                            repo_path=str(repo_path),
+                            branch_name=branch_name,
+                            limit=limit,
+                            use_models=False,
+                        )
+                        logger.debug(
+                            "Startup cache: prefetched commits for repo %s branch %s",
+                            repository["id"],
+                            branch_name,
+                        )
+                    except Exception as e:
+                        logger.warning(
+                            "Startup cache: commits prefetch skipped for repo %s: %s",
+                            repository.get("id"),
+                            e,
+                        )
             except Exception as e:
                 logger.warning("Startup cache: commits prefetch failed: %s", e)
 

@@ -57,30 +57,6 @@ class NautobotSetting(Base):
     )
 
 
-class GitSetting(Base):
-    """Git repository settings for configs."""
-
-    __tablename__ = "git_settings"
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    repo_url = Column(String(500), nullable=False)
-    branch = Column(String(255), nullable=False, default="main")
-    username = Column(String(255))
-    token = Column(String(500))
-    config_path = Column(String(500), nullable=False, default="configs/")
-    sync_interval = Column(Integer, nullable=False, default=15)
-    verify_ssl = Column(Boolean, nullable=False, default=True)
-    created_at = Column(
-        DateTime(timezone=True), server_default=func.now(), nullable=False
-    )
-    updated_at = Column(
-        DateTime(timezone=True),
-        server_default=func.now(),
-        onupdate=func.now(),
-        nullable=False,
-    )
-
-
 class CheckMKSetting(Base):
     """CheckMK connection settings."""
 

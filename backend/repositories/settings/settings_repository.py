@@ -11,7 +11,6 @@ from core.models import (
     CacheSetting,
     CelerySetting,
     CheckMKSetting,
-    GitSetting,
     NautobotSetting,
     NetworkDefault,
     ServerDefault,
@@ -33,21 +32,6 @@ class NautobotSettingRepository(BaseRepository[NautobotSetting]):
         session = get_db_session()
         try:
             return session.query(NautobotSetting).first()
-        finally:
-            session.close()
-
-
-class GitSettingRepository(BaseRepository[GitSetting]):
-    """Repository for Git settings."""
-
-    def __init__(self):
-        super().__init__(GitSetting)
-
-    def get_settings(self) -> Optional[GitSetting]:
-        """Get the first (and should be only) Git settings record."""
-        session = get_db_session()
-        try:
-            return session.query(GitSetting).first()
         finally:
             session.close()
 

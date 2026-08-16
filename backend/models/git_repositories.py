@@ -114,6 +114,12 @@ class GitRepositoryUpdateRequest(BaseModel):
     is_active: Optional[bool] = Field(None, description="Repository is active")
 
 
+class GitToggleActiveRequest(BaseModel):
+    """Git repository active-flag toggle request model."""
+
+    is_active: bool
+
+
 class GitConnectionTestRequest(BaseModel):
     """Git connection test request model."""
 
@@ -132,20 +138,3 @@ class GitConnectionTestResponse(BaseModel):
     success: bool
     message: str
     details: Optional[dict] = None
-
-
-class GitSyncRequest(BaseModel):
-    """Git repository sync request model."""
-
-    repository_id: Optional[int] = Field(
-        None, description="Specific repository ID to sync, or None for all"
-    )
-
-
-class GitSyncResponse(BaseModel):
-    """Git repository sync response model."""
-
-    synced_repositories: List[int]
-    failed_repositories: List[int]
-    errors: dict
-    message: str

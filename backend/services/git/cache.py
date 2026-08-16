@@ -11,7 +11,6 @@ for commits, file history, and other git data.
 from __future__ import annotations
 
 import logging
-import subprocess
 from typing import Any, Dict, List, Optional
 
 from git import Repo
@@ -119,7 +118,7 @@ class GitCacheService:
         limit: int,
         cache_cfg: Dict[str, Any],
     ) -> List[Dict[str, Any]]:
-        """Fetch commits from repository using GitPython with subprocess fallback.
+        """Fetch commits from repository using GitPython.
 
         Args:
             repo_id: Repository ID
@@ -139,89 +138,34 @@ class GitCacheService:
             for commit in repo.iter_commits(branch_name, max_count=limit):
                 commits.append(commit_to_dict(commit))
 
-            # Cache full commit list if enabled and within limits
+            # Cache full commit list if enabled
             if cache_cfg.get("enabled", True):
                 max_commits = int(cache_cfg.get("max_commits", 500))
-                if len(commits) < max_commits:
-                    # Fetch full list for cache
-                    full_commits = []
-                    for commit in repo.iter_commits(branch_name, max_count=max_commits):
-                        full_commits.append(commit_to_dict(commit))
-
-                    ttl = int(cache_cfg.get("ttl_seconds", 600))
-                    cache_key = self._build_cache_key(repo_id, "commits", branch_name)
-                    self._cache.set(cache_key, full_commits, ttl)
-                    logger.debug(
-                        "Cached %s commits for repo %s, branch %s",
-                        len(full_commits),
-                        repo_id,
-                        branch_name,
-                    )
+                full_commits = commits
+                if limit < max_commits:
+                    # Requested fewer than the cache ceiling: cache the fuller list
+                    full_commits = [
+                        commit_to_dict(c)
+                        for c in repo.iter_commits(branch_name, max_count=max_commits)
+                    ]
+                ttl = int(cache_cfg.get("ttl_seconds", 600))
+                cache_key = self._build_cache_key(repo_id, "commits", branch_name)
+                self._cache.set(cache_key, full_commits, ttl)
+                logger.debug(
+                    "Cached %s commits for repo %s, branch %s",
+                    len(full_commits),
+                    repo_id,
+                    branch_name,
+                )
 
             return commits
 
         except Exception as git_error:
-            # Fallback to subprocess if GitPython fails
-            logger.warning(
-                "GitPython failed for repo %s, falling back to subprocess: %s",
+            logger.error(
+                "GitPython failed to fetch commits for repo %s: %s",
                 repo_id,
                 git_error,
             )
-            return self._fetch_commits_subprocess(repo_path, branch_name, limit)
-
-    def _fetch_commits_subprocess(
-        self, repo_path: str, branch_name: str, limit: int
-    ) -> List[Dict[str, Any]]:
-        """Fetch commits using git subprocess as fallback.
-
-        Args:
-            repo_path: Path to repository on disk
-            branch_name: Branch name
-            limit: Number of commits to fetch
-
-        Returns:
-            List of commit dictionaries
-        """
-        try:
-            log = subprocess.run(
-                [
-                    "git",
-                    "log",
-                    "-n",
-                    str(limit),
-                    "--date=iso",
-                    "--format=%H|%s|%an|%ae|%ad",
-                    branch_name,
-                ],
-                cwd=repo_path,
-                capture_output=True,
-                text=True,
-                timeout=10,
-            )
-
-            commits = []
-            if log.returncode == 0 and log.stdout:
-                for line in log.stdout.splitlines():
-                    parts = line.split("|", 4)
-                    if len(parts) >= 5:
-                        commits.append(
-                            {
-                                "hash": parts[0],
-                                "short_hash": parts[0][:8],
-                                "message": parts[1],
-                                "author": {
-                                    "name": parts[2],
-                                    "email": parts[3],
-                                },
-                                "date": parts[4],
-                                "files_changed": 0,
-                            }
-                        )
-
-            return commits
-
-        except Exception as e:
-            logger.error("Subprocess git log failed: %s", e)
             return []
 
     def get_file_history(

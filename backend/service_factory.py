@@ -355,13 +355,6 @@ def build_rbac_service():
     return RBACService(user_service=build_user_service())
 
 
-def build_git_operations_service():
-    """Create a fresh GitOperationsService instance."""
-    from services.git.operations import GitOperationsService
-
-    return GitOperationsService()
-
-
 def build_git_connection_service():
     """Create a fresh GitConnectionService instance."""
     from services.git.connection import GitConnectionService

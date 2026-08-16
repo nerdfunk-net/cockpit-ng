@@ -105,26 +105,6 @@ def test_get_commits_fetches_and_caches_on_miss() -> None:
 
 
 @pytest.mark.unit
-def test_fetch_commits_subprocess_parses_log() -> None:
-    svc = _service()
-    log_stdout = "deadbeef|subject|Author|author@example.com|2024-01-01T00:00:00\n"
-    with patch("services.git.cache.subprocess.run") as run:
-        run.return_value = MagicMock(returncode=0, stdout=log_stdout)
-        commits = svc._fetch_commits_subprocess("/tmp/repo", "main", 5)
-
-    assert len(commits) == 1
-    assert commits[0]["hash"] == "deadbeef"
-    assert commits[0]["author"]["email"] == "author@example.com"
-
-
-@pytest.mark.unit
-def test_fetch_commits_subprocess_returns_empty_on_failure() -> None:
-    svc = _service()
-    with patch("services.git.cache.subprocess.run", side_effect=OSError("git missing")):
-        assert svc._fetch_commits_subprocess("/tmp/repo", "main", 5) == []
-
-
-@pytest.mark.unit
 def test_get_file_history_returns_cached() -> None:
     mock_cache = MagicMock()
     mock_cache.get.return_value = _SAMPLE_COMMITS

@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional
 
 __all__ = [
     "NautobotSettings",
-    "GitSettings",
     "CheckMKSettings",
     "CacheSettings",
     "CelerySettings",
@@ -22,17 +21,6 @@ class NautobotSettings:
     url: str = "http://localhost:8080"
     token: str = ""
     timeout: int = 30
-    verify_ssl: bool = True
-
-
-@dataclass
-class GitSettings:
-    repo_url: str = ""
-    branch: str = "main"
-    username: str = ""
-    token: str = ""
-    config_path: str = "configs/"
-    sync_interval: int = 15
     verify_ssl: bool = True
 
 

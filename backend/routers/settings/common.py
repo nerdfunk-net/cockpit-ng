@@ -58,7 +58,6 @@ async def update_all_settings(
 
         settings_dict = {
             "nautobot": settings_request.nautobot.dict(),
-            "git": settings_request.git.dict(),
         }
         if settings_request.cache is not None:
             settings_dict["cache"] = settings_request.cache.dict()

@@ -49,9 +49,10 @@ backend/
 │   └── git_repository_repository.py            # Data access layer (CRUD on git_repositories table)
 ├── services/git/
 │   ├── __init__.py
-│   ├── service.py                              # GitService: core git ops (clone, pull, push, commit)
+│   ├── service.py                              # GitService: THE git engine (open_or_clone, pull, push,
+│   │                                            #   commit, sync_repository, remove_and_sync,
+│   │                                            #   get_repository_status)
 │   ├── repository_service.py                   # GitRepositoryService: DB record CRUD
-│   ├── operations.py                           # GitOperationsService: sync/status workflows
 │   ├── auth.py                                 # GitAuthenticationService: credential resolution + auth env
 │   ├── connection.py                           # GitConnectionService: connection testing via shallow clone
 │   ├── cache.py                                # GitCacheService: Redis caching for commits/file history
@@ -230,7 +231,9 @@ The service converts SQLAlchemy model instances to plain dicts via `_to_dict()`.
 
 ### `GitService` — `services/git/service.py`
 
-**Purpose:** Core git operations using GitPython (`gitpython` library). Works on the local filesystem clone.
+**Purpose:** THE git engine. Core git operations using GitPython (`gitpython` library), plus the sync/status
+workflows that used to live in a separate `GitOperationsService` (folded in — there is only one engine class).
+Works on the local filesystem clone.
 
 Constructed via `service_factory.build_git_service()`.
 
@@ -239,15 +242,20 @@ Key methods:
 | Method | Returns | Notes |
 |---|---|---|
 | `open_or_clone(repository: dict) → Repo` | GitPython `Repo` | Opens if exists and URL matches; re-clones if URL mismatch |
-| `clone(repository, target_path?) → Repo` | `Repo` | Explicit clone to path |
-| `pull(repository, repo?) → PullResult` | dataclass | Pulls `repository["branch"]` from `origin` |
-| `push(repository, repo?, branch?) → PushResult` | dataclass | Pushes to remote; handles token URL injection |
+| `pull(repository, repo?) → PullResult` | dataclass | Pulls `repository["branch"]` from `origin` via `http.extraHeader` for token auth (never `origin.set_url`) |
+| `push(repository, repo?, branch?) → PushResult` | dataclass | Pushes to remote via `http.extraHeader` for token auth (never `origin.set_url`, which would persist the token into the stored remote URL) |
 | `commit(repository, message, files?, repo?, add_all?) → CommitResult` | dataclass | Stages and commits; uses `set_git_author()` context |
 | `commit_and_push(repository, message, files?, ...) → CommitAndPushResult` | dataclass | Convenience: commit then push |
 | `fetch(repository, repo?) → GitResult` | dataclass | Fetch without merge |
-| `get_status(repository, repo?) → dict` | Status dict | branch, HEAD commit, dirty flag, file lists |
+| `sync_repository(repository, force_clone=False) → SyncResult` | dataclass | Clone if missing, pull if present. `force_clone=True` delegates to `remove_and_sync` |
+| `remove_and_sync(repository) → SyncResult` | dataclass | Backs up the existing working tree (timestamped rename), then clones fresh |
+| `get_repository_status(repository, repo_id) → dict` | Status dict | The one status implementation: branch, HEAD commit, ahead/behind counts, recent commits (via `GitCacheService`), config file listing |
 | `get_repo_path(repository) → Path` | `Path` | Delegates to `paths.repo_path()` |
 | `with_auth_environment(repository)` | Context manager | Yields `(auth_url, username, token, ssh_key_path)` |
+
+There is no `get_status()` / local-working-tree-only status method and no `clone()` public method — `open_or_clone()`
+and the private `_clone_fresh()` cover cloning, and `get_repository_status()` is the single status implementation
+used by the `/status` API endpoint.
 
 **Result dataclasses** (all defined in `service.py`):
 
@@ -302,21 +310,6 @@ Key methods:
 - `ssh_key` — resolves a credential of type `ssh_key` by name; sets `GIT_SSH_COMMAND=ssh -i {key_path} -o StrictHostKeyChecking=no` in the environment before the git operation.
 - `generic` — resolves a credential of type `generic`; embeds `username:password` into the HTTPS clone URL.
 - `none` — no credentials; URL used as-is.
-
----
-
-### `GitOperationsService` — `services/git/operations.py`
-
-**Purpose:** Sync/clone/status workflows used by the sync endpoints. Wraps `GitAuthenticationService` and `set_ssl_env`.
-
-Key methods:
-
-| Method | Returns | Notes |
-|---|---|---|
-| `sync_repository(repository, force_clone=False) → SyncResult` | dataclass | Clone if missing; pull if exists |
-| `remove_and_sync(repository) → SyncResult` | dataclass | `rmtree` existing; clone fresh |
-| `clone_repository(repository, target_path?) → CloneResult` | dataclass | Explicit clone |
-| `get_repository_status(repository, repo_id) → dict` | Status dict | GitPython-based; no subprocess |
 
 ---
 
@@ -376,9 +369,12 @@ All methods resolve the repository path via `repo_path()` and open with GitPytho
 
 ### `GitDiffService` — `services/git/diff.py`
 
-**Purpose:** Diff operations. Not used directly by the main router endpoints (those use inline `difflib` in `version_control.py`). Used by other services that need diffs.
+**Purpose:** The one diff implementation used by the API. `compare_commits_side_by_side(repo, commit1, commit2,
+file_path) → dict` is called directly by `POST /api/git/{repo_id}/diff` and returns the exact response body
+(`commit1, commit2, file_path, diff_lines, left_file, right_file, left_lines, right_lines, stats`) — the router
+has no inline `difflib` logic.
 
-Key methods: `unified_diff(...)`, `calculate_diff_stats(diff_lines)`, `line_by_line_diff(...)`, `compare_file_versions(...)`, `compare_files_across_repos(...)`, `compare_text_content(content1, content2)`.
+Other methods: `unified_diff(...)`, `calculate_diff_stats(diff_lines)`, `line_by_line_diff(...)`, `compare_file_versions(...)`, `compare_files_across_repos(...)`, `compare_text_content(content1, content2)`.
 
 ---
 
@@ -409,6 +405,7 @@ All endpoints require JWT authentication (enforced via `Depends(require_permissi
 | GET | `/api/git-repositories/{repo_id}/edit` | `git.repositories:write` | `get_repository_for_edit` | Get all fields including internal data for edit forms. Returns raw dict. |
 | POST | `/api/git-repositories/` | `git.repositories:write` | `create_repository` | Create repository. Body: `GitRepositoryRequest`. Returns `GitRepositoryResponse`. |
 | PUT | `/api/git-repositories/{repo_id}` | `git.repositories:write` | `update_repository` | Partial update. Body: `GitRepositoryUpdateRequest` (all fields optional). Returns `GitRepositoryResponse`. |
+| PATCH | `/api/git-repositories/{repo_id}/toggle-active` | `git.repositories:write` | `toggle_repository_active` | Body: `{is_active: bool}`. Returns `GitRepositoryResponse`. |
 | DELETE | `/api/git-repositories/{repo_id}` | `git.repositories:delete` | `delete_repository` | Delete or deactivate. Query param: `hard_delete` (bool, default `True`). Returns `{"message": "..."}`. |
 | POST | `/api/git-repositories/test-connection` | `git.repositories:write` | `test_git_connection` | Test connectivity. Body: `GitConnectionTestRequest`. Returns `GitConnectionTestResponse`. Delegates to `GitConnectionService.test_connection()`. |
 | GET | `/api/git-repositories/health` | `git.repositories:read` | `health_check` | Returns stats: total repos, active repos, count per category. |
@@ -422,9 +419,9 @@ All endpoints require JWT authentication (enforced via `Depends(require_permissi
 
 | Method | Path | Permission | Handler | Description |
 |---|---|---|---|---|
-| GET | `/api/git/{repo_id}/status` | `git.operations:execute` | `get_repository_status` | Returns `{success, data}` with branch, HEAD commit, dirty flag, file counts. Implemented via `GitOperationsService.get_repository_status()`. |
-| POST | `/api/git/{repo_id}/sync` | `git.operations:execute` | `sync_repository` | Clone (if missing) or pull (if exists). Updates `sync_status` on the DB record. Invalidates cache on success. Returns `{success, message, repository_path}`. Inline implementation in the router (does not delegate to service). |
-| POST | `/api/git/{repo_id}/remove-and-sync` | `git.operations:execute` | `remove_and_sync_repository` | Backs up existing directory (with timestamp suffix) then clones fresh. Same response shape as `/sync`. |
+| GET | `/api/git/{repo_id}/status` | `git.operations:execute` | `get_repository_status` | Returns `{success, data}` with branch, HEAD commit, dirty flag, file counts. Delegates to `GitService.get_repository_status()`. |
+| POST | `/api/git/{repo_id}/sync` | `git.operations:execute` | `sync_repository` | Delegates to `GitService.sync_repository()`. Updates `sync_status` on the DB record. Invalidates cache on success. Returns `{success, message, repository_path}`. |
+| POST | `/api/git/{repo_id}/remove-and-sync` | `git.operations:execute` | `remove_and_sync_repository` | Delegates to `GitService.remove_and_sync()`. Same response shape as `/sync`. |
 | GET | `/api/git/{repo_id}/info` | `git.operations:execute` | `get_repository_info` | Returns DB metadata plus live git stats (total_commits, total_branches, current_branch, working_directory). |
 | GET | `/api/git/{repo_id}/debug` | `git.operations:execute` | `debug_git` | Returns `{status, repo_path, branch}` from a live `Repo` instance. Simple health check. |
 
@@ -438,8 +435,8 @@ All endpoints require JWT authentication (enforced via `Depends(require_permissi
 | Method | Path | Permission | Handler | Description |
 |---|---|---|---|---|
 | GET | `/api/git/{repo_id}/branches` | `git.operations:execute` | `get_branches` | Returns list of `{name, current}` for all local branches. |
-| GET | `/api/git/{repo_id}/commits/{branch_name}` | `git.repositories:read` | `get_commits` | Returns up to `max_commits` (from cache settings, default 500) commits for the branch. Each commit: `{hash, short_hash, message, author: {name, email}, date, files_changed}`. Results are cached in Redis. |
-| POST | `/api/git/{repo_id}/diff` | `git.operations:execute` | `compare_commits` | Compare a single file between two commits. Body: `{commit1, commit2, file_path}`. Returns `{left_lines, right_lines, diff_lines, stats: {additions, deletions, changes, total_lines}}` where each line is `{line_number, content, type}` with type `equal \| delete \| insert \| replace`. |
+| GET | `/api/git/{repo_id}/commits/{branch_name}` | `git.repositories:read` | `get_commits` | Returns up to `max_commits` (from cache settings, default 500) commits for the branch. Each commit: `{hash, short_hash, message, author: {name, email}, date, files_changed}`. Delegates to `GitCacheService.get_commits()` (cache key `repo:{id}:commits:{branch}`). |
+| POST | `/api/git/{repo_id}/diff` | `git.operations:execute` | `compare_commits` | Compare a single file between two commits. Body: `{commit1, commit2, file_path}`. Delegates to `GitDiffService.compare_commits_side_by_side()`. Returns `{left_lines, right_lines, diff_lines, stats: {additions, deletions, changes, total_lines}}` where each line is `{line_number, content, type}` with type `equal \| delete \| insert \| replace`. |
 
 ---
 
@@ -475,7 +472,7 @@ All require `git.repositories:write` permission.
 | POST | `/api/git-repositories/{repo_id}/debug/read` | `debug_read_test` | Reads `.cockpit_debug_test.txt` from the repo root. Returns details including content and file size. |
 | POST | `/api/git-repositories/{repo_id}/debug/write` | `debug_write_test` | Writes `.cockpit_debug_test.txt` with a timestamp. Returns verification and git status. |
 | POST | `/api/git-repositories/{repo_id}/debug/delete` | `debug_delete_test` | Deletes `.cockpit_debug_test.txt`. Returns verification and git status. |
-| POST | `/api/git-repositories/{repo_id}/debug/push` | `debug_push_test` | Full write → commit → push test using `set_git_author()` and `GitAuthenticationService`. Cleans up after itself. |
+| POST | `/api/git-repositories/{repo_id}/debug/push` | `debug_push_test` | Writes `.cockpit_debug_test.txt`, then delegates commit+push to `GitService.commit_and_push()` (same `http.extraHeader` token-auth path as the sync endpoints — never `origin.set_url`). |
 | GET | `/api/git-repositories/{repo_id}/debug/info` | `debug_repository_info` | Returns filesystem stats: path exists, is_git_repo, disk usage, permissions, SSL cert info, remote URL. |
 
 ---
@@ -615,10 +612,6 @@ def build_git_repository_service():
     from services.git.repository_service import GitRepositoryService
     return GitRepositoryService()
 
-def build_git_operations_service():
-    from services.git.operations import GitOperationsService
-    return GitOperationsService()
-
 def build_git_connection_service():
     from services.git.connection import GitConnectionService
     return GitConnectionService()
@@ -639,9 +632,6 @@ def get_git_auth_service():
 
 def get_git_cache_service():
     return service_factory.build_git_cache_service()
-
-def get_git_operations_service():
-    return service_factory.build_git_operations_service()
 
 def get_git_connection_service():
     return service_factory.build_git_connection_service()
@@ -684,7 +674,6 @@ Copy these files verbatim (no changes needed if the stubs below are satisfied):
 - [ ] `services/git/diff.py`
 - [ ] `services/git/env.py`
 - [ ] `services/git/file_service.py`
-- [ ] `services/git/operations.py`
 - [ ] `services/git/paths.py`
 - [ ] `services/git/repository_service.py`
 - [ ] `services/git/service.py`
@@ -710,3 +699,12 @@ Adapt / stub out these internal dependencies:
 - [ ] Add `service_factory` builder functions and `dependencies.py` injectors
 - [ ] Register `git_router` in `main.py`
 - [ ] Create the `git_repositories` table via migration or `Base.metadata.create_all()`
+
+**Do not copy** (there is no second Git stack in this codebase — these were removed):
+
+- `routers/settings/git_settings.py` — deleted; the legacy `/api/settings/git` singleton-settings endpoints
+- `services/settings/git_service.py` — deleted; `GitSettingsService`
+- `GitSetting` SQLAlchemy model (`git_settings` table) — deleted from `core/models/settings.py`
+- `services/git/operations.py` — deleted; `GitOperationsService` was folded into `GitService` (`sync_repository`, `remove_and_sync`, `get_repository_status`)
+
+See [doc/refactoring/GIT_SERVICE.md](refactoring/GIT_SERVICE.md) for the historical context behind this consolidation — it documents the two-stack state this document used to describe and the phased plan that removed it. It is a record of the migration, not a second source of truth for the current implementation.

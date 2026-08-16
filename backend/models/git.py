@@ -37,24 +37,6 @@ class GitCommit(BaseModel):
     )
 
 
-class GitCommitDetails(GitCommit):
-    """Detailed commit information with stats and optional diff."""
-
-    stats: CommitStats = Field(..., description="Commit statistics")
-    diff: Optional[str] = Field(None, description="Full diff content if requested")
-
-
-class CommitStats(BaseModel):
-    """Statistics for a commit."""
-
-    additions: int = Field(default=0, description="Lines added")
-    deletions: int = Field(default=0, description="Lines deleted")
-    changes: int = Field(default=0, description="Total changes (additions + deletions)")
-    total_lines: int = Field(
-        default=0, description="Total lines in changed files after commit"
-    )
-
-
 # ============================================================================
 # Diff Models
 # ============================================================================
@@ -116,123 +98,6 @@ class CloneResult(BaseModel):
     repo_path: str = Field(..., description="Local path to cloned repository")
 
 
-class StatusInfo(BaseModel):
-    """Git repository status information."""
-
-    current_branch: str = Field(..., description="Currently active branch name")
-    branches: List[str] = Field(
-        default_factory=list, description="List of all branches"
-    )
-    is_dirty: bool = Field(
-        default=False, description="Whether repository has uncommitted changes"
-    )
-    untracked_files: List[str] = Field(
-        default_factory=list, description="List of untracked files"
-    )
-    modified_files: List[str] = Field(
-        default_factory=list, description="List of modified files"
-    )
-    last_commit: Optional[GitCommit] = Field(
-        None, description="Most recent commit information"
-    )
-    commits_behind: int = Field(
-        default=0, description="Number of commits behind remote"
-    )
-    commits_ahead: int = Field(
-        default=0, description="Number of commits ahead of remote"
-    )
-
-
-# ============================================================================
-# File History Models
-# ============================================================================
-
-
-class FileHistoryCommit(GitCommit):
-    """Commit in file history with change type information."""
-
-    change_type: Literal["added", "modified", "deleted", "renamed"] = Field(
-        ..., description="Type of change made to file in this commit"
-    )
-    old_path: Optional[str] = Field(None, description="Previous file path if renamed")
-
-
-class FileHistory(BaseModel):
-    """Complete history of a file across commits."""
-
-    file_path: str = Field(..., description="Path to the file")
-    commits: List[FileHistoryCommit] = Field(
-        default_factory=list, description="Commits affecting this file"
-    )
-    total_commits: int = Field(default=0, description="Total number of commits")
-
-
-# ============================================================================
-# Branch Models
-# ============================================================================
-
-
-class GitBranch(BaseModel):
-    """Git branch information."""
-
-    name: str = Field(..., description="Branch name")
-    is_current: bool = Field(
-        default=False, description="Whether this is the currently active branch"
-    )
-    last_commit: Optional[GitCommit] = Field(
-        None, description="Most recent commit on this branch"
-    )
-    commit_count: int = Field(
-        default=0, description="Total number of commits on this branch"
-    )
-
-
-# ============================================================================
-# Comparison Models
-# ============================================================================
-
-
-class CommitComparison(BaseModel):
-    """Comparison between two commits."""
-
-    commit1: str = Field(..., description="First commit hash")
-    commit2: str = Field(..., description="Second commit hash")
-    files_changed: List[str] = Field(
-        default_factory=list, description="List of files changed between commits"
-    )
-    diff: DiffResult = Field(..., description="Diff between commits")
-
-
-class CrossRepoComparison(BaseModel):
-    """Comparison of same file across different repositories."""
-
-    repo1_id: int = Field(..., description="First repository ID")
-    repo2_id: int = Field(..., description="Second repository ID")
-    file_path: str = Field(..., description="Path to file being compared")
-    commit1: Optional[str] = Field(None, description="Commit hash in first repo")
-    commit2: Optional[str] = Field(None, description="Commit hash in second repo")
-    diff: DiffResult = Field(..., description="Diff between files")
-
-
-# ============================================================================
-# Request Models (for backwards compatibility with existing endpoints)
-# ============================================================================
-
-
-class GitCommitRequest(BaseModel):
-    """Git commit request model."""
-
-    message: str
-    files: Optional[List[str]] = None  # If None, commit all changes
-
-
-class GitBranchRequest(BaseModel):
-    """Git branch management request model."""
-
-    branch_name: str
-    create: bool = False
-
-
 # ============================================================================
 # Helper Functions
 # ============================================================================
@@ -258,15 +123,3 @@ def commit_to_dict(commit) -> dict:
         "date": commit.committed_datetime.isoformat(),
         "files_changed": len(commit.stats.files) if hasattr(commit, "stats") else 0,
     }
-
-
-def create_git_commit(commit) -> GitCommit:
-    """Create a GitCommit model from a GitPython commit object.
-
-    Args:
-        commit: GitPython Commit object
-
-    Returns:
-        GitCommit instance with standardized fields
-    """
-    return GitCommit(**commit_to_dict(commit))

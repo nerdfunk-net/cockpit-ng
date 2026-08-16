@@ -208,3 +208,36 @@ def test_compare_files_across_repos_raises_on_commit_error(
 
     with pytest.raises(OSError, match="disk error"):
         svc.compare_files_across_repos(repo1, repo2, "f.txt")
+
+
+class _FakeTreeWithDiv(_FakeTree):
+    """Fake tree supporting the ``tree / path`` access GitPython also allows."""
+
+    def __truediv__(self, path: str) -> _FakeBlob:
+        return self[path]
+
+
+class _FakeCommitWithDiv(_FakeCommit):
+    def __init__(self, files: dict[str, str]) -> None:
+        self.tree = _FakeTreeWithDiv(files)
+
+
+@pytest.mark.unit
+def test_compare_commits_side_by_side_returns_left_right_lines(
+    svc: GitDiffService,
+) -> None:
+    repo = _fake_repo(
+        {
+            "aaa": _FakeCommitWithDiv({"cfg.txt": "one\n"}),
+            "bbb": _FakeCommitWithDiv({"cfg.txt": "two\n"}),
+        }
+    )
+
+    result = svc.compare_commits_side_by_side(repo, "aaa", "bbb", "cfg.txt")
+
+    assert result["left_lines"][0]["type"] == "replace"
+    assert result["right_lines"][0]["type"] == "replace"
+    assert result["left_file"] == "cfg.txt (aaa)"
+    assert result["right_file"] == "cfg.txt (bbb)"
+    assert result["stats"]["additions"] >= 1
+    assert result["stats"]["deletions"] >= 1
